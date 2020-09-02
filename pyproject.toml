@@ -1,0 +1,62 @@
+[tool.poetry]
+name = "dsync"
+version = "0.1.0"
+description = "Library to easily sync/diff/update 2 different data source"
+authors = ["Network to Code, LLC <info@networktocode.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.6"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.4.1"
+requests_mock = "^1.7.0"
+pyyaml = "^5.3"
+black = "^19.10b0"
+pylint = "^2.4.4"
+pydocstyle = "^5.0.2"
+yamllint = "^1.20.0"
+bandit = "^1.6.2"
+invoke = "^1.4.1"
+flake8 = "^3.8.3"
+
+[tool.poetry.scripts]
+dsync = 'dsync.cli:main'
+
+[tool.black]
+line-length = 120
+include = '\.pyi?$'
+exclude = '''
+        /(
+          \.git
+        | \.tox
+        | \.venv
+        | env/
+        | _build
+        | build
+        | dist
+        )/
+    '''
+
+[tool.pylint.messages_control]
+# Line length is enforced by Black, so pylint doesn't need to check it.
+# Pylint and Black disagree about how to format multi-line arrays; Black wins.
+disable = """,
+    line-too-long,
+    bad-continuation,
+    """
+
+[tool.pylint.miscellaneous]
+# Don't flag TODO as a failure, let us commit with things that still need to be done in the code
+notes = """,
+    FIXME,
+    XXX,
+    """
+    
+[tool.pytest.ini_options]
+testpaths = [
+    "tests"
+]
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
