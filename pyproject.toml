@@ -5,7 +5,8 @@ description = "Library to easily sync/diff/update 2 different data source"
 authors = ["Network to Code, LLC <info@networktocode.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.6"
+python = "^3.7"
+pydantic = "^1.6.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.4.1"
@@ -18,6 +19,7 @@ yamllint = "^1.20.0"
 bandit = "^1.6.2"
 invoke = "^1.4.1"
 flake8 = "^3.8.3"
+ipython = "^7.18.1"
 
 [tool.poetry.scripts]
 dsync = 'dsync.cli:main'
