@@ -19,7 +19,7 @@ class BackendB(DSync):
     device = Device
     interface = Interface
 
-    top_level = ["site"]
+    top_level = ['site']
 
     nb = None
 

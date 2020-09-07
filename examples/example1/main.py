@@ -17,6 +17,9 @@ def main():
     diff_a_b = a.diff(b)
     diff_a_b.print_detailed()
 
+    a.sync(b)
+    a.diff(b).print_detailed()
+
 
 if __name__ == "__main__":
     main()
