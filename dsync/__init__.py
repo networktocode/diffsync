@@ -19,6 +19,7 @@ from collections import defaultdict
 
 from .diff import Diff, DiffElement
 from .utils import intersection
+from .exceptions import ObjectCrudException, ObjectAlreadyExist
 
 logger = logging.getLogger(__name__)
 
@@ -300,14 +301,17 @@ class DSync:
         # Check if a specific crud function is available
         #   update_interface or create_device etc ...
         # If not apply the default one
-        if hasattr(self, f"{action}_{object_type}"):
-            item = getattr(self, f"{action}_{object_type}")(keys=keys, params=params)
-            logger.debug(f"{action}d {object_type} - {params}")
-        else:
-            item = getattr(self, f"default_{action}")(object_type=object_type, keys=keys, params=params)
-            logger.debug(f"{action}d {object_type} = {keys} - {params} (default)")
 
-        return item
+        try:
+            if hasattr(self, f"{action}_{object_type}"):
+                item = getattr(self, f"{action}_{object_type}")(keys=keys, params=params)
+                logger.debug(f"{action}d {object_type} - {params}")
+            else:
+                item = getattr(self, f"default_{action}")(object_type=object_type, keys=keys, params=params)
+                logger.debug(f"{action}d {object_type} = {keys} - {params} (default)")
+            return item
+        except ObjectCrudException:
+            return False
 
     # ----------------------------------------------------------------------------
     def default_create(self, object_type, keys, params):
@@ -446,7 +450,7 @@ class DSync:
         uid = obj.get_unique_id()
 
         if uid in self.__datas__[modelname]:
-            raise Exception(f"Object {uid} already present")
+            raise ObjectAlreadyExist(f"Object {uid} already present")
 
         self.__datas__[modelname][uid] = obj
 
