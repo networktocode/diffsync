@@ -15,10 +15,6 @@ class Site(DSyncModel):
 
     name: str
     devices: List = list()
-    prefixes: List = list()
-
-    def __repr__(self):
-        return str(self.name)
 
 
 class Device(DSyncModel):

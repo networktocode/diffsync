@@ -10,4 +10,5 @@ before_script:
   - "pip install invoke"
   - "invoke build-test-container -p $TRAVIS_PYTHON_VERSION"
 script:
-  - "invoke tests -p $TRAVIS_PYTHON_VERSION"
+  - "invoke black -p $TRAVIS_PYTHON_VERSION"
+  - "invoke bandit -p $TRAVIS_PYTHON_VERSION"
