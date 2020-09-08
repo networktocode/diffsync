@@ -72,12 +72,12 @@ class DSyncModel(BaseModel):
         Returns:
             str: Unique ID for this object
         """
-        return "__".join([getattr(self, key) for key in self.__identifier__])
+        return "__".join([str(getattr(self, key)) for key in self.__identifier__])
 
     def get_shortname(self):
 
         if self.__shortname__:
-            return "__".join([getattr(self, key) for key in self.__shortname__])
+            return "__".join([str(getattr(self, key)) for key in self.__shortname__])
         else:
             return self.get_unique_id()
 
