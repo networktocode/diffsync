@@ -30,27 +30,35 @@ class DSyncModel(BaseModel):
     Note that APIs of this class are implemented as `get_*()` functions rather than as properties;
     this is intentional as specific model classes may want to use these names (`type`, `keys`, `attrs`, etc.)
     as model attributes and we want to avoid any ambiguity or collisions.
+
+    This class has several dunder-named class variables that subclasses need to set for desired behavior; see below.
     """
 
     __modelname__: str = None
-    """Name of this model, used by DSync to store and look up instances of this model."""
+    """Name of this model, used by DSync to store and look up instances of this model or its equivalents.
+
+    Lowercase by convention; typically corresponds to the class name, but that is not enforced.
+    """
 
     __identifier__: tuple = []
-    """List of attributes which together uniquely identify an instance of this model."""
+    """List of model fields which together uniquely identify an instance of this model."""
 
     __shortname__: tuple = []
-    """Optional: list of attributes which together form a shorter identifier of an instance, not necessarily unique."""
+    """Optional: list of model fields that together form a shorter identifier of an instance, not necessarily unique."""
 
     __attributes__: tuple = []
-    """Optional: list of additional attributes (beyond those in __identifier__) that this model has.
+    """Optional: list of additional model fields (beyond those in `__identifier__`) that are relevant to this model.
 
-    TODO: remove me? Shouldn't be needed with Pydantic.
+    Only the fields in `__attributes__` (as well as any `__children__` fields, see below) will be considered
+    for the purposes of Diff calculation.
+    A model may define additional fields (not included in `__attributes__`) for its internal use;
+    a common example would be a locally significant database primary key or id value.
     """
 
     __children__: Mapping[str, str] = {}
-    """Optional: dict of `{__modelname__: attribute_name}` entries describing how to store "child" models in this model.
+    """Optional: dict of `{__modelname__: field_name}` entries describing how to store "child" models in this model.
 
-    TODO: remove me? Shouldn't be needed with Pydantic.
+    When calculating a Diff or performing a sync, DSync will automatically recurse into these child models.
     """
 
     def __repr__(self):
@@ -76,19 +84,21 @@ class DSyncModel(BaseModel):
         Returns:
             dict: dictionary containing all primary keys for this device, as defined in __identifier__
         """
+        # TODO: is this equivalent to self.dict(include=set(self.__identifier__))?
         return {key: getattr(self, key) for key in self.__identifier__}
 
     def get_attrs(self):
         """Get all the non-primary-key attributes or parameters for this object.
 
-        The list of parameters to return is defined by the __attributes__ list.
-
-        TODO: remove me? Redundant with Pydantic's `BaseModel.dict()` method?
-        Except that it does NOT include __identifier__ keys/values, only the additional __attributes__...
+        Similar to Pydantic's `BaseModel.dict()` method, with the following key differences:
+        1. Does not include the fields in `__identifier__`
+        2. Only includes fields explicitly listed in `__attributes__`
+        3. Does not include any additional fields not listed in `__attributes__`
 
         Returns:
             dict: Dictionary of attributes for this object
         """
+        # TODO: is this equivalent to self.dict(include=set(self.__attributes__))?
         return {key: getattr(self, key) for key in self.__attributes__}
 
     def get_unique_id(self):
@@ -102,9 +112,10 @@ class DSyncModel(BaseModel):
         return "__".join([str(getattr(self, key)) for key in self.__identifier__])
 
     def get_shortname(self):
-        """Get the (not guaranteed-unique) shortname of an object.
+        """Get the (not guaranteed-unique) shortname of an object, if any.
 
         By default the shortname is built based on all the keys defined in `__shortname__`.
+        If `__shortname__` is not specified, then this function is equivalent to `get_unique_id()`.
 
         Returns:
             str: Shortname of this object
@@ -118,15 +129,16 @@ class DSyncModel(BaseModel):
         """Add a child to an object.
 
         The child will be automatically saved/indexed by its unique id
-        The name of the target attribute is defined in __children__ per object type
+        The name of the target attribute is defined in `__children__` per object type
 
         Args:
             child (DSyncModel): Valid  DSyncModel object
 
         Raises:
-            Exception: Invalid Child type, if the type is not part of __children__
-            Exception: Invalid attribute name if the name of the attribute defined in __children__ for this type do not exist
+            Exception: Invalid Child type, if the type is not part of `__children__`
+            Exception: Invalid attribute name, if the model doesn't have a field matching the entry in `__children__`
         """
+        # TODO: raise more appropriate exception classes
         child_type = child.get_type()
 
         if child_type not in self.__children__:
@@ -134,6 +146,7 @@ class DSyncModel(BaseModel):
 
         attr_name = self.__children__[child_type]
 
+        # TODO: this should be checked at class declaration time, not at run time!
         if not hasattr(self, attr_name):
             raise Exception(
                 f"Invalid attribute name ({attr_name}) for child of type {child_type} for {self.get_type()}"
@@ -229,8 +242,8 @@ class DSync:
         """Generate a list of DiffElement between the given lists of objects.
 
         Args:
-          source (list): TODO
-          dest (list): TODO
+          source (list): List of source DSyncModel instances
+          dest (list): List of target DSyncModel instances
           source_root: TODO
 
         Returns:
@@ -314,6 +327,7 @@ class DSync:
                 diffs.append(de)
 
         else:
+            # TODO: what other types are we planning to support, and why?
             logger.warning(f"Type {type(source)} is not supported for now")
 
         return diffs
@@ -342,6 +356,8 @@ class DSync:
             default_create, default_update or default_delete
 
         The goal is to all each DSync class to insert its own logic per object type when we manipulate these objects
+
+        TODO: move to DSyncModel class?
 
         Args:
             action (str): type of action, must be create, update or delete
@@ -408,6 +424,7 @@ class DSync:
         """
         obj = getattr(self, object_type)
 
+        # TODO: uid = "__".join(keys.values()) to avoid instantiating the model unnecessarily?
         uid = obj(**keys).get_unique_id()
         item = self.get(obj=obj, keys=[uid])
 
@@ -437,6 +454,7 @@ class DSync:
     # ------------------------------------------------------------------------------
     # Object Storage Management
     # ------------------------------------------------------------------------------
+
     def get(self, obj, keys):
         """Get one object from the data store based on its unique id or a list of its unique attributes.
 
@@ -452,8 +470,10 @@ class DSync:
         else:
             modelname = obj.get_type()
 
+        # TODO: default_update() calls get(obj, [uid]) making the below rather redundant...
         uid = "__".join(keys)
 
+        # TODO: if modelname in self.__datas__:
         if uid in self.__datas__[modelname]:
             return self.__datas__[modelname][uid]
 
@@ -478,6 +498,7 @@ class DSync:
 
         return self.__datas__[modelname].values()
 
+    # TODO: rename keys to uids?
     def get_by_keys(self, keys, obj):
         """Get multiple objects from the store by their unique IDs/Keys and type.
 
@@ -502,9 +523,10 @@ class DSync:
             obj (DSyncModel): Object to store
 
         Raises:
-            Exception: Object is already present
+            ObjectAlreadyExist: if an object with the same uid is already present
         """
         modelname = obj.get_type()
+        # TODO: if modelname not in self.__datas__...
         uid = obj.get_unique_id()
 
         if uid in self.__datas__[modelname]:
@@ -524,6 +546,7 @@ class DSync:
             Exception: Object not present
         """
         modelname = obj.get_type()
+        # TODO: if modelname not in self.__datas__...
         uid = obj.get_unique_id()
 
         if uid not in self.__datas__[modelname]:

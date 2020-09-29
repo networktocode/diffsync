@@ -39,6 +39,8 @@ class Diff:
             element: (DiffElement) element to store
         """
         name = element.name
+
+        # TODO: shouldn't it be an error if the element already exists, like in DSync.add()?
         self.childs[group][name] = element
 
     def groups(self):
