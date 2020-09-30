@@ -17,15 +17,21 @@ from .utils import intersection, OrderedDefaultDict
 
 class Diff:
     """
-    Diff Object, designed to store multiple DiffElement object and aorganized them in group
+    Diff Object, designed to store multiple DiffElement object and organize them in a group.
     """
 
     def __init__(self):
         self.childs = OrderedDefaultDict(dict)
+        """DefaultDict for storing DiffElement objects.
+
+        `self.childs[group][unique_id] == DiffElement(...)`
+
+        TODO: rename to `children`.
+        """
 
     def add(self, group: str, element):
         """
-        Save a new DiffElement per group, 
+        Save a new DiffElement per group,
         if an element with the same name already exist it will be replaced
 
         Args:
@@ -33,6 +39,8 @@ class Diff:
             element: (DiffElement) element to store
         """
         name = element.name
+
+        # TODO: shouldn't it be an error if the element already exists, like in DSync.add()?
         self.childs[group][name] = element
 
     def groups(self):
@@ -49,11 +57,12 @@ class Diff:
             for child in self.childs[group].values():
                 if child.has_diffs():
                     status = True
+                    break
 
         return status
 
     def get_childs(self):
-
+        """Iterate over all child elements in all groups in self.childs."""
         for group in self.groups():
             for child in self.childs[group].values():
                 yield child
@@ -73,12 +82,22 @@ class Diff:
 
 
 class DiffElement:
-    """ 
-    DiffElement object, designed to represent an item/object
+    """
+    DiffElement object, designed to represent a single item/object that may or may not have any diffs.
     """
 
+    # TODO: make this a Pydantic.BaseModel subclass?
+
     def __init__(self, obj_type: str, name: str, keys: dict):
-        """ """
+        """Instantiate a DiffElement.
+
+        Args:
+            obj_type (str): Name of the object type being described.
+            name (str): Unique (TODO?) name of the object instance being described.
+            keys (dict): Key-value pairs (TODO?) uniquely describing this object.
+
+        TODO: Are keys and name redundant?
+        """
         if not isinstance(obj_type, str):
             raise ValueError(f"obj_type must be a string (not {type(obj_type)})")
 
@@ -107,14 +126,11 @@ class DiffElement:
     #     return f"{self.type}:{self.name} {self.nbr_diffs()} DIFFs"
 
     def add_attrs(self, source: dict = None, dest: dict = None):
-        """
-        Add an item
-        """
-
-        if source != None:
+        """Set additional attributes of a source and/or destination item that may result in diffs."""
+        if source is not None:
             self.source_attrs = source
 
-        if dest != None:
+        if dest is not None:
             self.dest_attrs = dest
 
     def get_attrs_keys(self):
@@ -123,8 +139,10 @@ class DiffElement:
         if source_attrs is not defined return dest
         if dest is not defined, return source
         if both are defined, return the intersection of both
-        """
 
+        TODO: this obscures the difference between "source/dest does not exist at all" and
+        "source/dest exists but does not have any attrs defined beyond the base `keys`" - this seems problematic.
+        """
         if self.source_attrs is None and self.dest_attrs is None:
             return None
         elif self.source_attrs is None and self.dest_attrs:
@@ -175,12 +193,15 @@ class DiffElement:
     def print_detailed(self, indent: int = 0):
         """
         Print status on screen for current object and all childs
-        
+
         Args:
           indent: Default value = 0
         """
 
         margin = " " * indent
+
+        # TODO: this obscures the difference between "source/dest does not exist" and
+        # "source/dest exists but has no specific `attrs` defined."
 
         # if self.missing_remote and self.missing_local:
         #     print(f"{margin}{self.type}: {self.name} MISSING BOTH")

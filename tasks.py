@@ -4,7 +4,7 @@ from invoke import task
 
 
 # Can be set to a separate Python version to be used for launching or building container
-PYTHON_VER = os.getenv("PYTHON_VER", "3.6")
+PYTHON_VER = os.getenv("PYTHON_VER", "3.7")
 # Name of the docker image/container
 NAME = os.getenv("IMAGE_NAME", "dsync-0.1.0")
 # Gather current working directory for Docker commands
