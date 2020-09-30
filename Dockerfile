@@ -7,6 +7,7 @@ RUN pip install --upgrade pip \
 
 WORKDIR /local
 COPY pyproject.toml /local
+COPY poetry.lock /local
 
 RUN poetry config virtualenvs.create false \
   && poetry install --no-interaction --no-ansi

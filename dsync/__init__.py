@@ -76,16 +76,13 @@ class DSyncModel(BaseModel):
         """
         return cls.__modelname__
 
-    def get_keys(self):
-        """Get all primary keys for this object.
-
-        TODO: misleading name, this doesn't get keys, it gets a dictionary with the given keys.
+    def get_identifiers(self):
+        """Get a dict of all identifiers (primary keys) and their values for this object.
 
         Returns:
             dict: dictionary containing all primary keys for this device, as defined in __identifier__
         """
-        # TODO: is this equivalent to self.dict(include=set(self.__identifier__))?
-        return {key: getattr(self, key) for key in self.__identifier__}
+        return self.dict(include=set(self.__identifier__))
 
     def get_attrs(self):
         """Get all the non-primary-key attributes or parameters for this object.
@@ -98,8 +95,7 @@ class DSyncModel(BaseModel):
         Returns:
             dict: Dictionary of attributes for this object
         """
-        # TODO: is this equivalent to self.dict(include=set(self.__attributes__))?
-        return {key: getattr(self, key) for key in self.__attributes__}
+        return self.dict(include=set(self.__attributes__))
 
     def get_unique_id(self):
         """Get the unique ID of an object.
@@ -272,7 +268,7 @@ class DSync:
                 de = DiffElement(
                     obj_type=dict_src[key].get_type(),
                     name=dict_src[key].get_shortname(),
-                    keys=dict_src[key].get_keys(),
+                    keys=dict_src[key].get_identifiers(),
                 )
                 de.add_attrs(source=dict_src[key].get_attrs(), dest=None)
                 diffs.append(de)
@@ -282,7 +278,7 @@ class DSync:
                 de = DiffElement(
                     obj_type=dict_dst[key].get_type(),
                     name=dict_dst[key].get_shortname(),
-                    keys=dict_dst[key].get_keys(),
+                    keys=dict_dst[key].get_identifiers(),
                 )
                 de.add_attrs(source=None, dest=dict_dst[key].get_attrs())
                 diffs.append(de)
@@ -293,7 +289,7 @@ class DSync:
                 de = DiffElement(
                     obj_type=dict_dst[key].get_type(),
                     name=dict_dst[key].get_shortname(),
-                    keys=dict_dst[key].get_keys(),
+                    keys=dict_dst[key].get_identifiers(),
                 )
 
                 de.add_attrs(
