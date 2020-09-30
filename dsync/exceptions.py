@@ -22,5 +22,9 @@ class ObjectAlreadyExists(ObjectStoreException):
     """Exception raised when trying to store a DSyncModel that is already being stored."""
 
 
+class ObjectNotFound(ObjectStoreException):
+    """Exception raised when trying to access a DSyncModel that isn't in storage."""
+
+
 class ObjectStoreWrongType(ObjectStoreException):
     """Exception raised when trying to store a DSyncModel of the wrong type."""

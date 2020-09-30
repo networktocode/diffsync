@@ -4,12 +4,13 @@ import pytest
 
 from dsync.exceptions import ObjectStoreWrongType
 
+
 def test_generic_dsync_model_methods(generic_dsync_model, make_site):
     """Check the default behavior of various APIs of a DSyncModel."""
     assert str(generic_dsync_model) == ""
     assert repr(generic_dsync_model) == 'None ""'
 
-    assert generic_dsync_model.get_type() == None
+    assert generic_dsync_model.get_type() is None
     assert generic_dsync_model.get_identifiers() == {}
     assert generic_dsync_model.get_attrs() == {}
     assert generic_dsync_model.get_unique_id() == ""

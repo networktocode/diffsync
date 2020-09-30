@@ -13,13 +13,13 @@ limitations under the License.
 """
 import logging
 from collections import defaultdict
-from typing import Mapping
+from typing import List, Mapping
 
 from pydantic import BaseModel
 
 from .diff import Diff, DiffElement
 from .utils import intersection
-from .exceptions import ObjectCrudException, ObjectAlreadyExists, ObjectStoreWrongType
+from .exceptions import ObjectCrudException, ObjectAlreadyExists, ObjectStoreWrongType, ObjectNotFound
 
 logger = logging.getLogger(__name__)
 
@@ -164,44 +164,48 @@ class DSync:
     """List of top-level modelnames to begin from when diffing or synchronizing."""
 
     def __init__(self):
+        """Generic initialization function.
+
+        Subclasses should be careful to call super().__init__() if they override this method.
+        """
         self.__datas__ = defaultdict(dict)
         """Defaultdict storing model instances.
 
         `self.__datas__[modelname][unique_id] == model_instance`
         """
 
-    def init(self):
-        """Load all desired data from whatever backend data source into this instance.
+    def load(self):
+        """Load all desired data from whatever backend data source into this instance."""
+        # No-op in this generic class
 
-        TODO: rename to something like `load()`?
-        """
-        raise NotImplementedError
-
-    def sync(self, source):
-        """Synchronize the current DSync object with the source.
-
-        TODO: rename to something like `sync_from` to make directionality clear, possibly add `sync_to` for convenience
+    def sync_from(self, source: "DSync"):
+        """Synchronize data from the given source DSync object into the current DSync object.
 
         Args:
-            source: DSync object to sync data from into this one
+            source (DSync): object to sync data from into this one
         """
-        diff = self.diff(source)
+        diff = self.diff_from(source)
 
         for child in diff.get_childs():
-            self.sync_element(child)
+            self.sync_from_diff_element(child)
 
-    def sync_element(self, element: DiffElement):
+    def sync_to(self, target: "DSync"):
+        """Synchronize data from the current DSync object into the given target DSync object.
+
+        Args:
+            target (DSync): object to sync data into from this one.
+        """
+        target.sync_from(self)
+
+    def sync_from_diff_element(self, element: DiffElement) -> bool:
         """Synchronize a given object or element defined in a DiffElement into this DSync.
-
-        TODO: rename to something like `sync_from_element` to make directionality clear.
 
         Args:
             element (DiffElement):
 
         Returns:
-            Bool: Return False if there is nothing to sync
+            bool: Return False if there is nothing to sync
         """
-
         if not element.has_diffs():
             return False
 
@@ -213,14 +217,18 @@ class DSync:
             self.update_object(object_type=element.type, keys=element.keys, params=element.source_attrs)
 
         for child in element.get_childs():
-            self.sync_element(child)
+            self.sync_from_diff_element(child)
 
         return True
 
-    def diff(self, source):
-        """Generate a Diff object between 2 DSync objects.
+    def diff_from(self, source: "DSync") -> Diff:
+        """Generate a Diff describing the difference from the other DSync to this one.
 
-        TODO: rename to `diff_from`, add `diff_to` convenience method?
+        Args:
+            source (DSync): Object to diff against.
+
+        Returns:
+            Diff
         """
         diff = Diff()
 
@@ -235,6 +243,17 @@ class DSync:
 
         return diff
 
+    def diff_to(self, target: "DSync") -> Diff:
+        """Generate a Diff describing the difference from this DSync to another one.
+
+        Args:
+            target (DSync): Object to diff against.
+
+        Returns:
+            Diff
+        """
+        return target.diff_from(self)
+
     def diff_objects(self, source, dest, source_root):
         """Generate a list of DiffElement between the given lists of objects.
 
@@ -247,6 +266,7 @@ class DSync:
           list(DiffElement)
         """
         if type(source) != type(dest):
+            # TODO, should probably be an exception?
             logger.warning(f"Attribute {source} are of different types")
             return False
 
@@ -312,9 +332,10 @@ class DSync:
 
                 for child_type, child_attr in dict_src[key].__children__.items():
 
+                    # TODO: the below is very much not self-documenting - let's add some comments :-)
                     childs = self.diff_objects(
-                        source=source_root.get_by_keys(getattr(dict_src[key], child_attr), child_type),
-                        dest=self.get_by_keys(getattr(dict_dst[key], child_attr), child_type),
+                        source=source_root.get_by_uids(getattr(dict_src[key], child_attr), child_type),
+                        dest=self.get_by_uids(getattr(dict_dst[key], child_attr), child_type),
                         source_root=source_root,
                     )
 
@@ -324,7 +345,8 @@ class DSync:
                 diffs.append(de)
 
         else:
-            # TODO: what other types are we planning to support, and why?
+            # In the future we might support dict, set, tuple, etc...
+            # TODO, should probably be an exception?
             logger.warning(f"Type {type(source)} is not supported for now")
 
         return diffs
@@ -444,8 +466,9 @@ class DSync:
             DSyncModel: Return the object that has been deleted
         """
         obj = getattr(self, object_type)
+        # TODO: uid = "__".join(keys.values()) to avoid instantiating the model unnecessarily?
         item = obj(**keys, **params)
-        self.delete(item)
+        self.remove(item)
         return item
 
     # ------------------------------------------------------------------------------
@@ -470,7 +493,6 @@ class DSync:
         # TODO: default_update() calls get(obj, [uid]) making the below rather redundant...
         uid = "__".join(keys)
 
-        # TODO: if modelname in self.__datas__:
         if uid in self.__datas__[modelname]:
             return self.__datas__[modelname][uid]
 
@@ -490,30 +512,30 @@ class DSync:
         else:
             modelname = obj.get_type()
 
-        if modelname not in self.__datas__:
-            return []
-
         return self.__datas__[modelname].values()
 
-    # TODO: rename keys to uids?
-    def get_by_keys(self, keys, obj):
+    def get_by_uids(self, uids: List[str], obj):
         """Get multiple objects from the store by their unique IDs/Keys and type.
 
         Args:
-            keys (list[str]): List of unique id / key identifying object in the database.
+            uids (list[str]): List of unique id / key identifying object in the database.
             obj (DSyncModel, str): DSyncModel class or object or string that define the type of the objects to retrieve
 
         Returns:
-            list[DSyncModel]: List of Object
+            list[DSyncModel]: List of DSyncModel objects
         """
         if isinstance(obj, str):
             modelname = obj
         else:
             modelname = obj.get_type()
 
-        return [value for uid, value in self.__datas__[modelname].items() if uid in keys]
+        # TODO: this returns the results ordered by their storage order in self.__datas__[modelname],
+        #       and NOT by the order given in uids. Seems like a bug?
+        #
+        # TODO: should this raise an exception if any or all of the uids are not found?
+        return [value for uid, value in self.__datas__[modelname].items() if uid in uids]
 
-    def add(self, obj):
+    def add(self, obj: DSyncModel):
         """Add a DSyncModel object to the store.
 
         Args:
@@ -523,7 +545,6 @@ class DSync:
             ObjectAlreadyExists: if an object with the same uid is already present
         """
         modelname = obj.get_type()
-        # TODO: if modelname not in self.__datas__...
         uid = obj.get_unique_id()
 
         if uid in self.__datas__[modelname]:
@@ -531,22 +552,19 @@ class DSync:
 
         self.__datas__[modelname][uid] = obj
 
-    def delete(self, obj):
+    def remove(self, obj: DSyncModel):
         """Remove a DSyncModel object from the store.
-
-        TODO: rename to `remove` to avoid confusion with object deletion.
 
         Args:
             obj (DSyncModel): object to delete
 
         Raises:
-            Exception: Object not present
+            ObjectNotFound: if the object is not present
         """
         modelname = obj.get_type()
-        # TODO: if modelname not in self.__datas__...
         uid = obj.get_unique_id()
 
         if uid not in self.__datas__[modelname]:
-            raise Exception(f"Object {uid} not present")
+            raise ObjectNotFound(f"Object {uid} not present")
 
         del self.__datas__[modelname][uid]
