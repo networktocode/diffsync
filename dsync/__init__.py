@@ -19,7 +19,7 @@ from pydantic import BaseModel
 
 from .diff import Diff, DiffElement
 from .utils import intersection
-from .exceptions import ObjectCrudException, ObjectAlreadyExist
+from .exceptions import ObjectCrudException, ObjectAlreadyExists, ObjectStoreWrongType
 
 logger = logging.getLogger(__name__)
 
@@ -131,20 +131,21 @@ class DSyncModel(BaseModel):
             child (DSyncModel): Valid  DSyncModel object
 
         Raises:
-            Exception: Invalid Child type, if the type is not part of `__children__`
-            Exception: Invalid attribute name, if the model doesn't have a field matching the entry in `__children__`
+            ObjectStoreWrongType: if the type is not part of `__children__`
+            AttributeError: if the model doesn't have a field matching the entry in `__children__`
         """
-        # TODO: raise more appropriate exception classes
         child_type = child.get_type()
 
         if child_type not in self.__children__:
-            raise Exception(f"Invalid Child type ({child_type}) for {self.get_type()}")
+            raise ObjectStoreWrongType(
+                f"Unable to store {child_type} as a child; valid types are {sorted(self.__children__.keys())}"
+            )
 
         attr_name = self.__children__[child_type]
 
         # TODO: this should be checked at class declaration time, not at run time!
         if not hasattr(self, attr_name):
-            raise Exception(
+            raise AttributeError(
                 f"Invalid attribute name ({attr_name}) for child of type {child_type} for {self.get_type()}"
             )
 
@@ -519,14 +520,14 @@ class DSync:
             obj (DSyncModel): Object to store
 
         Raises:
-            ObjectAlreadyExist: if an object with the same uid is already present
+            ObjectAlreadyExists: if an object with the same uid is already present
         """
         modelname = obj.get_type()
         # TODO: if modelname not in self.__datas__...
         uid = obj.get_unique_id()
 
         if uid in self.__datas__[modelname]:
-            raise ObjectAlreadyExist(f"Object {uid} already present")
+            raise ObjectAlreadyExists(f"Object {uid} already present")
 
         self.__datas__[modelname][uid] = obj
 

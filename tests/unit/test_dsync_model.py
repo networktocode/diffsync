@@ -2,7 +2,9 @@
 
 import pytest
 
-def test_generic_dsync_model_methods(generic_dsync_model):
+from dsync.exceptions import ObjectStoreWrongType
+
+def test_generic_dsync_model_methods(generic_dsync_model, make_site):
     """Check the default behavior of various APIs of a DSyncModel."""
     assert str(generic_dsync_model) == ""
     assert repr(generic_dsync_model) == 'None ""'
@@ -13,9 +15,8 @@ def test_generic_dsync_model_methods(generic_dsync_model):
     assert generic_dsync_model.get_unique_id() == ""
     assert generic_dsync_model.get_shortname() == ""
 
-    with pytest.raises(Exception):  # TODO, be more specific
-        # This should actually raise an exception about a model not being its own child...
-        generic_dsync_model.add_child(generic_dsync_model)
+    with pytest.raises(ObjectStoreWrongType):
+        generic_dsync_model.add_child(make_site())
 
 
 def test_dsync_model_subclass_methods(make_site, make_device, make_interface):
@@ -61,12 +62,12 @@ def test_dsync_model_subclass_methods(make_site, make_device, make_interface):
     site1.add_child(device1)
     assert site1.devices == ["device1"]
     # TODO add_child(device1) a second time should either be a no-op or an exception
-    with pytest.raises(Exception):  # TODO more specific exception type
+    with pytest.raises(ObjectStoreWrongType):
         site1.add_child(device1_eth0)
 
     assert device1.interfaces == []
     device1.add_child(device1_eth0)
     assert device1.interfaces == ["device1__eth0"]
     # TODO add_child(device1_eth0) a second time should either be a no-op or an exception
-    with pytest.raises(Exception):  # TODO more specific exception type
+    with pytest.raises(ObjectStoreWrongType):
         device1.add_child(site1)
