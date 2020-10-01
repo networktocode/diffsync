@@ -34,19 +34,19 @@ class DSyncModel(BaseModel):
     This class has several dunder-named class variables that subclasses need to set for desired behavior; see below.
     """
 
-    __modelname__: str = None
+    __modelname__: str = "dsyncmodel"
     """Name of this model, used by DSync to store and look up instances of this model or its equivalents.
 
     Lowercase by convention; typically corresponds to the class name, but that is not enforced.
     """
 
-    __identifier__: tuple = []
+    __identifier__: tuple = ()
     """List of model fields which together uniquely identify an instance of this model."""
 
-    __shortname__: tuple = []
+    __shortname__: tuple = ()
     """Optional: list of model fields that together form a shorter identifier of an instance, not necessarily unique."""
 
-    __attributes__: tuple = []
+    __attributes__: tuple = ()
     """Optional: list of additional model fields (beyond those in `__identifier__`) that are relevant to this model.
 
     Only the fields in `__attributes__` (as well as any `__children__` fields, see below) will be considered
@@ -160,7 +160,7 @@ class DSync:
     # modelname1 = MyModelClass1
     # modelname2 = MyModelClass2
 
-    top_level = []
+    top_level: List[str] = []
     """List of top-level modelnames to begin from when diffing or synchronizing."""
 
     def __init__(self):
@@ -226,9 +226,6 @@ class DSync:
 
         Args:
             source (DSync): Object to diff against.
-
-        Returns:
-            Diff
         """
         diff = Diff()
 
@@ -248,9 +245,6 @@ class DSync:
 
         Args:
             target (DSync): Object to diff against.
-
-        Returns:
-            Diff
         """
         return target.diff_from(self)
 
@@ -258,8 +252,8 @@ class DSync:
         """Generate a list of DiffElement between the given lists of objects.
 
         Args:
-          source (list): List of source DSyncModel instances
-          dest (list): List of target DSyncModel instances
+          source (list): List (other types may be supported in future) of source DSyncModel instances
+          dest (list): List (other types may be supported in future) of target DSyncModel instances
           source_root: TODO
 
         Returns:
@@ -514,15 +508,12 @@ class DSync:
 
         return self.__datas__[modelname].values()
 
-    def get_by_uids(self, uids: List[str], obj):
+    def get_by_uids(self, uids: List[str], obj) -> List[DSyncModel]:
         """Get multiple objects from the store by their unique IDs/Keys and type.
 
         Args:
             uids (list[str]): List of unique id / key identifying object in the database.
             obj (DSyncModel, str): DSyncModel class or object or string that define the type of the objects to retrieve
-
-        Returns:
-            list[DSyncModel]: List of DSyncModel objects
         """
         if isinstance(obj, str):
             modelname = obj
