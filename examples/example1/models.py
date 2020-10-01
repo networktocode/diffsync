@@ -1,11 +1,10 @@
 """Models """
-from typing import Set, Dict, List, Optional
+from typing import List, Optional
 from dsync import DSyncModel
 
 
 class Site(DSyncModel):
-    """
-    """
+    """Example model of a geographic Site."""
 
     __modelname__ = "site"
     __identifier__ = ["name"]
@@ -18,8 +17,7 @@ class Site(DSyncModel):
 
 
 class Device(DSyncModel):
-    """
-    """
+    """Example model of a network Device."""
 
     __modelname__ = "device"
     __identifier__ = ["name"]
@@ -33,8 +31,7 @@ class Device(DSyncModel):
 
 
 class Interface(DSyncModel):
-    """
-    """
+    """Example model of a network Interface."""
 
     __modelname__ = "interface"
     __identifier__ = ["device_name", "name"]

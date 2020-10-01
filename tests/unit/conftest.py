@@ -38,8 +38,10 @@ class Site(DSyncModel):
 def make_site():
     """Factory for Site instances."""
 
-    def site(name="site1", devices=[]):
+    def site(name="site1", devices=None):
         """Provide an instance of a Site model."""
+        if not devices:
+            devices = []
         return Site(name=name, devices=devices)
 
     return site

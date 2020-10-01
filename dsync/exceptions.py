@@ -1,3 +1,5 @@
+"""Exception classes used in DSync."""
+
 class ObjectCrudException(Exception):
     """Base class for various failures during CRUD operations."""
 

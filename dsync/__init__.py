@@ -118,8 +118,7 @@ class DSyncModel(BaseModel):
         """
         if self.__shortname__:
             return "__".join([str(getattr(self, key)) for key in self.__shortname__])
-        else:
-            return self.get_unique_id()
+        return self.get_unique_id()
 
     def add_child(self, child):
         """Add a child to an object.
@@ -395,10 +394,10 @@ class DSync:
         try:
             if hasattr(self, f"{action}_{object_type}"):
                 item = getattr(self, f"{action}_{object_type}")(keys=keys, params=params)
-                logger.debug(f"{action}d {object_type} - {params}")
+                logger.debug("%sd %s - %s", action, object_type, params)
             else:
                 item = getattr(self, f"default_{action}")(object_type=object_type, keys=keys, params=params)
-                logger.debug(f"{action}d {object_type} = {keys} - {params} (default)")
+                logger.debug("%sd %s = %s - %s (default)", action, object_type, keys, params)
             return item
         except ObjectCrudException:
             return False

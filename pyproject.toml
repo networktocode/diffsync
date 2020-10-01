@@ -39,6 +39,11 @@ exclude = '''
         )/
     '''
 
+[tool.pylint.general]
+extension-pkg-whitelist = [
+    "pydantic"
+]
+
 [tool.pylint.messages_control]
 # Line length is enforced by Black, so pylint doesn't need to check it.
 # Pylint and Black disagree about how to format multi-line arrays; Black wins.

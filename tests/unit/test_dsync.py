@@ -9,6 +9,7 @@ from .conftest import Site, Device
 
 
 def test_generic_dsync_methods(generic_dsync, generic_dsync_model):
+    """Test the standard DSync APIs on a generic DSync instance and DSyncModel instance."""
     generic_dsync.load()  # no-op
     assert len(generic_dsync.__datas__) == 0
     generic_dsync.sync_from(generic_dsync)  # no-op

@@ -1,19 +1,22 @@
+"""Example of a DSync adapter implementation."""
+
 from dsync import DSync
-from models import *
+from models import Site, Device, Interface
 
 DATA = {
     "nyc": {
-        "nyc-spine1": {"role": "spine", "interfaces": {"eth0": "Interface 1/1", "eth1": "Interface 1",}},
-        "nyc-spine2": {"role": "spine", "interfaces": {"eth0": "Interface 0", "eth1": "Interface 1",}},
+        "nyc-spine1": {"role": "spine", "interfaces": {"eth0": "Interface 1/1", "eth1": "Interface 1"}},
+        "nyc-spine2": {"role": "spine", "interfaces": {"eth0": "Interface 0", "eth1": "Interface 1"}},
     },
     "sfo": {
-        "sfo-spine1": {"role": "leaf", "interfaces": {"eth0": "Interface 0", "eth1": "Interface 1",}},
-        "sfo-spine2": {"role": "spine", "interfaces": {"eth0": "Interface 0/0", "eth1": "Interface 0/1",}},
+        "sfo-spine1": {"role": "leaf", "interfaces": {"eth0": "Interface 0", "eth1": "Interface 1"}},
+        "sfo-spine2": {"role": "spine", "interfaces": {"eth0": "Interface 0/0", "eth1": "Interface 0/1"}},
     },
 }
 
 
 class BackendC(DSync):
+    """Example of a DSync adapter implementation."""
 
     site = Site
     device = Device
@@ -24,10 +27,7 @@ class BackendC(DSync):
     nb = None
 
     def load(self):
-        """
-        Initialize the BackendB Object by loading some site, device and interfaces 
-        from DATA 
-        """
+        """Initialize the BackendB Object by loading some site, device and interfaces from DATA."""
 
         for site_name, site_data in DATA.items():
             site = self.site(name=site_name)
