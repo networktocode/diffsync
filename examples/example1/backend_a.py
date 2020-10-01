@@ -23,7 +23,7 @@ class BackendA(DSync):
 
     nb = None
 
-    def init(self):
+    def load(self):
         """
         Initialize the BackendA Object by loading some site, device and interfaces 
         from DATA 

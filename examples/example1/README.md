@@ -6,7 +6,7 @@ For this example, we have a shared model for Device and Interface defined in `mo
 And we have 3 instances of DSync based on the same model but with different values (BackendA, BackendB & BackendC).
 
 
-First initialize all 3 objects
+First create and populate all 3 objects
 ```python
 from backend_a import BackendA
 from backend_b import BackendB
@@ -15,34 +15,34 @@ from backend_c import BackendC
 # Create each
 
 a = BackendA()
-a.init()
+a.load()
 b = BackendB()
-b.init(
+b.load()
 c = BackendC()
-c.init()
+c.load()
 ```
 
 Show the differences between A and B
 ```python
-diff_a_b = a.diff(b)
+diff_a_b = a.diff_to(b)
 diff_a_b.print_detailed()
 ```
 
 Show the differences between B and C
 ```python
-diff_b_c = b.diff(c)
+diff_b_c = c.diff_from(b)
 diff_b_c.print_detailed()
 ```
 
-Syncronize A and B
+Synchronize A and B (update B with the contents of A)
 ```python
-a.sync(b)
-a.diff(b).print_detailed()
+a.sync_to(b)
+a.diff_to(b).print_detailed()
 ```
 
 Now A and B will show no differences
 ```python
-diff_a_b = a.diff(b)
+diff_a_b = a.diff_to(b)
 diff_a_b.print_detailed()
 ```
 

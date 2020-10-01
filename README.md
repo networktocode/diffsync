@@ -8,18 +8,18 @@ For example, it can be used to compare a list of devices from 2 inventories syst
 A = DSyncSystemA()
 B = DSyncSystemB()
 
-A.init()
-B.init()
+A.load()
+B.load()
 
 # it will show the difference between both systems 
-diff_a_b = A.diff(B)
+diff_a_b = A.diff_from(B)
 diff.print_detailed()
 
 # it will update System A to align with the current status of system B
-A.sync(B)
+A.sync_from(B)
 
 # it will update System B to align with the current status of system A
-B.sync(A)
+A.sync_to(B)
 ```
 
 # Getting Started
@@ -70,7 +70,7 @@ class BackendA(DSync):
     top_level = ["site"]
 ```
 
-It's up to the user to populate the internal cache with the appropriate data. In the example below we are using the `init()` method to populate the cache but it's not mandatory, it could be done differently
+It's up to the user to populate the internal cache with the appropriate data. In the example below we are using the `load()` method to populate the cache but it's not mandatory, it could be done differently
 
 ## Store data in a DSync object
 
@@ -80,7 +80,7 @@ To add a site to the local cache/store, you need to pass a valid DSyncModel obje
 class BackendA(DSync):
     [...]
 
-    def init(self): 
+    def load(self):
         # Store an individual object
         site = self.site(name="nyc")
         self.add(site)

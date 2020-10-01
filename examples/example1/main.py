@@ -6,19 +6,19 @@ from backend_c import BackendC
 def main():
 
     a = BackendA()
-    a.init()
+    a.load()
 
     b = BackendB()
-    b.init()
+    b.load()
 
     c = BackendC()
-    c.init()
+    c.load()
 
-    diff_a_b = a.diff(b)
+    diff_a_b = a.diff_to(b)
     diff_a_b.print_detailed()
 
-    a.sync(b)
-    a.diff(b).print_detailed()
+    a.sync_to(b)
+    a.diff_to(b).print_detailed()
 
 
 if __name__ == "__main__":
