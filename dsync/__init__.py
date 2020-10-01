@@ -185,7 +185,7 @@ class DSync:
         """
         diff = self.diff_from(source)
 
-        for child in diff.get_childs():
+        for child in diff.get_children():
             self.sync_from_diff_element(child)
 
     def sync_to(self, target: "DSync"):
@@ -197,7 +197,7 @@ class DSync:
         target.sync_from(self)
 
     def sync_from_diff_element(self, element: DiffElement) -> bool:
-        """Synchronize a given object or element defined in a DiffElement into this DSync.
+        """Synchronize a given DiffElement (and its children, if any) into this DSync.
 
         Args:
             element (DiffElement):
@@ -215,7 +215,7 @@ class DSync:
         elif element.source_attrs != element.dest_attrs:
             self.update_object(object_type=element.type, keys=element.keys, params=element.source_attrs)
 
-        for child in element.get_childs():
+        for child in element.get_children():
             self.sync_from_diff_element(child)
 
         return True
@@ -320,7 +320,7 @@ class DSync:
                 #         diff.add_item(k, v, getattr(dict_dst[i], k))
 
                 # logger.debug(
-                #     f"{dict_src[i].get_type()} {dict_dst[i]} | following the path for {dict_src[i].childs}"
+                #     f"{dict_src[i].get_type()} {dict_dst[i]} | following the path for {dict_src[i].children}"
                 # )
 
                 for child_type, child_attr in dict_src[key].__children__.items():
