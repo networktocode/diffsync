@@ -7,9 +7,9 @@ class Site(DSyncModel):
     """Example model of a geographic Site."""
 
     __modelname__ = "site"
-    __identifier__ = ["name"]
-    __shortname__ = []
-    __attributes__ = []
+    __identifier__ = ("name",)
+    __shortname__ = ()
+    __attributes__ = ()
     __children__ = {"device": "devices"}
 
     name: str
@@ -20,8 +20,8 @@ class Device(DSyncModel):
     """Example model of a network Device."""
 
     __modelname__ = "device"
-    __identifier__ = ["name"]
-    __attributes__ = []
+    __identifier__ = ("name",)
+    __attributes__ = ()
     __children__ = {"interface": "interfaces"}
 
     name: str
@@ -34,9 +34,9 @@ class Interface(DSyncModel):
     """Example model of a network Interface."""
 
     __modelname__ = "interface"
-    __identifier__ = ["device_name", "name"]
-    __shortname__ = ["name"]
-    __attributes__ = ["description"]
+    __identifier__ = ("device_name", "name")
+    __shortname__ = ("name",)
+    __attributes__ = ("description",)
 
     name: str
     device_name: str

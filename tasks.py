@@ -1,6 +1,6 @@
 """Replacement for Makefile."""
 import os
-from invoke import task
+from invoke import task  # type: ignore
 
 
 # Can be set to a separate Python version to be used for launching or building container
@@ -141,6 +141,21 @@ def flake8(context, name=NAME, python_ver=PYTHON_VER):
 
 
 @task
+def mypy(context, name=NAME, python_ver=PYTHON_VER):
+    """This will run mypy for the specified name and Python version.
+
+    Args:
+        context (obj): Used to run specific commands
+        name (str): Used to name the docker image
+        python_ver (str): Will use the Python version docker image to build from
+    """
+    # pty is set to true to properly run the docker commands due to the invocation process of docker
+    # https://docs.pyinvoke.org/en/latest/api/runners.html - Search for pty for more information
+    docker = f"docker run -it -v {PWD}:/local {name}-{python_ver}:latest"
+    context.run(f"{docker} sh -c \"find . -name '*.py' | xargs mypy\"", pty=True)
+
+
+@task
 def pylint(context, name=NAME, python_ver=PYTHON_VER):
     """This will run pylint for the specified name and Python version.
 
@@ -222,18 +237,21 @@ def tests(context, name=NAME, python_ver=PYTHON_VER):
         name (str): Used to name the docker image
         python_ver (str): Will use the Python version docker image to build from
     """
+    # Sorted loosely from fastest to slowest
     print("Running black...")
     black(context, name, python_ver)
-    print("Running flake8...")
-    flake8(context, name, python_ver)
-    print("Running pylint...")
-    pylint(context, name, python_ver)
     print("Running yamllint...")
     yamllint(context, name, python_ver)
-    print("Running pydocstyle...")
-    pydocstyle(context, name, python_ver)
+    print("Running flake8...")
+    flake8(context, name, python_ver)
     print("Running bandit...")
     bandit(context, name, python_ver)
+    print("Running pydocstyle...")
+    pydocstyle(context, name, python_ver)
+    print("Running mypy...")
+    mypy(context, name, python_ver)
+    print("Running pylint...")
+    pylint(context, name, python_ver)
     print("Running pytest...")
     pytest(context, name, python_ver)
 
