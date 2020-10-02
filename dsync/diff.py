@@ -1,4 +1,5 @@
-"""
+"""Diff and DiffElement classes for DSync.
+
 (c) 2020 Network To Code
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,11 +19,10 @@ from .utils import intersection, OrderedDefaultDict
 
 
 class Diff:
-    """
-    Diff Object, designed to store multiple DiffElement object and organize them in a group.
-    """
+    """Diff Object, designed to store multiple DiffElement object and organize them in a group."""
 
     def __init__(self):
+        """Initialize a new, empty Diff object."""
         self.children = OrderedDefaultDict(dict)
         """DefaultDict for storing DiffElement objects.
 
@@ -30,9 +30,7 @@ class Diff:
         """
 
     def add(self, group: str, element: "DiffElement"):
-        """
-        Save a new DiffElement per group,
-        if an element with the same name already exist it will be replaced
+        """Save a new DiffElement per group; if an element with the same name already exists it will be replaced.
 
         Args:
             group: (string) Group name to store the element
@@ -50,7 +48,7 @@ class Diff:
         return self.children.keys()
 
     def has_diffs(self) -> bool:
-        """Indicate if at least one of the child elements contains some diff
+        """Indicate if at least one of the child elements contains some diff.
 
         Returns:
             bool: True if at least one child element contains some diff
@@ -69,7 +67,7 @@ class Diff:
                 yield child
 
     def print_detailed(self, indent: int = 0):
-        """Print all diffs to screen for all child elements
+        """Print all diffs to screen for all child elements.
 
         Args:
             indent (int, optional): Indentation to use when printing to screen. Defaults to 0.
@@ -83,9 +81,7 @@ class Diff:
 
 
 class DiffElement:
-    """
-    DiffElement object, designed to represent a single item/object that may or may not have any diffs.
-    """
+    """DiffElement object, designed to represent a single item/object that may or may not have any diffs."""
 
     # TODO: make this a Pydantic.BaseModel subclass?
 
@@ -138,11 +134,11 @@ class DiffElement:
             self.dest_attrs = dest
 
     def get_attrs_keys(self):
-        """
-        Return the list of shared attrs between source and dest
-        if source_attrs is not defined return dest
-        if dest is not defined, return source
-        if both are defined, return the intersection of both
+        """Return the list of shared attrs between source and dest, or the attrs of source or diff if only one is present.
+
+        - If source_attrs is not defined return dest
+        - If dest is not defined, return source
+        - If both are defined, return the intersection of both
 
         TODO: this obscures the difference between "source/dest does not exist at all" and
         "source/dest exists but does not have any attrs defined beyond the base `keys`" - this seems problematic.
@@ -156,9 +152,9 @@ class DiffElement:
         return intersection(self.dest_attrs.keys(), self.source_attrs.keys())
 
     def add_child(self, element: "DiffElement"):
-        """
-        Attach a child object of type DiffElement
-        Childs are saved in a Diff object and are organized by type and name
+        """Attach a child object of type DiffElement.
+
+        Childs are saved in a Diff object and are organized by type and name.
 
         Args:
           element: DiffElement
@@ -185,8 +181,7 @@ class DiffElement:
         return False
 
     def print_detailed(self, indent: int = 0):
-        """
-        Print status on screen for current object and all children
+        """Print status on screen for current object and all children.
 
         Args:
           indent: Default value = 0

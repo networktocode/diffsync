@@ -28,7 +28,6 @@ class BackendC(DSync):
 
     def load(self):
         """Initialize the BackendB Object by loading some site, device and interfaces from DATA."""
-
         for site_name, site_data in DATA.items():
             site = self.site(name=site_name)
             self.add(site)

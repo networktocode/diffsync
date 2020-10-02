@@ -1,4 +1,4 @@
-"""Models """
+"""Example models."""
 from typing import List, Optional
 from dsync import DSyncModel
 
