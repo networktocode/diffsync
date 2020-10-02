@@ -31,35 +31,71 @@ class DSyncModel(BaseModel):
     this is intentional as specific model classes may want to use these names (`type`, `keys`, `attrs`, etc.)
     as model attributes and we want to avoid any ambiguity or collisions.
 
-    This class has several dunder-named class variables that subclasses need to set for desired behavior; see below.
+    This class has several underscore-prefixed class variables that subclasses should set as desired; see below.
+
+    NOTE: The groupings _identifiers, _attributes, and _children are mutually exclusive; any given field name can
+          be included in **at most** one of these three tuples.
     """
 
-    __modelname__: str = "dsyncmodel"
+    _modelname: str = "dsyncmodel"
     """Name of this model, used by DSync to store and look up instances of this model or its equivalents.
 
     Lowercase by convention; typically corresponds to the class name, but that is not enforced.
     """
 
-    __identifier__: tuple = ()
+    _identifiers: tuple = ()
     """List of model fields which together uniquely identify an instance of this model."""
 
-    __shortname__: tuple = ()
+    _shortname: tuple = ()
     """Optional: list of model fields that together form a shorter identifier of an instance, not necessarily unique."""
 
-    __attributes__: tuple = ()
-    """Optional: list of additional model fields (beyond those in `__identifier__`) that are relevant to this model.
+    _attributes: tuple = ()
+    """Optional: list of additional model fields (beyond those in `_identifiers`) that are relevant to this model.
 
-    Only the fields in `__attributes__` (as well as any `__children__` fields, see below) will be considered
+    Only the fields in `_attributes` (as well as any `_children` fields, see below) will be considered
     for the purposes of Diff calculation.
-    A model may define additional fields (not included in `__attributes__`) for its internal use;
+    A model may define additional fields (not included in `_attributes`) for its internal use;
     a common example would be a locally significant database primary key or id value.
+
+    Note: inclusion in `_attributes` is mutually exclusive from inclusion in `_identifiers`; a field cannot be in both!
     """
 
-    __children__: Mapping[str, str] = {}
-    """Optional: dict of `{__modelname__: field_name}` entries describing how to store "child" models in this model.
+    _children: Mapping[str, str] = {}
+    """Optional: dict of `{_modelname: field_name}` entries describing how to store "child" models in this model.
 
     When calculating a Diff or performing a sync, DSync will automatically recurse into these child models.
     """
+
+    def __init_subclass__(cls):
+        """Validate that the various class attribute declarations correspond to actual instance fields.
+
+        Called automatically on subclass declaration.
+        """
+        variables = cls.__fields__.keys()
+        # Make sure that any field referenced by name actually exists on the model
+        for attr in cls._identifiers:
+            if attr not in variables and not hasattr(cls, attr):
+                raise AttributeError(f"_identifiers {cls._identifiers} references missing or un-annotated attr {attr}")
+        for attr in cls._shortname:
+            if attr not in variables:
+                raise AttributeError(f"_shortname {cls._shortname} references missing or un-annotated attr {attr}")
+        for attr in cls._attributes:
+            if attr not in variables:
+                raise AttributeError(f"_attributes {cls._attributes} references missing or un-annotated attr {attr}")
+        for attr in cls._children.values():
+            if attr not in variables:
+                raise AttributeError(f"_children {cls._children} references missing or un-annotated attr {attr}")
+
+        # Any given field can only be in one of (_identifiers, _attributes, _children)
+        id_attr_overlap = set(cls._identifiers).intersection(cls._attributes)
+        if id_attr_overlap:
+            raise AttributeError(f"Fields {id_attr_overlap} are included in both _identifiers and _attributes.")
+        id_child_overlap = set(cls._identifiers).intersection(cls._children.values())
+        if id_child_overlap:
+            raise AttributeError(f"Fields {id_child_overlap} are included in both _identifiers and _children.")
+        attr_child_overlap = set(cls._attributes).intersection(cls._children.values())
+        if attr_child_overlap:
+            raise AttributeError(f"Fields {attr_child_overlap} are included in both _attributes and _children.")
 
     def __repr__(self):
         return f'{self.get_type()} "{self.get_unique_id()}"'
@@ -74,80 +110,73 @@ class DSyncModel(BaseModel):
         Returns:
             str: modelname of the class, used in to store all objects
         """
-        return cls.__modelname__
+        return cls._modelname
 
     def get_identifiers(self):
         """Get a dict of all identifiers (primary keys) and their values for this object.
 
         Returns:
-            dict: dictionary containing all primary keys for this device, as defined in __identifier__
+            dict: dictionary containing all primary keys for this device, as defined in _identifiers
         """
-        return self.dict(include=set(self.__identifier__))
+        return self.dict(include=set(self._identifiers))
 
     def get_attrs(self):
         """Get all the non-primary-key attributes or parameters for this object.
 
         Similar to Pydantic's `BaseModel.dict()` method, with the following key differences:
-        1. Does not include the fields in `__identifier__`
-        2. Only includes fields explicitly listed in `__attributes__`
-        3. Does not include any additional fields not listed in `__attributes__`
+        1. Does not include the fields in `_identifiers`
+        2. Only includes fields explicitly listed in `_attributes`
+        3. Does not include any additional fields not listed in `_attributes`
 
         Returns:
             dict: Dictionary of attributes for this object
         """
-        return self.dict(include=set(self.__attributes__))
+        return self.dict(include=set(self._attributes))
 
     def get_unique_id(self):
         """Get the unique ID of an object.
 
-        By default the unique ID is built based on all the primary keys defined in `__identifier__`.
+        By default the unique ID is built based on all the primary keys defined in `_identifiers`.
 
         Returns:
             str: Unique ID for this object
         """
-        return "__".join([str(getattr(self, key)) for key in self.__identifier__])
+        return "__".join([str(getattr(self, key)) for key in self._identifiers])
 
     def get_shortname(self):
         """Get the (not guaranteed-unique) shortname of an object, if any.
 
-        By default the shortname is built based on all the keys defined in `__shortname__`.
-        If `__shortname__` is not specified, then this function is equivalent to `get_unique_id()`.
+        By default the shortname is built based on all the keys defined in `_shortname`.
+        If `_shortname` is not specified, then this function is equivalent to `get_unique_id()`.
 
         Returns:
             str: Shortname of this object
         """
-        if self.__shortname__:
-            return "__".join([str(getattr(self, key)) for key in self.__shortname__])
+        if self._shortname:
+            return "__".join([str(getattr(self, key)) for key in self._shortname])
         return self.get_unique_id()
 
     def add_child(self, child):
         """Add a child to an object.
 
         The child will be automatically saved/indexed by its unique id
-        The name of the target attribute is defined in `__children__` per object type
+        The name of the target attribute is defined in `_children` per object type
 
         Args:
             child (DSyncModel): Valid  DSyncModel object
 
         Raises:
-            ObjectStoreWrongType: if the type is not part of `__children__`
-            AttributeError: if the model doesn't have a field matching the entry in `__children__`
+            ObjectStoreWrongType: if the type is not part of `_children`
+            AttributeError: if the model doesn't have a field matching the entry in `_children`
         """
         child_type = child.get_type()
 
-        if child_type not in self.__children__:
+        if child_type not in self._children:
             raise ObjectStoreWrongType(
-                f"Unable to store {child_type} as a child; valid types are {sorted(self.__children__.keys())}"
+                f"Unable to store {child_type} as a child; valid types are {sorted(self._children.keys())}"
             )
 
-        attr_name = self.__children__[child_type]
-
-        # TODO: this should be checked at class declaration time, not at run time!
-        if not hasattr(self, attr_name):
-            raise AttributeError(
-                f"Invalid attribute name ({attr_name}) for child of type {child_type} for {self.get_type()}"
-            )
-
+        attr_name = self._children[child_type]
         childs = getattr(self, attr_name)
         childs.append(child.get_unique_id())
 
@@ -167,10 +196,10 @@ class DSync:
 
         Subclasses should be careful to call super().__init__() if they override this method.
         """
-        self.__datas__ = defaultdict(dict)
+        self._data = defaultdict(dict)
         """Defaultdict storing model instances.
 
-        `self.__datas__[modelname][unique_id] == model_instance`
+        `self._data[modelname][unique_id] == model_instance`
         """
 
     def load(self):
@@ -323,7 +352,7 @@ class DSync:
                 #     f"{dict_src[i].get_type()} {dict_dst[i]} | following the path for {dict_src[i].children}"
                 # )
 
-                for child_type, child_attr in dict_src[key].__children__.items():
+                for child_type, child_attr in dict_src[key]._children.items():
 
                     # TODO: the below is very much not self-documenting - let's add some comments :-)
                     childs = self.diff_objects(
@@ -486,8 +515,8 @@ class DSync:
         # TODO: default_update() calls get(obj, [uid]) making the below rather redundant...
         uid = "__".join(keys)
 
-        if uid in self.__datas__[modelname]:
-            return self.__datas__[modelname][uid]
+        if uid in self._data[modelname]:
+            return self._data[modelname][uid]
 
         return None
 
@@ -505,7 +534,7 @@ class DSync:
         else:
             modelname = obj.get_type()
 
-        return self.__datas__[modelname].values()
+        return self._data[modelname].values()
 
     def get_by_uids(self, uids: List[str], obj) -> List[DSyncModel]:
         """Get multiple objects from the store by their unique IDs/Keys and type.
@@ -519,11 +548,11 @@ class DSync:
         else:
             modelname = obj.get_type()
 
-        # TODO: this returns the results ordered by their storage order in self.__datas__[modelname],
+        # TODO: this returns the results ordered by their storage order in self._data[modelname],
         #       and NOT by the order given in uids. Seems like a bug?
         #
         # TODO: should this raise an exception if any or all of the uids are not found?
-        return [value for uid, value in self.__datas__[modelname].items() if uid in uids]
+        return [value for uid, value in self._data[modelname].items() if uid in uids]
 
     def add(self, obj: DSyncModel):
         """Add a DSyncModel object to the store.
@@ -537,10 +566,10 @@ class DSync:
         modelname = obj.get_type()
         uid = obj.get_unique_id()
 
-        if uid in self.__datas__[modelname]:
+        if uid in self._data[modelname]:
             raise ObjectAlreadyExists(f"Object {uid} already present")
 
-        self.__datas__[modelname][uid] = obj
+        self._data[modelname][uid] = obj
 
     def remove(self, obj: DSyncModel):
         """Remove a DSyncModel object from the store.
@@ -554,7 +583,7 @@ class DSync:
         modelname = obj.get_type()
         uid = obj.get_unique_id()
 
-        if uid not in self.__datas__[modelname]:
+        if uid not in self._data[modelname]:
             raise ObjectNotFound(f"Object {uid} not present")
 
-        del self.__datas__[modelname][uid]
+        del self._data[modelname][uid]

@@ -1,7 +1,10 @@
 """Unit tests for the DSyncModel class."""
 
+from typing import List
+
 import pytest
 
+from dsync import DSyncModel
 from dsync.exceptions import ObjectStoreWrongType
 
 
@@ -45,7 +48,7 @@ def test_dsync_model_subclass_methods(make_site, make_device, make_interface):
     assert list(device1_eth0.get_identifiers().keys()) == ["device_name", "name"]
 
     assert site1.get_attrs() == {}  # note that identifiers are not included in get_attrs()
-    assert device1.get_attrs() == {"role": "default"}  # site_name field is not in __attributes__, so not in get_attrs
+    assert device1.get_attrs() == {"role": "default"}  # site_name field is not in _attributes, so not in get_attrs
     # TODO: since description is Optional, should it be omitted from get_attrs() if unset??
     assert device1_eth0.get_attrs() == {"interface_type": "ethernet", "description": None}
     # Ordering of attributes must be consistent
@@ -72,3 +75,136 @@ def test_dsync_model_subclass_methods(make_site, make_device, make_interface):
     # TODO add_child(device1_eth0) a second time should either be a no-op or an exception
     with pytest.raises(ObjectStoreWrongType):
         device1.add_child(site1)
+
+
+def test_dsync_model_subclass_validation():
+    """Verify that invalid subclasses of DSyncModel are detected at declaration time."""
+    # Pylint would complain because we're not actually using any of the classes declared below
+    # pylint: disable=unused-variable
+
+    with pytest.raises(AttributeError) as excinfo:
+
+        class BadIdentifier(DSyncModel):
+            """Model with an _identifiers referencing a nonexistent field."""
+
+            _identifiers = ("name",)
+
+    assert "_identifiers" in str(excinfo.value)
+    assert "name" in str(excinfo.value)
+
+    with pytest.raises(AttributeError) as excinfo:
+
+        class BadShortname(DSyncModel):
+            """Model with a _shortname referencing a nonexistent field."""
+
+            _identifiers = ("name",)
+            _shortname = ("short_name",)
+
+            name: str
+
+    assert "_shortname" in str(excinfo.value)
+    assert "short_name" in str(excinfo.value)
+
+    with pytest.raises(AttributeError) as excinfo:
+
+        class BadAttributes(DSyncModel):
+            """Model with _attributes referencing a nonexistent field."""
+
+            _identifiers = ("name",)
+            _shortname = ("short_name",)
+            _attributes = ("my_attr",)
+
+            name: str
+            # Note that short_name doesn't have a type annotation - making sure this works too
+            short_name = "short_name"
+
+    assert "_attributes" in str(excinfo.value)
+    assert "my_attr" in str(excinfo.value)
+
+    with pytest.raises(AttributeError) as excinfo:
+
+        class BadChildren(DSyncModel):
+            """Model with _children referencing a nonexistent field."""
+
+            _identifiers = ("name",)
+            _shortname = ("short_name",)
+            _attributes = ("my_attr",)
+            _children = {"device": "devices"}
+
+            name: str
+            short_name = "short_name"
+            my_attr: int = 0
+
+    assert "_children" in str(excinfo.value)
+    assert "devices" in str(excinfo.value)
+
+    with pytest.raises(AttributeError) as excinfo:
+
+        class IdAttrOverlap(DSyncModel):
+            """Model including a field in both _identifiers and _attributes."""
+
+            _identifiers = ("name",)
+            _attributes = ("name",)
+
+            name: str
+
+    assert "both _identifiers and _attributes" in str(excinfo.value)
+    assert "name" in str(excinfo.value)
+
+    with pytest.raises(AttributeError) as excinfo:
+
+        class IdChildOverlap(DSyncModel):
+            """Model including a field in both _identifiers and _children."""
+
+            _identifiers = ("names",)
+            _children = {"name": "names"}
+
+            names: str
+
+    assert "both _identifiers and _children" in str(excinfo.value)
+    assert "names" in str(excinfo.value)
+
+    with pytest.raises(AttributeError) as excinfo:
+
+        class AttrChildOverlap(DSyncModel):
+            """Model including a field in both _attributes and _children."""
+
+            _attributes = ("devices",)
+            _children = {"device": "devices"}
+
+            devices: List
+
+    assert "both _attributes and _children" in str(excinfo.value)
+    assert "devices" in str(excinfo.value)
+
+
+def test_dsync_model_subclass_inheritance():
+    """Verify that the class validation works properly even with a hierarchy of subclasses."""
+    # Pylint would complain because we're not actually using any of the classes declared below
+    # pylint: disable=unused-variable
+    class Alpha(DSyncModel):
+        """A model class representing a single Greek letter."""
+
+        _modelname = "alpha"
+        _identifiers = ("name",)
+        _shortname = ("name",)
+        _attributes = ("letter",)
+        _children = {"number": "numbers"}
+
+        name: str
+        letter: str
+        numbers: List = list()
+
+    class Beta(Alpha):
+        """A model class representing a single Greek letter in both English and Spanish."""
+
+        _modelname = "beta"
+        _identifiers = ("name", "nombre")  # reference parent field, as well as a new field of our own
+        _attributes = ("letter", "letra")  # reference parent field, as well as a new field of our own
+
+        nombre: str
+        letra: str
+
+    beta = Beta(name="Beta", letter="β", nombre="Beta", letra="β")
+    assert beta.get_unique_id() == "Beta__Beta"
+    assert beta.get_attrs() == {"letter": "β", "letra": "β"}
