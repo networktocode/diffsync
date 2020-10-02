@@ -9,6 +9,7 @@ from .conftest import Site, Device
 
 
 def test_generic_dsync_methods(generic_dsync, generic_dsync_model):
+    """Test the standard DSync APIs on a generic DSync instance and DSyncModel instance."""
     generic_dsync.load()  # no-op
     assert len(generic_dsync.__datas__) == 0
     generic_dsync.sync_from(generic_dsync)  # no-op
@@ -35,19 +36,16 @@ def test_generic_dsync_methods(generic_dsync, generic_dsync_model):
         generic_dsync.add(generic_dsync_model)
 
     assert generic_dsync.get(DSyncModel, []) == generic_dsync_model
-    # TODO - this errors because DSyncModel.get_type() returns None, rather than a str
-    # assert generic_dsync.get(DSyncModel.get_type(), []) == generic_dsync_model
+    assert generic_dsync.get(DSyncModel.get_type(), []) == generic_dsync_model
     assert generic_dsync.get("", []) is None
     assert generic_dsync.get(DSyncModel, ["myname"]) is None
 
     assert list(generic_dsync.get_all(DSyncModel)) == [generic_dsync_model]
-    # TODO - this errors because DSyncModel.get_type() returns None, rather than a str
-    # assert list(generic_dsync.get_all(DSyncModel.get_type())) == [generic_dsync_model]
+    assert list(generic_dsync.get_all(DSyncModel.get_type())) == [generic_dsync_model]
     assert list(generic_dsync.get_all("anything")) == []
 
     assert generic_dsync.get_by_uids([""], DSyncModel) == [generic_dsync_model]
-    # TODO - this errors because DSyncModel.get_type() returns None, rather than a str
-    # assert generic_dsync.get_by_uids([""], DSyncModel.get_type()) == [generic_dsync_model]
+    assert generic_dsync.get_by_uids([""], DSyncModel.get_type()) == [generic_dsync_model]
     assert generic_dsync.get_by_uids(["myname"], DSyncModel) == []
     assert generic_dsync.get_by_uids(["aname", "", "anothername"], DSyncModel) == [generic_dsync_model]
 

@@ -34,19 +34,19 @@ class DSyncModel(BaseModel):
     This class has several dunder-named class variables that subclasses need to set for desired behavior; see below.
     """
 
-    __modelname__: str = None
+    __modelname__: str = "dsyncmodel"
     """Name of this model, used by DSync to store and look up instances of this model or its equivalents.
 
     Lowercase by convention; typically corresponds to the class name, but that is not enforced.
     """
 
-    __identifier__: tuple = []
+    __identifier__: tuple = ()
     """List of model fields which together uniquely identify an instance of this model."""
 
-    __shortname__: tuple = []
+    __shortname__: tuple = ()
     """Optional: list of model fields that together form a shorter identifier of an instance, not necessarily unique."""
 
-    __attributes__: tuple = []
+    __attributes__: tuple = ()
     """Optional: list of additional model fields (beyond those in `__identifier__`) that are relevant to this model.
 
     Only the fields in `__attributes__` (as well as any `__children__` fields, see below) will be considered
@@ -118,8 +118,7 @@ class DSyncModel(BaseModel):
         """
         if self.__shortname__:
             return "__".join([str(getattr(self, key)) for key in self.__shortname__])
-        else:
-            return self.get_unique_id()
+        return self.get_unique_id()
 
     def add_child(self, child):
         """Add a child to an object.
@@ -160,7 +159,7 @@ class DSync:
     # modelname1 = MyModelClass1
     # modelname2 = MyModelClass2
 
-    top_level = []
+    top_level: List[str] = []
     """List of top-level modelnames to begin from when diffing or synchronizing."""
 
     def __init__(self):
@@ -186,7 +185,7 @@ class DSync:
         """
         diff = self.diff_from(source)
 
-        for child in diff.get_childs():
+        for child in diff.get_children():
             self.sync_from_diff_element(child)
 
     def sync_to(self, target: "DSync"):
@@ -198,7 +197,7 @@ class DSync:
         target.sync_from(self)
 
     def sync_from_diff_element(self, element: DiffElement) -> bool:
-        """Synchronize a given object or element defined in a DiffElement into this DSync.
+        """Synchronize a given DiffElement (and its children, if any) into this DSync.
 
         Args:
             element (DiffElement):
@@ -216,7 +215,7 @@ class DSync:
         elif element.source_attrs != element.dest_attrs:
             self.update_object(object_type=element.type, keys=element.keys, params=element.source_attrs)
 
-        for child in element.get_childs():
+        for child in element.get_children():
             self.sync_from_diff_element(child)
 
         return True
@@ -226,9 +225,6 @@ class DSync:
 
         Args:
             source (DSync): Object to diff against.
-
-        Returns:
-            Diff
         """
         diff = Diff()
 
@@ -248,9 +244,6 @@ class DSync:
 
         Args:
             target (DSync): Object to diff against.
-
-        Returns:
-            Diff
         """
         return target.diff_from(self)
 
@@ -258,8 +251,8 @@ class DSync:
         """Generate a list of DiffElement between the given lists of objects.
 
         Args:
-          source (list): List of source DSyncModel instances
-          dest (list): List of target DSyncModel instances
+          source (list): List (other types may be supported in future) of source DSyncModel instances
+          dest (list): List (other types may be supported in future) of target DSyncModel instances
           source_root: TODO
 
         Returns:
@@ -327,7 +320,7 @@ class DSync:
                 #         diff.add_item(k, v, getattr(dict_dst[i], k))
 
                 # logger.debug(
-                #     f"{dict_src[i].get_type()} {dict_dst[i]} | following the path for {dict_src[i].childs}"
+                #     f"{dict_src[i].get_type()} {dict_dst[i]} | following the path for {dict_src[i].children}"
                 # )
 
                 for child_type, child_attr in dict_src[key].__children__.items():
@@ -401,10 +394,10 @@ class DSync:
         try:
             if hasattr(self, f"{action}_{object_type}"):
                 item = getattr(self, f"{action}_{object_type}")(keys=keys, params=params)
-                logger.debug(f"{action}d {object_type} - {params}")
+                logger.debug("%sd %s - %s", action, object_type, params)
             else:
                 item = getattr(self, f"default_{action}")(object_type=object_type, keys=keys, params=params)
-                logger.debug(f"{action}d {object_type} = {keys} - {params} (default)")
+                logger.debug("%sd %s = %s - %s (default)", action, object_type, keys, params)
             return item
         except ObjectCrudException:
             return False
@@ -514,15 +507,12 @@ class DSync:
 
         return self.__datas__[modelname].values()
 
-    def get_by_uids(self, uids: List[str], obj):
+    def get_by_uids(self, uids: List[str], obj) -> List[DSyncModel]:
         """Get multiple objects from the store by their unique IDs/Keys and type.
 
         Args:
             uids (list[str]): List of unique id / key identifying object in the database.
             obj (DSyncModel, str): DSyncModel class or object or string that define the type of the objects to retrieve
-
-        Returns:
-            list[DSyncModel]: List of DSyncModel objects
         """
         if isinstance(obj, str):
             modelname = obj

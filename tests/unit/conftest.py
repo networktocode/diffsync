@@ -27,7 +27,7 @@ class Site(DSyncModel):
     """Concrete DSyncModel subclass representing a site or location that contains devices."""
 
     __modelname__ = "site"
-    __identifier__ = ["name"]
+    __identifier__ = ("name",)
     __children__ = {"device": "devices"}
 
     name: str
@@ -38,8 +38,10 @@ class Site(DSyncModel):
 def make_site():
     """Factory for Site instances."""
 
-    def site(name="site1", devices=[]):
+    def site(name="site1", devices=None):
         """Provide an instance of a Site model."""
+        if not devices:
+            devices = []
         return Site(name=name, devices=devices)
 
     return site
@@ -49,8 +51,8 @@ class Device(DSyncModel):
     """Concrete DSyncModel subclass representing a device."""
 
     __modelname__ = "device"
-    __identifier__ = ["name"]
-    __attributes__ = ["role"]
+    __identifier__ = ("name",)
+    __attributes__ = ("role",)
     __children__ = {"interface": "interfaces"}
 
     name: str
@@ -74,9 +76,9 @@ class Interface(DSyncModel):
     """Concrete DSyncModel subclass representing an interface."""
 
     __modelname__ = "interface"
-    __identifier__ = ["device_name", "name"]
-    __shortname__ = ["name"]
-    __attributes__ = ["interface_type", "description"]
+    __identifier__ = ("device_name", "name")
+    __shortname__ = ("name",)
+    __attributes__ = ("interface_type", "description")
 
     device_name: str
     name: str

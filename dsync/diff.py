@@ -1,4 +1,5 @@
-"""
+"""Diff and DiffElement classes for DSync.
+
 (c) 2020 Network To Code
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,63 +13,61 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+from typing import Iterator, Optional
+
 from .utils import intersection, OrderedDefaultDict
 
 
 class Diff:
-    """
-    Diff Object, designed to store multiple DiffElement object and organize them in a group.
-    """
+    """Diff Object, designed to store multiple DiffElement object and organize them in a group."""
 
     def __init__(self):
-        self.childs = OrderedDefaultDict(dict)
+        """Initialize a new, empty Diff object."""
+        self.children = OrderedDefaultDict(dict)
         """DefaultDict for storing DiffElement objects.
 
-        `self.childs[group][unique_id] == DiffElement(...)`
-
-        TODO: rename to `children`.
+        `self.children[group][unique_id] == DiffElement(...)`
         """
 
-    def add(self, group: str, element):
-        """
-        Save a new DiffElement per group,
-        if an element with the same name already exist it will be replaced
+    def add(self, group: str, element: "DiffElement"):
+        """Save a new DiffElement per group; if an element with the same name already exists it will be replaced.
 
         Args:
             group: (string) Group name to store the element
             element: (DiffElement) element to store
         """
+        # TODO: why is group an argument, why not just use element.obj_type?
+        # TODO: element.name is usually a DSyncModel.shortname() -- i.e., NOT guaranteed globally unique!!
         name = element.name
 
         # TODO: shouldn't it be an error if the element already exists, like in DSync.add()?
-        self.childs[group][name] = element
+        self.children[group][name] = element
 
     def groups(self):
-        return self.childs.keys()
+        """Get the list of all group keys in self.children."""
+        return self.children.keys()
 
     def has_diffs(self) -> bool:
-        """Indicate if at least one of the childs element contains some diff
+        """Indicate if at least one of the child elements contains some diff.
 
         Returns:
             bool: True if at least one child element contains some diff
         """
-        status = False
         for group in self.groups():
-            for child in self.childs[group].values():
+            for child in self.children[group].values():
                 if child.has_diffs():
-                    status = True
-                    break
+                    return True
 
-        return status
+        return False
 
-    def get_childs(self):
-        """Iterate over all child elements in all groups in self.childs."""
+    def get_children(self) -> Iterator["DiffElement"]:
+        """Iterate over all child elements in all groups in self.children."""
         for group in self.groups():
-            for child in self.childs[group].values():
+            for child in self.children[group].values():
                 yield child
 
     def print_detailed(self, indent: int = 0):
-        """Print all diffs to screen for all child elements
+        """Print all diffs to screen for all child elements.
 
         Args:
             indent (int, optional): Indentation to use when printing to screen. Defaults to 0.
@@ -76,15 +75,13 @@ class Diff:
         margin = " " * indent
         for group in self.groups():
             print(f"{margin}{group}")
-            for child in self.childs[group].values():
+            for child in self.children[group].values():
                 if child.has_diffs():
                     child.print_detailed(indent + 2)
 
 
 class DiffElement:
-    """
-    DiffElement object, designed to represent a single item/object that may or may not have any diffs.
-    """
+    """DiffElement object, designed to represent a single item/object that may or may not have any diffs."""
 
     # TODO: make this a Pydantic.BaseModel subclass?
 
@@ -92,11 +89,12 @@ class DiffElement:
         """Instantiate a DiffElement.
 
         Args:
-            obj_type (str): Name of the object type being described.
-            name (str): Unique (TODO?) name of the object instance being described.
-            keys (dict): Key-value pairs (TODO?) uniquely describing this object.
+            obj_type (str): Name of the object type being described, as in DSyncModel.get_type().
+            name (str): Human-readable name of the object being described, as in DSyncModel.get_shortname()
+                        TODO: name is not guaranteed globally unique?
+            keys (dict): Primary keys and values uniquely describing this object, as in DSyncModel.get_identifiers().
 
-        TODO: Are keys and name redundant?
+        TODO: refactor so it just takes a DSyncModel as its only input parameter instead?
         """
         if not isinstance(obj_type, str):
             raise ValueError(f"obj_type must be a string (not {type(obj_type)})")
@@ -107,9 +105,9 @@ class DiffElement:
         self.type = obj_type
         self.name = name
         self.keys = keys
-        self.source_attrs = None
-        self.dest_attrs = None
-        self.childs = Diff()
+        self.source_attrs: Optional[dict] = None
+        self.dest_attrs: Optional[dict] = None
+        self.child_diff = Diff()
 
     # def __str__(self):
     #     """ """
@@ -125,8 +123,10 @@ class DiffElement:
 
     #     return f"{self.type}:{self.name} {self.nbr_diffs()} DIFFs"
 
-    def add_attrs(self, source: dict = None, dest: dict = None):
+    # TODO: separate into set_source_attrs() and set_dest_attrs() methods, or just use direct property access instead?
+    def add_attrs(self, source: Optional[dict] = None, dest: Optional[dict] = None):
         """Set additional attributes of a source and/or destination item that may result in diffs."""
+        # TODO: should source_attrs and dest_attrs be "write-once" properties, or is it OK to overwrite them once set?
         if source is not None:
             self.source_attrs = source
 
@@ -134,70 +134,58 @@ class DiffElement:
             self.dest_attrs = dest
 
     def get_attrs_keys(self):
-        """
-        Return the list of shared attrs between source and dest
-        if source_attrs is not defined return dest
-        if dest is not defined, return source
-        if both are defined, return the intersection of both
+        """Return the list of shared attrs between source and dest, or the attrs of source or diff if only one is present.
+
+        - If source_attrs is not defined return dest
+        - If dest is not defined, return source
+        - If both are defined, return the intersection of both
 
         TODO: this obscures the difference between "source/dest does not exist at all" and
         "source/dest exists but does not have any attrs defined beyond the base `keys`" - this seems problematic.
         """
         if self.source_attrs is None and self.dest_attrs is None:
             return None
-        elif self.source_attrs is None and self.dest_attrs:
+        if self.source_attrs is None and self.dest_attrs:
             return self.dest_attrs.keys()
-        elif self.source_attrs and self.dest_attrs is None:
+        if self.source_attrs and self.dest_attrs is None:
             return self.source_attrs.keys()
-        else:
-            return intersection(self.dest_attrs.keys(), self.source_attrs.keys())
+        return intersection(self.dest_attrs.keys(), self.source_attrs.keys())
 
-    def add_child(self, element):
-        """
-        Attach a child object of type DiffElement
-        Childs are saved in a Diff object and are organized by type and name
+    def add_child(self, element: "DiffElement"):
+        """Attach a child object of type DiffElement.
+
+        Childs are saved in a Diff object and are organized by type and name.
 
         Args:
           element: DiffElement
         """
-        self.childs.add(group=element.type, element=element)
+        self.child_diff.add(group=element.type, element=element)
 
-    def get_childs(self):
-        return self.childs.get_childs()
+    def get_children(self) -> Iterator["DiffElement"]:
+        """Iterate over all child DiffElements of this one."""
+        yield from self.child_diff.get_children()
 
-    def has_diffs(self, include_childs: bool = True) -> bool:
-        """
-        return true if the object has some diffs,
-        by default it recursively checks all childs as well
+    def has_diffs(self, include_children: bool = True) -> bool:
+        """Check whether this element (or optionally any of its children) has some diffs.
 
         Args:
-          include_childs: Default value = True
-
-        Returns:
-            bool
+          include_children: If True, recursively check children for diffs as well.
         """
+        if self.source_attrs != self.dest_attrs:
+            return True
 
-        status = False
+        if include_children:
+            if self.child_diff.has_diffs():
+                return True
 
-        if not (self.source_attrs == self.dest_attrs):
-            status = True
-
-        if not include_childs:
-            return status
-
-        if self.childs.has_diffs():
-            status = True
-
-        return status
+        return False
 
     def print_detailed(self, indent: int = 0):
-        """
-        Print status on screen for current object and all childs
+        """Print status on screen for current object and all children.
 
         Args:
           indent: Default value = 0
         """
-
         margin = " " * indent
 
         # TODO: this obscures the difference between "source/dest does not exist" and
@@ -217,4 +205,4 @@ class DiffElement:
                 if self.source_attrs.get(attr, None) != self.dest_attrs.get(attr, None):
                     print(f"{margin}  {attr}   S({self.source_attrs[attr]})   D({self.dest_attrs[attr]})")
 
-        self.childs.print_detailed(indent + 2)
+        self.child_diff.print_detailed(indent + 2)
