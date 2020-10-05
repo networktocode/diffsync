@@ -100,13 +100,43 @@ def test_dsync_subclass_methods(backend_a, backend_b):
     assert diff_ab.has_diffs() is True
     diff_ba = backend_a.diff_from(backend_b)
     assert diff_ba.has_diffs() is True
-    # TODO: check contents of diff_ab and diff_ba?
 
+    def check_diff_symmetry(diff1, diff2):
+        """Recursively compare two Diffs to make sure they are equal and opposite to one another."""
+        assert len(list(diff1.get_children())) == len(list(diff2.get_children()))
+        for elem1, elem2 in zip(diff1.get_children(), diff2.get_children()):
+            # Same basic properties
+            assert elem1.type == elem2.type
+            assert elem1.name == elem2.name
+            assert elem1.keys == elem2.keys
+            assert elem1.has_diffs() == elem2.has_diffs()
+            # Opposite diffs, if any
+            assert elem1.source_attrs == elem2.dest_attrs
+            assert elem1.dest_attrs == elem2.source_attrs
+            check_diff_symmetry(elem1.child_diff, elem2.child_diff)
+
+    check_diff_symmetry(diff_ab, diff_ba)
+
+    # Perform sync of one subtree of diffs
     assert backend_a._sync_from_diff_element(diff_elements[0]) is True
     # Make sure the sync descended through the diff element all the way to the leafs
     assert backend_a.get(Interface, ["nyc-spine1", "eth0"]).description == "Interface 0/0"  # was initially Interface 0
+    # Recheck diffs
+    diff_elements = backend_a.diff_objects(
+        source=backend_a.get_all("site"), dest=backend_b.get_all("site"), source_root=backend_b
+    )
+    assert len(diff_elements) == 2  # nyc, sfo
+    assert not diff_elements[0].has_diffs()  # sync completed, no diffs
+    assert diff_elements[1].has_diffs()
 
-    # TODO: sync_[from|to], default_[create|update|delete]
+    # Perform full sync
+    backend_a.sync_from(backend_b)
+    # Make sure the sync descended through the diff elements to their children
+    assert backend_a.get(Device, ["sfo-spine1"]).role == "leaf"  # was initially "spine"
+    # Recheck diffs
+    assert backend_a.diff_from(backend_b).has_diffs() is False
+
+    # TODO: default_[create|update|delete]
 
     site_nyc_a = backend_a.get(Site, ["nyc"])
     assert isinstance(site_nyc_a, Site)
