@@ -22,8 +22,6 @@ def test_generic_dsync_methods(generic_dsync, generic_dsync_model):
     generic_dsync.sync_from(generic_dsync)  # no-op
     generic_dsync.sync_to(generic_dsync)  # no-op
 
-    # TODO: default_[create|update|delete]
-
     assert generic_dsync.get("anything", ["myname"]) is None
     assert generic_dsync.get(DSyncModel, []) is None
 
@@ -136,8 +134,6 @@ def test_dsync_subclass_methods(backend_a, backend_b):
     # Recheck diffs
     assert backend_a.diff_from(backend_b).has_diffs() is False
 
-    # TODO: default_[create|update|delete]
-
     site_nyc_a = backend_a.get(Site, ["nyc"])
     assert isinstance(site_nyc_a, Site)
     assert site_nyc_a.name == "nyc"
@@ -172,6 +168,20 @@ def test_dsync_subclass_methods(backend_a, backend_b):
     with pytest.raises(ObjectNotFound):
         backend_a.remove(site_atl_a)
 
+    # Test low-level default_* CRUD APIs
+    backend_a.default_create("interface", {"device_name": "nyc-spine1", "name": "eth2"}, {"description": "Interface 2"})
+    new_interface = backend_a.get("interface", ["nyc-spine1", "eth2"])
+    assert new_interface.description == "Interface 2"
+
+    backend_a.default_update("interface", {"device_name": "nyc-spine1", "name": "eth2"}, {"description": "Intf 2"})
+    new_interface_2 = backend_a.get("interface", ["nyc-spine1", "eth2"])
+    assert new_interface.description == "Intf 2"
+    assert new_interface_2 is new_interface
+
+    backend_a.default_delete("interface", {"device_name": "nyc-spine1", "name": "eth2"}, {})
+    assert backend_a.get("interface", ["nyc-spine1", "eth2"]) is None
+
+    # Test higher-level *_object CRUD APIs
     backend_a.create_object("device", {"name": "new_device"}, {"role": "new_role", "site_name": "nyc"})
     new_device = backend_a.get("device", ["new_device"])
     assert new_device.role == "new_role"

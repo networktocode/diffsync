@@ -500,7 +500,7 @@ class DSync:
         Args:
             object_type (str): Attribute name on this class identifying the DSyncModel subclass of the object
             keys (dict): Dictionnary containings the primary attributes of an object and their value
-            params (dict): Dictionnary containings the attributes of an object and their value
+            params: Unused argument included only for parallels to the other APIs.
 
         Returns:
             DSyncModel: Return the object that has been deleted
