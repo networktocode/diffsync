@@ -54,10 +54,17 @@ class DSyncModel(BaseModel):
     """
 
     _identifiers: tuple = ()
-    """List of model fields which together uniquely identify an instance of this model."""
+    """List of model fields which together uniquely identify an instance of this model.
+
+    This identifier MUST be globally unique among all instances of this class.
+    """
 
     _shortname: tuple = ()
-    """Optional: list of model fields that together form a shorter identifier of an instance, not necessarily unique."""
+    """Optional: list of model fields that together form a shorter identifier of an instance.
+
+    This MUST be locally unique (e.g., interface shortnames MUST be unique among all interfaces on a given device),
+    but does not need to be guaranteed to be globally unique among all instances.
+    """
 
     _attributes: tuple = ()
     """Optional: list of additional model fields (beyond those in `_identifiers`) that are relevant to this model.
@@ -130,6 +137,11 @@ class DSyncModel(BaseModel):
             **identifiers: Dict of identifiers and their values, as in `get_identifiers()`.
         """
         return "__".join(str(identifiers[key]) for key in cls._identifiers)
+
+    @classmethod
+    def get_children_mapping(cls) -> Mapping[str, str]:
+        """Get the mapping of types to fieldnames for child models of this model."""
+        return cls._children
 
     def get_identifiers(self):
         """Get a dict of all identifiers (primary keys) and their values for this object.
@@ -292,9 +304,7 @@ class DSync:
 
         for obj in intersection(self.top_level, source.top_level):
 
-            diff_elements = self.diff_objects(
-                source=list(source.get_all(obj)), dest=list(self.get_all(obj)), source_root=source,
-            )
+            diff_elements = self._diff_objects(source=source.get_all(obj), dest=self.get_all(obj), source_root=source)
 
             for element in diff_elements:
                 diff.add(obj, element)
@@ -309,15 +319,17 @@ class DSync:
         """
         return target.diff_from(self)
 
-    def diff_objects(
+    def _diff_objects(
         self, source: Iterable[DSyncModel], dest: Iterable[DSyncModel], source_root: "DSync"
     ) -> List[DiffElement]:
         """Generate a list of DiffElement between the given lists of objects.
 
+        Helper method for `diff_from`/`diff_to`; this generally shouldn't be called on its own.
+
         Args:
-          source: List (other types may be supported in future) of source DSyncModel instances
-          dest: List (other types may be supported in future) of target DSyncModel instances
-          source_root (DSync): TODO
+          source: DSyncModel instances retrieved from another DSync instance
+          dest: DSyncModel instances retrieved from this DSync instance
+          source_root (DSync): The other DSync object being diffed against (owner of the `source` models).
 
         Raises:
           TypeError: if the source and dest args are not the same type, or if that type is unsupported
@@ -325,48 +337,45 @@ class DSync:
         diffs = []
 
         if isinstance(source, ABCIterable) and isinstance(dest, ABCIterable):
-            # Convert list into a Dict and using the str representation as Key
+            # Convert a list of DSyncModels into a dict using the unique_ids as keys
             dict_src = {item.get_unique_id(): item for item in source} if not isinstance(source, ABCMapping) else source
             dict_dst = {item.get_unique_id(): item for item in dest} if not isinstance(dest, ABCMapping) else dest
 
-            # Identify the shared keys between SRC and DST DSync
-            # The keys missing in DST Dsync
-            # The keys missing in SRT DSync
-            same_keys = intersection(dict_src.keys(), dict_dst.keys())
-            missing_dst = list(set(dict_src.keys()) - set(same_keys))
-            missing_src = list(set(dict_dst.keys()) - set(same_keys))
+            # TODO: should we check/enforce that all DSyncModels in dict_src/dict_dst have the same get_type() output?
 
-            for key in missing_dst:
-                de = DiffElement(
-                    obj_type=dict_src[key].get_type(),
-                    name=dict_src[key].get_shortname(),
-                    keys=dict_src[key].get_identifiers(),
+            # Identify the shared unique-ids between source and dest dicts
+            # The unique-ids missing in dest dict
+            # The unique-ids missing in source dict
+            shared_ids = intersection(dict_src.keys(), dict_dst.keys())
+            # TODO: we potentially lose any ordering present in the source/dest lists by the below - is that a problem?
+            missing_dst = list(set(dict_src.keys()) - set(shared_ids))
+            missing_src = list(set(dict_dst.keys()) - set(shared_ids))
+
+            for uid in missing_dst:
+                src_obj = dict_src[uid]
+                diff_element = DiffElement(
+                    obj_type=src_obj.get_type(), name=src_obj.get_shortname(), keys=src_obj.get_identifiers(),
                 )
-                de.add_attrs(source=dict_src[key].get_attrs(), dest=None)
-                diffs.append(de)
+                diff_element.add_attrs(source=src_obj.get_attrs(), dest=None)
+                diffs.append(diff_element)
                 # TODO Continue the tree here
 
-            for key in missing_src:
-                de = DiffElement(
-                    obj_type=dict_dst[key].get_type(),
-                    name=dict_dst[key].get_shortname(),
-                    keys=dict_dst[key].get_identifiers(),
+            for uid in missing_src:
+                dst_obj = dict_dst[uid]
+                diff_element = DiffElement(
+                    obj_type=dst_obj.get_type(), name=dst_obj.get_shortname(), keys=dst_obj.get_identifiers(),
                 )
-                de.add_attrs(source=None, dest=dict_dst[key].get_attrs())
-                diffs.append(de)
+                diff_element.add_attrs(source=None, dest=dst_obj.get_attrs())
+                diffs.append(diff_element)
                 # TODO Continue the tree here
 
-            for key in same_keys:
-
-                de = DiffElement(
-                    obj_type=dict_dst[key].get_type(),
-                    name=dict_dst[key].get_shortname(),
-                    keys=dict_dst[key].get_identifiers(),
+            for uid in shared_ids:
+                src_obj = dict_src[uid]
+                dst_obj = dict_dst[uid]
+                diff_element = DiffElement(
+                    obj_type=dst_obj.get_type(), name=dst_obj.get_shortname(), keys=dst_obj.get_identifiers(),
                 )
-
-                de.add_attrs(
-                    source=dict_src[key].get_attrs(), dest=dict_dst[key].get_attrs(),
-                )
+                diff_element.add_attrs(source=src_obj.get_attrs(), dest=dst_obj.get_attrs())
 
                 # logger.debug(
                 #     f"{dict_src[i].get_type()} {dict_dst[i]} | {i}"
@@ -381,19 +390,19 @@ class DSync:
                 #     f"{dict_src[i].get_type()} {dict_dst[i]} | following the path for {dict_src[i].children}"
                 # )
 
-                for child_type, child_attr in dict_src[key]._children.items():
-
-                    # TODO: the below is very much not self-documenting - let's add some comments :-)
-                    childs = self.diff_objects(
-                        source=source_root.get_by_uids(getattr(dict_src[key], child_attr), child_type),
-                        dest=self.get_by_uids(getattr(dict_dst[key], child_attr), child_type),
+                for child_type, child_fieldname in src_obj.get_children_mapping().items():
+                    child_diff_elements = self._diff_objects(
+                        # Get all child UIDs in src_obj, then get the matching DSyncModel instances from source_root
+                        source=source_root.get_by_uids(getattr(src_obj, child_fieldname), child_type),
+                        # Get all child UIDs in dst_obj, then get the matching DSyncModel instances from self
+                        dest=self.get_by_uids(getattr(dst_obj, child_fieldname), child_type),
                         source_root=source_root,
                     )
 
-                    for c in childs:
-                        de.add_child(c)
+                    for child_diff_element in child_diff_elements:
+                        diff_element.add_child(child_diff_element)
 
-                diffs.append(de)
+                diffs.append(diff_element)
 
         else:
             # In the future we might support set, etc...
@@ -505,7 +514,7 @@ class DSync:
 
         return item
 
-    def default_delete(self, object_type, keys, params):
+    def default_delete(self, object_type, keys, params):  # pylint: disable=unused-argument
         """Delete an object locally based on its primary keys and attributes.
 
         This function will be called if a more specific function of type delete_<object_type> is not defined

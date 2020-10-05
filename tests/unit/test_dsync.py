@@ -3,7 +3,6 @@
 import pytest
 
 from dsync import DSync, DSyncModel
-from dsync.diff import DiffElement
 from dsync.exceptions import ObjectAlreadyExists, ObjectNotFound, ObjectNotCreated, ObjectNotUpdated, ObjectNotDeleted
 
 from .conftest import Site, Device, Interface
@@ -72,11 +71,13 @@ def test_generic_dsync_methods(generic_dsync, generic_dsync_model):
     with pytest.raises(ObjectNotDeleted):
         generic_dsync.delete_object("dsyncmodel", {}, {})
 
-    diff_elements = generic_dsync.diff_objects([generic_dsync_model], [generic_dsync_model], generic_dsync)
+    diff_elements = generic_dsync._diff_objects(  # pylint: disable=protected-access
+        [generic_dsync_model], [generic_dsync_model], generic_dsync,
+    )
     assert len(diff_elements) == 1
     assert not diff_elements[0].has_diffs()
     # No-op as diff_element.has_diffs() is False
-    generic_dsync._sync_from_diff_element(diff_elements[0])
+    generic_dsync._sync_from_diff_element(diff_elements[0])  # pylint: disable=protected-access
 
 
 def test_dsync_subclass_validation():
@@ -94,9 +95,9 @@ def test_dsync_subclass_validation():
     assert "dev_class" in str(excinfo.value)
 
 
-def test_dsync_subclass_methods(backend_a, backend_b):
-    """Test DSync APIs on an actual concrete subclass."""
-    diff_elements = backend_a.diff_objects(
+def test_dsync_subclass_methods_diff_sync(backend_a, backend_b):
+    """Test DSync diff/sync APIs on an actual concrete subclass."""
+    diff_elements = backend_a._diff_objects(  # pylint: disable=protected-access
         source=backend_a.get_all("site"), dest=backend_b.get_all("site"), source_root=backend_b
     )
     assert len(diff_elements) == 2  # nyc, sfo
@@ -130,11 +131,11 @@ def test_dsync_subclass_methods(backend_a, backend_b):
     check_diff_symmetry(diff_ab, diff_ba)
 
     # Perform sync of one subtree of diffs
-    assert backend_a._sync_from_diff_element(diff_elements[0]) is True
+    assert backend_a._sync_from_diff_element(diff_elements[0]) is True  # pylint: disable=protected-access
     # Make sure the sync descended through the diff element all the way to the leafs
     assert backend_a.get(Interface, ["nyc-spine1", "eth0"]).description == "Interface 0/0"  # was initially Interface 0
     # Recheck diffs
-    diff_elements = backend_a.diff_objects(
+    diff_elements = backend_a._diff_objects(  # pylint: disable=protected-access
         source=backend_a.get_all("site"), dest=backend_b.get_all("site"), source_root=backend_b
     )
     assert len(diff_elements) == 2  # nyc, sfo
@@ -168,6 +169,11 @@ def test_dsync_subclass_methods(backend_a, backend_b):
     assert backend_a.get_by_uids(["nyc", "sfo"], Device) == []
     assert backend_a.get_by_uids(["nyc", "sfo"], "device") == []
 
+
+def test_dsync_subclass_methods_crud(backend_a):
+    """Test DSync CRUD APIs against a concrete subclass."""
+    site_nyc_a = backend_a.get(Site, ["nyc"])
+    site_sfo_a = backend_a.get("site", ["sfo"])
     site_atl_a = Site(name="atl")
     backend_a.add(site_atl_a)
     with pytest.raises(ObjectAlreadyExists):

@@ -65,6 +65,9 @@ testpaths = [
     "tests"
 ]
 
+[tool.pylint.similarities]
+min-similarity-lines = 10
+
 [build-system]
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
