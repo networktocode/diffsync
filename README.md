@@ -1,8 +1,8 @@
 # dsync
 
-DSync is a utility library that can be used to compare and syncronize different datasets. 
+DSync is a utility library that can be used to compare and synchronize different datasets.
 
-For example, it can be used to compare a list of devices from 2 inventories system and, if required, syncronize them in either direction.
+For example, it can be used to compare a list of devices from 2 inventories system and, if required, synchronize them in either direction.
 
 ```python
 A = DSyncSystemA()
@@ -11,7 +11,7 @@ B = DSyncSystemB()
 A.load()
 B.load()
 
-# it will show the difference between both systems 
+# it will show the difference between both systems
 diff_a_b = A.diff_from(B)
 diff.print_detailed()
 
@@ -24,40 +24,41 @@ A.sync_to(B)
 
 # Getting Started
 
-To be able to properly compare different datasets, DSync rely on a shared datamodel that both systems must use. 
+To be able to properly compare different datasets, DSync rely on a shared datamodel that both systems must use.
 
 ## Define your model with DSyncModel
 
 DSyncModel is based on [Pydantic](https://pydantic-docs.helpmanual.io/) and is using Python Typing to define the format of each attribute.
-Each DSyncModel object support the following attributes:
-- `__modelname__` (str) Define the type of the model, it's used to store the data internally (Mandatory)
-- `__identifier__` List(str) List of attribute names used as primary keys for this object (Mandatory)
-- `__attributes__` List(str) List of optional attribute names for this object (Optional)
-- `__shortname__` List(str) List of attribute names to use for a shorter name (Optional)
-- `__children__` Dict: Dict of (<modelname>, attribute) name to indicate how children should be stored. (Optional)
+Each DSyncModel class supports the following class-level attributes:
+- `_modelname` (str) Define the type of the model, it's used to store the data internally (Mandatory)
+- `_identifiers` List(str) List of instance field names used as primary keys for this object (Mandatory)
+- `_shortname` List(str) List of instance field names to use for a shorter name (Optional)
+- `_attributes` List(str) List of additional instance field names for this object (Optional)
+- `_children` Dict: Dict of {`<modelname>`: `field_name`} to indicate how child objects should be stored. (Optional)
 
-> DSyncModel must uniquely identified by their unique id, composed of all attributes defined in `__identifier__`. DSyncModel do not support incremental IDs as primary key.
+> DSyncModel must uniquely identified by their unique id, composed of all fields defined in `_identifiers`. DSyncModel do not support incremental IDs as primary key.
 
 ```python
 from dsync import DSyncModel
 
 class Site(DSyncModel):
-    __modelname__ = "site"
-    __identifier__ = ["name"]
-    __shortname__ = []
-    __attributes__ = []
-    __children__ = {"device": "devices"}
+    _modelname = "site"
+    _identifiers = ("name",)
+    _shortname = ()
+    _attributes = ("contact_phone",)
+    _children = {"device": "devices"}
 
     name: str
+    contact_phone: str
     devices: List = list()
 ```
 
 ### Relationship between models.
-Currently the relationship between models are very loose, by design. Instead of storing an object, it's recommended to store the uid of an object and retrieve it from the store as needed. 
+Currently the relationship between models are very loose, by design. Instead of storing an object, it's recommended to store the uid of an object and retrieve it from the store as needed.
 
 ## DSync
 
-A DSync object must reference each model available at the top of the object by its modelname and must have a `top_level` attribute define to indicate how the diff and the syncronization should be done. In the example below, `"site"` is the only top level objects so the syncronization engine will check all sites and all children of each site (devices)
+A DSync object must reference each model available at the top of the object by its modelname and must have a `top_level` attribute defined to indicate how the diff and the synchronization should be done. In the example below, `"site"` is the only top level objects so the synchronization engine will check all sites and all children of each site (devices)
 
 ```python
 from dsync import DSync
@@ -93,7 +94,7 @@ class BackendA(DSync):
 
 ## Update Remote system on Sync
 
-To update a remote system, you need to extend your DSync object to define your own `create`, `update` or `delete` method for each model. The DSync engine will automatically look for `create_<modelname>`, `update_<modelname>` or  `delete_<modelname>` depending on the status of the object. 
+To update a remote system, you need to extend your DSync object to define your own `create`, `update` or `delete` method for each model. The DSync engine will automatically look for `create_<modelname>`, `update_<modelname>` or  `delete_<modelname>` depending on the status of the object.
 Each method need to accept 2 dict, `keys` and `params` and should return a DSyncModel object:
 - `keys` dict containing all identifier for this object
 - `params` dict containing all attributes for this object
@@ -110,5 +111,5 @@ class BackendA(DSync):
     def update_device(self, keys, params):
         ## TODO add your own logic here to update the device on the remote system
         item = self.default_update(object_type="device", keys=keys, params=params)
-        return item 
+        return item
 ```

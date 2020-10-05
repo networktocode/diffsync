@@ -6,11 +6,11 @@ from dsync import DSyncModel
 class Site(DSyncModel):
     """Example model of a geographic Site."""
 
-    __modelname__ = "site"
-    __identifier__ = ("name",)
-    __shortname__ = ()
-    __attributes__ = ()
-    __children__ = {"device": "devices"}
+    _modelname = "site"
+    _identifiers = ("name",)
+    _shortname = ()
+    _attributes = ()
+    _children = {"device": "devices"}
 
     name: str
     devices: List = list()
@@ -19,10 +19,10 @@ class Site(DSyncModel):
 class Device(DSyncModel):
     """Example model of a network Device."""
 
-    __modelname__ = "device"
-    __identifier__ = ("name",)
-    __attributes__ = ()
-    __children__ = {"interface": "interfaces"}
+    _modelname = "device"
+    _identifiers = ("name",)
+    _attributes = ()
+    _children = {"interface": "interfaces"}
 
     name: str
     site_name: str
@@ -33,10 +33,10 @@ class Device(DSyncModel):
 class Interface(DSyncModel):
     """Example model of a network Interface."""
 
-    __modelname__ = "interface"
-    __identifier__ = ("device_name", "name")
-    __shortname__ = ("name",)
-    __attributes__ = ("description",)
+    _modelname = "interface"
+    _identifiers = ("device_name", "name")
+    _shortname = ("name",)
+    _attributes = ("description",)
 
     name: str
     device_name: str

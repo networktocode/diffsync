@@ -26,9 +26,9 @@ def generic_dsync_model():
 class Site(DSyncModel):
     """Concrete DSyncModel subclass representing a site or location that contains devices."""
 
-    __modelname__ = "site"
-    __identifier__ = ("name",)
-    __children__ = {"device": "devices"}
+    _modelname = "site"
+    _identifiers = ("name",)
+    _children = {"device": "devices"}
 
     name: str
     devices: List = list()
@@ -50,13 +50,13 @@ def make_site():
 class Device(DSyncModel):
     """Concrete DSyncModel subclass representing a device."""
 
-    __modelname__ = "device"
-    __identifier__ = ("name",)
-    __attributes__ = ("role",)
-    __children__ = {"interface": "interfaces"}
+    _modelname = "device"
+    _identifiers = ("name",)
+    _attributes = ("role",)
+    _children = {"interface": "interfaces"}
 
     name: str
-    site_name: str  # note this is not included in __attributes__
+    site_name: str  # note this is not included in _attributes
     role: str
     interfaces: List = list()
 
@@ -75,10 +75,10 @@ def make_device():
 class Interface(DSyncModel):
     """Concrete DSyncModel subclass representing an interface."""
 
-    __modelname__ = "interface"
-    __identifier__ = ("device_name", "name")
-    __shortname__ = ("name",)
-    __attributes__ = ("interface_type", "description")
+    _modelname = "interface"
+    _identifiers = ("device_name", "name")
+    _shortname = ("name",)
+    _attributes = ("interface_type", "description")
 
     device_name: str
     name: str
