@@ -6,7 +6,7 @@ from dsync import DSyncModel
 from dsync.diff import DiffElement
 from dsync.exceptions import ObjectAlreadyExists, ObjectNotFound, ObjectNotCreated, ObjectNotUpdated, ObjectNotDeleted
 
-from .conftest import Site, Device
+from .conftest import Site, Device, Interface
 
 
 def test_generic_dsync_methods(generic_dsync, generic_dsync_model):
@@ -74,15 +74,11 @@ def test_generic_dsync_methods(generic_dsync, generic_dsync_model):
     with pytest.raises(ObjectNotDeleted):
         generic_dsync.delete_object("dsyncmodel", {}, {})
 
-    diff_element = DiffElement(
-        generic_dsync_model.get_type(), generic_dsync_model.get_shortname(), generic_dsync_model.get_identifiers(),
-    )
-    # No-op as diff_element.has_diffs() is False
-    generic_dsync.sync_from_diff_element(diff_element)
-
     diff_elements = generic_dsync.diff_objects([generic_dsync_model], [generic_dsync_model], generic_dsync)
     assert len(diff_elements) == 1
     assert not diff_elements[0].has_diffs()
+    # No-op as diff_element.has_diffs() is False
+    generic_dsync._sync_from_diff_element(diff_elements[0])
 
 
 def test_dsync_subclass_methods(backend_a, backend_b):
@@ -94,6 +90,7 @@ def test_dsync_subclass_methods(backend_a, backend_b):
     assert len(diff_elements) == 2  # nyc, sfo
     assert diff_elements[0].has_diffs()
     assert diff_elements[1].has_diffs()
+    # We don't inspect the contents of the diff elements in detail here - see test_diff_element.py for that
 
     diff_aa = backend_a.diff_from(backend_a)
     assert diff_aa.has_diffs() is False
@@ -105,7 +102,11 @@ def test_dsync_subclass_methods(backend_a, backend_b):
     assert diff_ba.has_diffs() is True
     # TODO: check contents of diff_ab and diff_ba?
 
-    # TODO: sync_[from|to](_diff_element)?, default_[create|update|delete]
+    assert backend_a._sync_from_diff_element(diff_elements[0]) is True
+    # Make sure the sync descended through the diff element all the way to the leafs
+    assert backend_a.get(Interface, ["nyc-spine1", "eth0"]).description == "Interface 0/0"  # was initially Interface 0
+
+    # TODO: sync_[from|to], default_[create|update|delete]
 
     site_nyc_a = backend_a.get(Site, ["nyc"])
     assert isinstance(site_nyc_a, Site)
@@ -141,16 +142,16 @@ def test_dsync_subclass_methods(backend_a, backend_b):
     with pytest.raises(ObjectNotFound):
         backend_a.remove(site_atl_a)
 
-    backend_a.create_object("device_class", {"name": "new_device"}, {"role": "new_role", "site_name": "nyc"})
+    backend_a.create_object("device", {"name": "new_device"}, {"role": "new_role", "site_name": "nyc"})
     new_device = backend_a.get("device", ["new_device"])
     assert new_device.role == "new_role"
     assert new_device.site_name == "nyc"
 
-    backend_a.update_object("device_class", {"name": "new_device"}, {"role": "another_role"})
+    backend_a.update_object("device", {"name": "new_device"}, {"role": "another_role"})
     new_device_2 = backend_a.get(Device, ["new_device"])
     assert new_device_2 is new_device
     assert new_device.role == "another_role"
 
-    backend_a.delete_object("device_class", {"name": "new_device"})
+    backend_a.delete_object("device", {"name": "new_device"})
     new_device_3 = backend_a.get("device", ["new_device"])
     assert new_device_3 is None

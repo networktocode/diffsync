@@ -233,7 +233,7 @@ class DSync:
         diff = self.diff_from(source)
 
         for child in diff.get_children():
-            self.sync_from_diff_element(child)
+            self._sync_from_diff_element(child)
 
     def sync_to(self, target: "DSync"):
         """Synchronize data from the current DSync object into the given target DSync object.
@@ -243,8 +243,10 @@ class DSync:
         """
         target.sync_from(self)
 
-    def sync_from_diff_element(self, element: DiffElement) -> bool:
+    def _sync_from_diff_element(self, element: DiffElement) -> bool:
         """Synchronize a given DiffElement (and its children, if any) into this DSync.
+
+        Helper method for `sync_from`/`sync_to`; this generally shouldn't be called on its own.
 
         Args:
             element (DiffElement):
@@ -263,7 +265,7 @@ class DSync:
             self.update_object(object_type=element.type, keys=element.keys, params=element.source_attrs)
 
         for child in element.get_children():
-            self.sync_from_diff_element(child)
+            self._sync_from_diff_element(child)
 
         return True
 
@@ -430,12 +432,12 @@ class DSync:
 
         if not hasattr(self, object_type):
             if action == "create":
-                raise ObjectNotCreated("Unable to find this object type")
+                raise ObjectNotCreated(f"Unable to find object type {object_type}")
             if action == "update":
-                raise ObjectNotUpdated("Unable to find this object type")
+                raise ObjectNotUpdated(f"Unable to find object type {object_type}")
             if action == "delete":
-                raise ObjectNotDeleted("Unable to find this object type")
-            raise ObjectCrudException("Unable to find this object type")
+                raise ObjectNotDeleted(f"Unable to find object type {object_type}")
+            raise ObjectCrudException(f"Unable to find object type {object_type}")
 
         # Check if a specific crud function is available
         #   update_interface or create_device etc ...
