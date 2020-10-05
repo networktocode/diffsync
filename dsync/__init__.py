@@ -343,39 +343,42 @@ class DSync:
 
             # TODO: should we check/enforce that all DSyncModels in dict_src/dict_dst have the same get_type() output?
 
-            # Identify the shared unique-ids between source and dest dicts
-            # The unique-ids missing in dest dict
-            # The unique-ids missing in source dict
-            shared_ids = intersection(dict_src.keys(), dict_dst.keys())
-            # TODO: we potentially lose any ordering present in the source/dest lists by the below - is that a problem?
-            missing_dst = list(set(dict_src.keys()) - set(shared_ids))
-            missing_src = list(set(dict_dst.keys()) - set(shared_ids))
+            combined_dict = {uid: (dict_src[uid], None) for uid in dict_src}
+            for uid in dict_dst:
+                combined_dict[uid] = (dict_src.get(uid), dict_dst[uid])
 
-            for uid in missing_dst:
-                src_obj = dict_src[uid]
-                diff_element = DiffElement(
-                    obj_type=src_obj.get_type(), name=src_obj.get_shortname(), keys=src_obj.get_identifiers(),
-                )
-                diff_element.add_attrs(source=src_obj.get_attrs(), dest=None)
-                diffs.append(diff_element)
-                # TODO Continue the tree here
+            for uid in combined_dict:
+                src_obj, dst_obj = combined_dict[uid]
+                if src_obj and dst_obj:
+                    if src_obj.get_type() != dst_obj.get_type():
+                        raise TypeError(f"Type mismatch: {src_obj.get_type()} vs {dst_obj.get_type()}")
+                    if src_obj.get_shortname() != dst_obj.get_shortname():
+                        raise ValueError(f"Shortname mismatch: {src_obj.get_shortname()} vs {dst_obj.get_shortname()}")
+                    if src_obj.get_identifiers() != dst_obj.get_identifiers():
+                        raise ValueError(f"Keys mismatch: {src_obj.get_identifiers()} vs {dst_obj.get_identifiers()}")
+                    if src_obj.get_children_mapping() != dst_obj.get_children_mapping():
+                        raise ValueError(
+                            f"Children mismatch: {src_obj.get_children_mapping()} vs {dst_obj.get_children_mapping()}"
+                        )
 
-            for uid in missing_src:
-                dst_obj = dict_dst[uid]
-                diff_element = DiffElement(
-                    obj_type=dst_obj.get_type(), name=dst_obj.get_shortname(), keys=dst_obj.get_identifiers(),
-                )
-                diff_element.add_attrs(source=None, dest=dst_obj.get_attrs())
-                diffs.append(diff_element)
-                # TODO Continue the tree here
+                if src_obj:
+                    diff_element = DiffElement(
+                        obj_type=src_obj.get_type(), name=src_obj.get_shortname(), keys=src_obj.get_identifiers()
+                    )
+                    children_mapping = src_obj.get_children_mapping()
+                elif dst_obj:
+                    diff_element = DiffElement(
+                        obj_type=dst_obj.get_type(), name=dst_obj.get_shortname(), keys=dst_obj.get_identifiers()
+                    )
+                    children_mapping = dst_obj.get_children_mapping()
+                else:
+                    # Should be unreachable
+                    raise RuntimeError(f"UID {uid} is in combined_dict but has neither src_obj nor dst_obj??")
 
-            for uid in shared_ids:
-                src_obj = dict_src[uid]
-                dst_obj = dict_dst[uid]
-                diff_element = DiffElement(
-                    obj_type=dst_obj.get_type(), name=dst_obj.get_shortname(), keys=dst_obj.get_identifiers(),
-                )
-                diff_element.add_attrs(source=src_obj.get_attrs(), dest=dst_obj.get_attrs())
+                if src_obj:
+                    diff_element.add_attrs(source=src_obj.get_attrs(), dest=None)
+                if dst_obj:
+                    diff_element.add_attrs(source=None, dest=dst_obj.get_attrs())
 
                 # logger.debug(
                 #     f"{dict_src[i].get_type()} {dict_dst[i]} | {i}"
@@ -390,16 +393,14 @@ class DSync:
                 #     f"{dict_src[i].get_type()} {dict_dst[i]} | following the path for {dict_src[i].children}"
                 # )
 
-                for child_type, child_fieldname in src_obj.get_children_mapping().items():
-                    child_diff_elements = self._diff_objects(
-                        # Get all child UIDs in src_obj, then get the matching DSyncModel instances from source_root
-                        source=source_root.get_by_uids(getattr(src_obj, child_fieldname), child_type),
-                        # Get all child UIDs in dst_obj, then get the matching DSyncModel instances from self
-                        dest=self.get_by_uids(getattr(dst_obj, child_fieldname), child_type),
+                for child_type, child_fieldname in children_mapping.items():
+                    src_uids: List[str] = getattr(src_obj, child_fieldname) if src_obj else []
+                    dst_uids: List[str] = getattr(dst_obj, child_fieldname) if dst_obj else []
+                    for child_diff_element in self._diff_objects(
+                        source=source_root.get_by_uids(src_uids, child_type),
+                        dest=self.get_by_uids(dst_uids, child_type),
                         source_root=source_root,
-                    )
-
-                    for child_diff_element in child_diff_elements:
+                    ):
                         diff_element.add_child(child_diff_element)
 
                 diffs.append(diff_element)
