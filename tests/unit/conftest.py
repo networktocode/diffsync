@@ -107,7 +107,6 @@ def generic_dsync():
 class BackendA(DSync):
     """An example subclass of DSync."""
 
-    # TODO: name these "type_class" instead of just "type" to catch bugs where the modelname is being used instead
     site = Site
     device = Device
     interface = Interface

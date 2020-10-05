@@ -2,7 +2,7 @@
 
 import pytest
 
-from dsync import DSyncModel
+from dsync import DSync, DSyncModel
 from dsync.diff import DiffElement
 from dsync.exceptions import ObjectAlreadyExists, ObjectNotFound, ObjectNotCreated, ObjectNotUpdated, ObjectNotDeleted
 
@@ -79,9 +79,23 @@ def test_generic_dsync_methods(generic_dsync, generic_dsync_model):
     generic_dsync._sync_from_diff_element(diff_elements[0])
 
 
+def test_dsync_subclass_validation():
+    """Test the declaration-time checks on a DSync subclass."""
+    # pylint: disable=unused-variable
+    with pytest.raises(AttributeError) as excinfo:
+
+        class BadElementName(DSync):
+            """Model with a DSyncModel attribute whose name does not match the modelname."""
+
+            dev_class = Device  # should be device = Device
+
+    assert "Device" in str(excinfo.value)
+    assert "device" in str(excinfo.value)
+    assert "dev_class" in str(excinfo.value)
+
+
 def test_dsync_subclass_methods(backend_a, backend_b):
     """Test DSync APIs on an actual concrete subclass."""
-
     diff_elements = backend_a.diff_objects(
         source=backend_a.get_all("site"), dest=backend_b.get_all("site"), source_root=backend_b
     )

@@ -11,6 +11,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from inspect import isclass
 import logging
 from collections import defaultdict
 from collections.abc import Iterable as ABCIterable, Mapping as ABCMapping
@@ -219,6 +220,18 @@ class DSync:
 
         `self._data[modelname][unique_id] == model_instance`
         """
+
+    def __init_subclass__(cls):
+        """Validate that references to specific DSyncModels use the correct modelnames.
+
+        Called automatically on subclass declaration.
+        """
+        contents = cls.__dict__
+        for name, value in contents.items():
+            if isclass(value) and issubclass(value, DSyncModel) and value.get_type() != name:
+                raise AttributeError(
+                    f'Incorrect field name - {value.__name__} has type name "{value.get_type()}", not "{name}"'
+                )
 
     def load(self):
         """Load all desired data from whatever backend data source into this instance."""
