@@ -3,7 +3,7 @@
 import pytest
 
 from dsync import DSyncModel
-from dsync.exceptions import ObjectAlreadyExists, ObjectNotFound
+from dsync.exceptions import ObjectAlreadyExists, ObjectNotFound, ObjectNotCreated, ObjectNotUpdated, ObjectNotDeleted
 
 from .conftest import Site, Device
 
@@ -12,15 +12,16 @@ def test_generic_dsync_methods(generic_dsync, generic_dsync_model):
     """Test the standard DSync APIs on a generic DSync instance and DSyncModel instance."""
     generic_dsync.load()  # no-op
     assert len(generic_dsync._data) == 0  # pylint: disable=protected-access
-    generic_dsync.sync_from(generic_dsync)  # no-op
-    generic_dsync.sync_to(generic_dsync)  # no-op
 
     diff = generic_dsync.diff_from(generic_dsync)
     assert diff.has_diffs() is False
     diff = generic_dsync.diff_to(generic_dsync)
     assert diff.has_diffs() is False
 
-    # TODO: sync_from_diff_element, diff_objects, [create|update|delete]_object, default_[create|update|delete]
+    generic_dsync.sync_from(generic_dsync)  # no-op
+    generic_dsync.sync_to(generic_dsync)  # no-op
+
+    # TODO: sync_from_diff_element, diff_objects, default_[create|update|delete]
 
     assert generic_dsync.get("anything", ["myname"]) is None
     assert generic_dsync.get(DSyncModel, []) is None
@@ -31,22 +32,29 @@ def test_generic_dsync_methods(generic_dsync, generic_dsync_model):
     assert generic_dsync.get_by_uids(["any", "another"], "anything") == []
     assert generic_dsync.get_by_uids(["any", "another"], DSyncModel) == []
 
+    # A DSync can store arbitrary DSyncModel objects, even if it doesn't know about them at definition time.
     generic_dsync.add(generic_dsync_model)
     with pytest.raises(ObjectAlreadyExists):
         generic_dsync.add(generic_dsync_model)
 
+    # The generic_dsync_model has an empty identifier/unique-id
     assert generic_dsync.get(DSyncModel, []) == generic_dsync_model
     assert generic_dsync.get(DSyncModel.get_type(), []) == generic_dsync_model
+    # Wrong object-type - no match
     assert generic_dsync.get("", []) is None
+    # Wrong unique-id - no match
     assert generic_dsync.get(DSyncModel, ["myname"]) is None
 
     assert list(generic_dsync.get_all(DSyncModel)) == [generic_dsync_model]
     assert list(generic_dsync.get_all(DSyncModel.get_type())) == [generic_dsync_model]
+    # Wrong object-type - no match
     assert list(generic_dsync.get_all("anything")) == []
 
     assert generic_dsync.get_by_uids([""], DSyncModel) == [generic_dsync_model]
     assert generic_dsync.get_by_uids([""], DSyncModel.get_type()) == [generic_dsync_model]
+    # Wrong unique-id - no match
     assert generic_dsync.get_by_uids(["myname"], DSyncModel) == []
+    # Valid unique-id mixed in with unknown ones - return the successful matches?
     assert generic_dsync.get_by_uids(["aname", "", "anothername"], DSyncModel) == [generic_dsync_model]
 
     generic_dsync.remove(generic_dsync_model)
@@ -56,6 +64,14 @@ def test_generic_dsync_methods(generic_dsync, generic_dsync_model):
     assert generic_dsync.get(DSyncModel, []) is None
     assert list(generic_dsync.get_all(DSyncModel)) == []
     assert generic_dsync.get_by_uids([""], DSyncModel) == []
+
+    # Default (empty) DSync class doesn't know how to create any objects
+    with pytest.raises(ObjectNotCreated):
+        generic_dsync.create_object("dsyncmodel", {}, {})
+    with pytest.raises(ObjectNotUpdated):
+        generic_dsync.update_object("dsyncmodel", {}, {})
+    with pytest.raises(ObjectNotDeleted):
+        generic_dsync.delete_object("dsyncmodel", {}, {})
 
 
 def test_dsync_subclass_methods(backend_a, backend_b):
@@ -71,7 +87,7 @@ def test_dsync_subclass_methods(backend_a, backend_b):
     assert diff_ba.has_diffs() is True
     # TODO: check contents of diff_ab and diff_ba?
 
-    # TODO: sync_[from|to](_diff_element)?, diff_objects, [create|update|delete]_object, default_[create|update|delete]
+    # TODO: sync_[from|to](_diff_element)?, diff_objects, default_[create|update|delete]
 
     site_nyc_a = backend_a.get(Site, ["nyc"])
     assert isinstance(site_nyc_a, Site)
@@ -106,3 +122,17 @@ def test_dsync_subclass_methods(backend_a, backend_b):
     backend_a.remove(site_atl_a)
     with pytest.raises(ObjectNotFound):
         backend_a.remove(site_atl_a)
+
+    backend_a.create_object("device_class", {"name": "new_device"}, {"role": "new_role", "site_name": "nyc"})
+    new_device = backend_a.get("device", ["new_device"])
+    assert new_device.role == "new_role"
+    assert new_device.site_name == "nyc"
+
+    backend_a.update_object("device_class", {"name": "new_device"}, {"role": "another_role"})
+    new_device_2 = backend_a.get(Device, ["new_device"])
+    assert new_device_2 is new_device
+    assert new_device.role == "another_role"
+
+    backend_a.delete_object("device_class", {"name": "new_device"})
+    new_device_3 = backend_a.get("device", ["new_device"])
+    assert new_device_3 is None

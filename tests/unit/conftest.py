@@ -107,9 +107,10 @@ def generic_dsync():
 class BackendA(DSync):
     """An example subclass of DSync."""
 
-    site = Site
-    device = Device
-    interface = Interface
+    # We name these "type_class" instead of just "type" to catch bugs where the modelname is being used instead
+    site_class = Site
+    device_class = Device
+    interface_class = Interface
 
     top_level = ["site"]
 
@@ -128,16 +129,16 @@ class BackendA(DSync):
         """Initialize the BackendA Object by loading some site, device and interfaces from DATA_A."""
 
         for site_name, site_data in self.DATA.items():
-            site = self.site(name=site_name)
+            site = self.site_class(name=site_name)
             self.add(site)
 
             for device_name, device_data in site_data.items():
-                device = self.device(name=device_name, role=device_data["role"], site_name=site_name)
+                device = self.device_class(name=device_name, role=device_data["role"], site_name=site_name)
                 self.add(device)
                 site.add_child(device)
 
                 for intf_name, desc in device_data["interfaces"].items():
-                    intf = self.interface(name=intf_name, device_name=device_name, description=desc)
+                    intf = self.interface_class(name=intf_name, device_name=device_name, description=desc)
                     self.add(intf)
                     device.add_child(intf)
 

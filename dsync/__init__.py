@@ -19,7 +19,15 @@ from pydantic import BaseModel
 
 from .diff import Diff, DiffElement
 from .utils import intersection
-from .exceptions import ObjectCrudException, ObjectAlreadyExists, ObjectStoreWrongType, ObjectNotFound
+from .exceptions import (
+    ObjectNotCreated,
+    ObjectNotUpdated,
+    ObjectNotDeleted,
+    ObjectCrudException,
+    ObjectAlreadyExists,
+    ObjectStoreWrongType,
+    ObjectNotFound,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -112,6 +120,15 @@ class DSyncModel(BaseModel):
         """
         return cls._modelname
 
+    @classmethod
+    def create_unique_id(cls, **identifiers) -> str:
+        """Construct a unique identifier for this model class.
+
+        Args:
+            **identifiers: Dict of identifiers and their values, as in `get_identifiers()`.
+        """
+        return "__".join(str(identifiers[key]) for key in cls._identifiers)
+
     def get_identifiers(self):
         """Get a dict of all identifiers (primary keys) and their values for this object.
 
@@ -141,7 +158,7 @@ class DSyncModel(BaseModel):
         Returns:
             str: Unique ID for this object
         """
-        return "__".join([str(getattr(self, key)) for key in self._identifiers])
+        return self.create_unique_id(**self.get_identifiers())
 
     def get_shortname(self):
         """Get the (not guaranteed-unique) shortname of an object, if any.
@@ -383,11 +400,13 @@ class DSync:
             action="update", object_type=object_type, keys=keys, params=params,
         )
 
-    def delete_object(self, object_type, keys, params):
+    def delete_object(self, object_type, keys, params=None):
         """TODO: move to a `delete` method on DSyncModel class."""
+        if not params:
+            params = {}
         self._crud_change(action="delete", object_type=object_type, keys=keys, params=params)
 
-    def _crud_change(self, action, object_type, keys, params):
+    def _crud_change(self, action: str, object_type: str, keys: dict, params: dict) -> DSyncModel:
         """Dispatcher function to Create, Update or Delete an object.
 
         Based on the type of the action and the type of the object,
@@ -407,29 +426,32 @@ class DSync:
             params (dict): Dictionary containing the attributes of an object and their value
 
         Raises:
-            Exception: Object type do not exist in this class
+            ObjectCrudException: Object type does not exist in this class
 
         Returns:
             DSyncModel: object created/updated/deleted
         """
 
         if not hasattr(self, object_type):
-            raise Exception("Unable to find this object type")
+            if action == "create":
+                raise ObjectNotCreated("Unable to find this object type")
+            if action == "update":
+                raise ObjectNotUpdated("Unable to find this object type")
+            if action == "delete":
+                raise ObjectNotDeleted("Unable to find this object type")
+            raise ObjectCrudException("Unable to find this object type")
 
         # Check if a specific crud function is available
         #   update_interface or create_device etc ...
         # If not apply the default one
 
-        try:
-            if hasattr(self, f"{action}_{object_type}"):
-                item = getattr(self, f"{action}_{object_type}")(keys=keys, params=params)
-                logger.debug("%sd %s - %s", action, object_type, params)
-            else:
-                item = getattr(self, f"default_{action}")(object_type=object_type, keys=keys, params=params)
-                logger.debug("%sd %s = %s - %s (default)", action, object_type, keys, params)
-            return item
-        except ObjectCrudException:
-            return False
+        if hasattr(self, f"{action}_{object_type}"):
+            item = getattr(self, f"{action}_{object_type}")(keys=keys, params=params)
+            logger.debug("%sd %s - %s", action, object_type, params)
+        else:
+            item = getattr(self, f"default_{action}")(object_type=object_type, keys=keys, params=params)
+            logger.debug("%sd %s = %s - %s (default)", action, object_type, keys, params)
+        return item
 
     # ----------------------------------------------------------------------------
     def default_create(self, object_type, keys, params):
@@ -445,8 +467,8 @@ class DSync:
         Returns:
             DSyncModel: Return the newly created object
         """
-        obj = getattr(self, object_type)
-        item = obj(**keys, **params)
+        object_class = getattr(self, object_type)
+        item = object_class(**keys, **params)
         self.add(item)
         return item
 
@@ -463,11 +485,9 @@ class DSync:
         Returns:
             DSyncModel: Return the object after update
         """
-        obj = getattr(self, object_type)
-
-        # TODO: uid = "__".join(keys.values()) to avoid instantiating the model unnecessarily?
-        uid = obj(**keys).get_unique_id()
-        item = self.get(obj=obj, keys=[uid])
+        object_class = getattr(self, object_type)
+        uid = object_class.create_unique_id(**keys)
+        item = self.get(obj=object_class, keys=[uid])
 
         for attr, value in params.items():
             setattr(item, attr, value)
@@ -487,9 +507,9 @@ class DSync:
         Returns:
             DSyncModel: Return the object that has been deleted
         """
-        obj = getattr(self, object_type)
-        # TODO: uid = "__".join(keys.values()) to avoid instantiating the model unnecessarily?
-        item = obj(**keys, **params)
+        object_class = getattr(self, object_type)
+        uid = object_class.create_unique_id(**keys)
+        item = self.get(obj=object_class, keys=[uid])
         self.remove(item)
         return item
 
