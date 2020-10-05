@@ -13,7 +13,8 @@ limitations under the License.
 """
 import logging
 from collections import defaultdict
-from typing import List, Mapping
+from collections.abc import Iterable as ABCIterable, Mapping as ABCMapping
+from typing import List, Mapping, Iterable
 
 from pydantic import BaseModel
 
@@ -293,29 +294,25 @@ class DSync:
         """
         return target.diff_from(self)
 
-    def diff_objects(self, source, dest, source_root):
+    def diff_objects(
+        self, source: Iterable[DSyncModel], dest: Iterable[DSyncModel], source_root: "DSync"
+    ) -> List[DiffElement]:
         """Generate a list of DiffElement between the given lists of objects.
 
         Args:
-          source (list): List (other types may be supported in future) of source DSyncModel instances
-          dest (list): List (other types may be supported in future) of target DSyncModel instances
-          source_root: TODO
+          source: List (other types may be supported in future) of source DSyncModel instances
+          dest: List (other types may be supported in future) of target DSyncModel instances
+          source_root (DSync): TODO
 
-        Returns:
-          list(DiffElement)
+        Raises:
+          TypeError: if the source and dest args are not the same type, or if that type is unsupported
         """
-        if type(source) != type(dest):
-            # TODO, should probably be an exception?
-            logger.warning(f"Attribute {source} are of different types")
-            return False
-
         diffs = []
 
-        if isinstance(source, list):
-
-            # Convert both list into a Dict and using the str representation as Key
-            dict_src = {item.get_unique_id(): item for item in source}
-            dict_dst = {item.get_unique_id(): item for item in dest}
+        if isinstance(source, ABCIterable) and isinstance(dest, ABCIterable):
+            # Convert list into a Dict and using the str representation as Key
+            dict_src = {item.get_unique_id(): item for item in source} if not isinstance(source, ABCMapping) else source
+            dict_dst = {item.get_unique_id(): item for item in dest} if not isinstance(dest, ABCMapping) else dest
 
             # Identify the shared keys between SRC and DST DSync
             # The keys missing in DST Dsync
@@ -384,9 +381,8 @@ class DSync:
                 diffs.append(de)
 
         else:
-            # In the future we might support dict, set, tuple, etc...
-            # TODO, should probably be an exception?
-            logger.warning(f"Type {type(source)} is not supported for now")
+            # In the future we might support set, etc...
+            raise TypeError(f"Type {type(source)} is not supported... for now")
 
         return diffs
 

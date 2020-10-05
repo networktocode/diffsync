@@ -3,6 +3,7 @@
 import pytest
 
 from dsync import DSyncModel
+from dsync.diff import DiffElement
 from dsync.exceptions import ObjectAlreadyExists, ObjectNotFound, ObjectNotCreated, ObjectNotUpdated, ObjectNotDeleted
 
 from .conftest import Site, Device
@@ -21,7 +22,7 @@ def test_generic_dsync_methods(generic_dsync, generic_dsync_model):
     generic_dsync.sync_from(generic_dsync)  # no-op
     generic_dsync.sync_to(generic_dsync)  # no-op
 
-    # TODO: sync_from_diff_element, diff_objects, default_[create|update|delete]
+    # TODO: default_[create|update|delete]
 
     assert generic_dsync.get("anything", ["myname"]) is None
     assert generic_dsync.get(DSyncModel, []) is None
@@ -73,9 +74,26 @@ def test_generic_dsync_methods(generic_dsync, generic_dsync_model):
     with pytest.raises(ObjectNotDeleted):
         generic_dsync.delete_object("dsyncmodel", {}, {})
 
+    diff_element = DiffElement(
+        generic_dsync_model.get_type(), generic_dsync_model.get_shortname(), generic_dsync_model.get_identifiers(),
+    )
+    # No-op as diff_element.has_diffs() is False
+    generic_dsync.sync_from_diff_element(diff_element)
+
+    diff_elements = generic_dsync.diff_objects([generic_dsync_model], [generic_dsync_model], generic_dsync)
+    assert len(diff_elements) == 1
+    assert not diff_elements[0].has_diffs()
+
 
 def test_dsync_subclass_methods(backend_a, backend_b):
     """Test DSync APIs on an actual concrete subclass."""
+
+    diff_elements = backend_a.diff_objects(
+        source=backend_a.get_all("site"), dest=backend_b.get_all("site"), source_root=backend_b
+    )
+    assert len(diff_elements) == 2  # nyc, sfo
+    assert diff_elements[0].has_diffs()
+    assert diff_elements[1].has_diffs()
 
     diff_aa = backend_a.diff_from(backend_a)
     assert diff_aa.has_diffs() is False
@@ -87,7 +105,7 @@ def test_dsync_subclass_methods(backend_a, backend_b):
     assert diff_ba.has_diffs() is True
     # TODO: check contents of diff_ab and diff_ba?
 
-    # TODO: sync_[from|to](_diff_element)?, diff_objects, default_[create|update|delete]
+    # TODO: sync_[from|to](_diff_element)?, default_[create|update|delete]
 
     site_nyc_a = backend_a.get(Site, ["nyc"])
     assert isinstance(site_nyc_a, Site)
