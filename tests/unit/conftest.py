@@ -104,14 +104,73 @@ def generic_dsync():
     return DSync()
 
 
-class BackendA(DSync):
-    """An example subclass of DSync."""
+class SiteA(Site):
+    """Extend Site with a `people` list."""
 
-    site = Site
+    _children = {"device": "devices", "person": "people"}
+
+    people: List = list()
+
+
+class PersonA(DSyncModel):
+    """Concrete DSyncModel subclass representing a person; only used by BackendA."""
+
+    _modelname = "person"
+    _identifiers = ("name",)
+
+    name: str
+
+
+class SiteB(Site):
+    """Extend Site with a `places` list."""
+
+    _children = {"device": "devices", "place": "places"}
+
+    places: List = list()
+
+
+class PlaceB(DSyncModel):
+    """Concrete DSyncModel subclass representing a place; only used by BackendB."""
+
+    _modelname = "place"
+    _identifiers = ("name",)
+
+    name: str
+
+
+class GenericBackend(DSync):
+    """An example semi-abstract subclass of DSync."""
+
+    site = Site  # to be overridden by subclasses
     device = Device
     interface = Interface
 
     top_level = ["site"]
+
+    DATA: dict = {}
+
+    def load(self):
+        """Initialize the Backend object by loading some site, device and interfaces from DATA."""
+        for site_name, site_data in self.DATA.items():
+            site = self.site(name=site_name)
+            self.add(site)
+
+            for device_name, device_data in site_data.items():
+                device = self.device(name=device_name, role=device_data["role"], site_name=site_name)
+                self.add(device)
+                site.add_child(device)
+
+                for intf_name, desc in device_data["interfaces"].items():
+                    intf = self.interface(name=intf_name, device_name=device_name, description=desc)
+                    self.add(intf)
+                    device.add_child(intf)
+
+
+class BackendA(GenericBackend):
+    """An example concrete subclass of DSync."""
+
+    site = SiteA
+    person = PersonA
 
     DATA = {
         "nyc": {
@@ -129,21 +188,11 @@ class BackendA(DSync):
     }
 
     def load(self):
-        """Initialize the BackendA Object by loading some site, device and interfaces from DATA_A."""
-
-        for site_name, site_data in self.DATA.items():
-            site = self.site(name=site_name)
-            self.add(site)
-
-            for device_name, device_data in site_data.items():
-                device = self.device(name=device_name, role=device_data["role"], site_name=site_name)
-                self.add(device)
-                site.add_child(device)
-
-                for intf_name, desc in device_data["interfaces"].items():
-                    intf = self.interface(name=intf_name, device_name=device_name, description=desc)
-                    self.add(intf)
-                    device.add_child(intf)
+        """Extend the base load() implementation with subclass-specific logic."""
+        super().load()
+        person = self.person(name="Glenn Matthews")
+        self.add(person)
+        self.get("site", ["rdu"]).add_child(person)
 
 
 @pytest.fixture
@@ -154,8 +203,11 @@ def backend_a():
     return dsync
 
 
-class BackendB(BackendA):
-    """Another DSync subclass with different data from BackendA."""
+class BackendB(GenericBackend):
+    """Another DSync concrete subclass with different data from BackendA."""
+
+    site = SiteB
+    place = PlaceB
 
     DATA = {
         "nyc": {
@@ -171,6 +223,13 @@ class BackendB(BackendA):
             "atl-spine2": {"role": "spine", "interfaces": {"eth0": "Interface 0", "eth1": "Interface 1"}},
         },
     }
+
+    def load(self):
+        """Extend the base load() implementation with subclass-specific logic."""
+        super().load()
+        place = self.place(name="Statue of Liberty")
+        self.add(place)
+        self.get("site", ["nyc"]).add_child(place)
 
 
 @pytest.fixture

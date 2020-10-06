@@ -412,8 +412,7 @@ class DSync:
 
         Raises:
             TypeError: If any pair of objects in the dict have differing get_type() values.
-            ValueError: If any pair of objects in the dict have differing get_shortname(), get_identifiers(), or
-                get_children_mapping() values.
+            ValueError: If any pair of objects in the dict have differing get_shortname() or get_identifiers() values.
         """
         for uid in combined_dict:
             # TODO: should we check/enforce whether ALL DSyncModels in this dict have the same get_type() output?
@@ -425,10 +424,6 @@ class DSync:
                     raise ValueError(f"Shortname mismatch: {src_obj.get_shortname()} vs {dst_obj.get_shortname()}")
                 if src_obj.get_identifiers() != dst_obj.get_identifiers():
                     raise ValueError(f"Keys mismatch: {src_obj.get_identifiers()} vs {dst_obj.get_identifiers()}")
-                if src_obj.get_children_mapping() != dst_obj.get_children_mapping():
-                    raise ValueError(
-                        f"Children mismatch: {src_obj.get_children_mapping()} vs {dst_obj.get_children_mapping()}"
-                    )
 
     def _diff_child_objects(
         self,
@@ -437,11 +432,20 @@ class DSync:
         dst_obj: Optional[DSyncModel],
         source_root: "DSync",
     ):
-        """For all children of the given DSyncModel pair, diff them recursively, and add diffs to the given diff_element.
+        """For all children of the given DSyncModel pair, diff them recursively, adding diffs to the given diff_element.
 
         Helper method for `_diff_objects`.
         """
-        if src_obj:
+        children_mapping: Mapping[str, str]
+        if src_obj and dst_obj:
+            # Get the subset of child types common to both src_obj and dst_obj
+            src_mapping = src_obj.get_children_mapping()
+            dst_mapping = dst_obj.get_children_mapping()
+            children_mapping = {}
+            for child_type, child_fieldname in src_mapping.items():
+                if child_type in dst_mapping:
+                    children_mapping[child_type] = child_fieldname
+        elif src_obj:
             children_mapping = src_obj.get_children_mapping()
         elif dst_obj:
             children_mapping = dst_obj.get_children_mapping()
