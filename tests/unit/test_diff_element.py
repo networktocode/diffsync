@@ -17,7 +17,7 @@ def test_diff_element_empty():
     assert not element.has_diffs()
     assert not element.has_diffs(include_children=True)
     assert not element.has_diffs(include_children=False)
-    assert element.get_attrs_keys() is None
+    assert element.get_attrs_keys() == []
 
     # TODO print_detailed
 

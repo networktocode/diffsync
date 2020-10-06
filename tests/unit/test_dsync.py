@@ -139,6 +139,8 @@ def test_dsync_subclass_methods_diff_sync(backend_a, backend_b):
     diff_elements = backend_a._diff_objects(  # pylint: disable=protected-access
         source=backend_a.get_all("site"), dest=backend_b.get_all("site"), source_root=backend_b
     )
+    for diff_element in diff_elements:
+        diff_element.print_detailed()
     assert len(diff_elements) == 4  # atl, nyc, sfo, rdu
     assert not diff_elements[0].has_diffs()  # sync completed, no diffs
     assert diff_elements[1].has_diffs()

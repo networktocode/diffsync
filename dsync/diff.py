@@ -14,7 +14,7 @@ limitations under the License.
 """
 
 from functools import total_ordering
-from typing import Iterator, Optional
+from typing import Iterator, Iterable, Optional
 
 from .utils import intersection, OrderedDefaultDict
 
@@ -107,6 +107,7 @@ class DiffElement:
         self.type = obj_type
         self.name = name
         self.keys = keys
+        # Note: *_attrs == None if no target object exists; it'll be an empty dict if it exists but has no _attributes
         self.source_attrs: Optional[dict] = None
         self.dest_attrs: Optional[dict] = None
         self.child_diff = Diff()
@@ -148,23 +149,20 @@ class DiffElement:
         if dest is not None:
             self.dest_attrs = dest
 
-    def get_attrs_keys(self):
-        """Return the list of shared attrs between source and dest, or the attrs of source or diff if only one is present.
+    def get_attrs_keys(self) -> Iterable[str]:
+        """Get the list of shared attrs between source and dest, or the attrs of source or dest if only one is present.
 
-        - If source_attrs is not defined return dest
-        - If dest is not defined, return source
-        - If both are defined, return the intersection of both
-
-        TODO: this obscures the difference between "source/dest does not exist at all" and
-        "source/dest exists but does not have any attrs defined beyond the base `keys`" - this seems problematic.
+        - If source_attrs is not set, return the keys of dest_attrs
+        - If dest_attrs is not set, return the keys of source_attrs
+        - If both are defined, return the intersection of both keys
         """
-        if self.source_attrs is None and self.dest_attrs is None:
-            return None
-        if self.source_attrs is None and self.dest_attrs:
+        if self.source_attrs is not None and self.dest_attrs is not None:
+            return intersection(self.dest_attrs.keys(), self.source_attrs.keys())
+        if self.source_attrs is None and self.dest_attrs is not None:
             return self.dest_attrs.keys()
-        if self.source_attrs and self.dest_attrs is None:
+        if self.source_attrs is not None and self.dest_attrs is None:
             return self.source_attrs.keys()
-        return intersection(self.dest_attrs.keys(), self.source_attrs.keys())
+        return []
 
     def add_child(self, element: "DiffElement"):
         """Attach a child object of type DiffElement.
@@ -186,8 +184,14 @@ class DiffElement:
         Args:
           include_children: If True, recursively check children for diffs as well.
         """
-        if self.source_attrs != self.dest_attrs:
+        if (self.source_attrs is not None and self.dest_attrs is None) or (
+            self.source_attrs is None and self.dest_attrs is not None
+        ):
             return True
+        if self.source_attrs is not None and self.dest_attrs is not None:
+            for attr_key in self.get_attrs_keys():
+                if self.source_attrs.get(attr_key) != self.dest_attrs.get(attr_key):
+                    return True
 
         if include_children:
             if self.child_diff.has_diffs():
@@ -203,21 +207,15 @@ class DiffElement:
         """
         margin = " " * indent
 
-        # TODO: this obscures the difference between "source/dest does not exist" and
-        # "source/dest exists but has no specific `attrs` defined."
-
-        # if self.missing_remote and self.missing_local:
-        #     print(f"{margin}{self.type}: {self.name} MISSING BOTH")
         if self.source_attrs is None:
             print(f"{margin}{self.type}: {self.name} MISSING in SOURCE")
         elif self.dest_attrs is None:
             print(f"{margin}{self.type}: {self.name} MISSING in DEST")
         else:
             print(f"{margin}{self.type}: {self.name}")
-            # Currently we assume that source and dest have the same attrs,
-            # need to account for that
+            # Only print attrs that have meaning in both source and dest
             for attr in self.get_attrs_keys():
-                if self.source_attrs.get(attr, None) != self.dest_attrs.get(attr, None):
+                if self.source_attrs[attr] != self.dest_attrs[attr]:
                     print(f"{margin}  {attr}   S({self.source_attrs[attr]})   D({self.dest_attrs[attr]})")
 
         self.child_diff.print_detailed(indent + 2)

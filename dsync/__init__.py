@@ -53,20 +53,20 @@ class DSyncModel(BaseModel):
     Lowercase by convention; typically corresponds to the class name, but that is not enforced.
     """
 
-    _identifiers: tuple = ()
+    _identifiers: Tuple[str, ...] = ()
     """List of model fields which together uniquely identify an instance of this model.
 
     This identifier MUST be globally unique among all instances of this class.
     """
 
-    _shortname: tuple = ()
+    _shortname: Tuple[str, ...] = ()
     """Optional: list of model fields that together form a shorter identifier of an instance.
 
     This MUST be locally unique (e.g., interface shortnames MUST be unique among all interfaces on a given device),
     but does not need to be guaranteed to be globally unique among all instances.
     """
 
-    _attributes: tuple = ()
+    _attributes: Tuple[str, ...] = ()
     """Optional: list of additional model fields (beyond those in `_identifiers`) that are relevant to this model.
 
     Only the fields in `_attributes` (as well as any `_children` fields, see below) will be considered
@@ -302,15 +302,23 @@ class DSync:
             return False
 
         if element.source_attrs is None:
-            obj = self.delete_object(object_type=element.type, keys=element.keys, params=element.dest_attrs)
+            obj = self.delete_object(object_type=element.type, keys=element.keys)
             if parent_model:
                 parent_model.remove_child(obj)
         elif element.dest_attrs is None:
-            obj = self.create_object(object_type=element.type, keys=element.keys, params=element.source_attrs)
+            obj = self.create_object(
+                object_type=element.type,
+                keys=element.keys,
+                params={attr_key: element.source_attrs[attr_key] for attr_key in element.get_attrs_keys()},
+            )
             if parent_model:
                 parent_model.add_child(obj)
         elif element.source_attrs != element.dest_attrs:
-            obj = self.update_object(object_type=element.type, keys=element.keys, params=element.source_attrs)
+            obj = self.update_object(
+                object_type=element.type,
+                keys=element.keys,
+                params={attr_key: element.source_attrs[attr_key] for attr_key in element.get_attrs_keys()},
+            )
         else:
             obj = self.get(element.type, element.keys.values())
 

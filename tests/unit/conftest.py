@@ -1,5 +1,5 @@
 """Used to setup fixtures to be used through tests"""
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import pytest
 
@@ -52,7 +52,7 @@ class Device(DSyncModel):
 
     _modelname = "device"
     _identifiers = ("name",)
-    _attributes = ("role",)
+    _attributes: Tuple[str, ...] = ("role",)
     _children = {"interface": "interfaces"}
 
     name: str
@@ -104,40 +104,6 @@ def generic_dsync():
     return DSync()
 
 
-class SiteA(Site):
-    """Extend Site with a `people` list."""
-
-    _children = {"device": "devices", "person": "people"}
-
-    people: List = list()
-
-
-class PersonA(DSyncModel):
-    """Concrete DSyncModel subclass representing a person; only used by BackendA."""
-
-    _modelname = "person"
-    _identifiers = ("name",)
-
-    name: str
-
-
-class SiteB(Site):
-    """Extend Site with a `places` list."""
-
-    _children = {"device": "devices", "place": "places"}
-
-    places: List = list()
-
-
-class PlaceB(DSyncModel):
-    """Concrete DSyncModel subclass representing a place; only used by BackendB."""
-
-    _modelname = "place"
-    _identifiers = ("name",)
-
-    name: str
-
-
 class GenericBackend(DSync):
     """An example semi-abstract subclass of DSync."""
 
@@ -166,10 +132,36 @@ class GenericBackend(DSync):
                     device.add_child(intf)
 
 
+class SiteA(Site):
+    """Extend Site with a `people` list."""
+
+    _children = {"device": "devices", "person": "people"}
+
+    people: List = list()
+
+
+class DeviceA(Device):
+    """Extend Device with additional data fields."""
+
+    _attributes = ("role", "tag")
+
+    tag: str = ""
+
+
+class PersonA(DSyncModel):
+    """Concrete DSyncModel subclass representing a person; only used by BackendA."""
+
+    _modelname = "person"
+    _identifiers = ("name",)
+
+    name: str
+
+
 class BackendA(GenericBackend):
     """An example concrete subclass of DSync."""
 
     site = SiteA
+    device = DeviceA
     person = PersonA
 
     DATA = {
@@ -203,10 +195,36 @@ def backend_a():
     return dsync
 
 
+class SiteB(Site):
+    """Extend Site with a `places` list."""
+
+    _children = {"device": "devices", "place": "places"}
+
+    places: List = list()
+
+
+class DeviceB(Device):
+    """Extend Device with a `vlans` list."""
+
+    _attributes = ("role", "vlans")
+
+    vlans: List = list()
+
+
+class PlaceB(DSyncModel):
+    """Concrete DSyncModel subclass representing a place; only used by BackendB."""
+
+    _modelname = "place"
+    _identifiers = ("name",)
+
+    name: str
+
+
 class BackendB(GenericBackend):
     """Another DSync concrete subclass with different data from BackendA."""
 
     site = SiteB
+    device = DeviceB
     place = PlaceB
 
     DATA = {
