@@ -21,8 +21,8 @@ def test_generic_dsync_methods(generic_dsync, generic_dsync_model):
     generic_dsync.sync_from(generic_dsync)  # no-op
     generic_dsync.sync_to(generic_dsync)  # no-op
 
-    assert generic_dsync.get("anything", ["myname"]) is None
-    assert generic_dsync.get(DSyncModel, []) is None
+    assert generic_dsync.get("anything", "myname") is None
+    assert generic_dsync.get(DSyncModel, "") is None
 
     assert list(generic_dsync.get_all("anything")) == []
     assert list(generic_dsync.get_all(DSyncModel)) == []
@@ -36,12 +36,12 @@ def test_generic_dsync_methods(generic_dsync, generic_dsync_model):
         generic_dsync.add(generic_dsync_model)
 
     # The generic_dsync_model has an empty identifier/unique-id
-    assert generic_dsync.get(DSyncModel, []) == generic_dsync_model
-    assert generic_dsync.get(DSyncModel.get_type(), []) == generic_dsync_model
+    assert generic_dsync.get(DSyncModel, "") == generic_dsync_model
+    assert generic_dsync.get(DSyncModel.get_type(), "") == generic_dsync_model
     # Wrong object-type - no match
-    assert generic_dsync.get("", []) is None
+    assert generic_dsync.get("", "") is None
     # Wrong unique-id - no match
-    assert generic_dsync.get(DSyncModel, ["myname"]) is None
+    assert generic_dsync.get(DSyncModel, "myname") is None
 
     assert list(generic_dsync.get_all(DSyncModel)) == [generic_dsync_model]
     assert list(generic_dsync.get_all(DSyncModel.get_type())) == [generic_dsync_model]
@@ -59,7 +59,7 @@ def test_generic_dsync_methods(generic_dsync, generic_dsync_model):
     with pytest.raises(ObjectNotFound):
         generic_dsync.remove(generic_dsync_model)
 
-    assert generic_dsync.get(DSyncModel, []) is None
+    assert generic_dsync.get(DSyncModel, "") is None
     assert list(generic_dsync.get_all(DSyncModel)) == []
     assert generic_dsync.get_by_uids([""], DSyncModel) == []
 
@@ -134,7 +134,7 @@ def test_dsync_subclass_methods_diff_sync(backend_a, backend_b):
     # Perform sync of one subtree of diffs
     assert backend_a._sync_from_diff_element(diff_elements[0]) is True  # pylint: disable=protected-access
     # Make sure the sync descended through the diff element all the way to the leafs
-    assert backend_a.get(Interface, ["nyc-spine1", "eth0"]).description == "Interface 0/0"  # was initially Interface 0
+    assert backend_a.get(Interface, "nyc-spine1__eth0").description == "Interface 0/0"  # was initially Interface 0
     # Recheck diffs
     diff_elements = backend_a._diff_objects(  # pylint: disable=protected-access
         source=backend_a.get_all("site"), dest=backend_b.get_all("site"), source_root=backend_b
@@ -150,23 +150,23 @@ def test_dsync_subclass_methods_diff_sync(backend_a, backend_b):
     # Perform full sync
     backend_a.sync_from(backend_b)
     # Make sure the sync descended through the diff elements to their children
-    assert backend_a.get(Device, ["sfo-spine1"]).role == "leaf"  # was initially "spine"
+    assert backend_a.get(Device, "sfo-spine1").role == "leaf"  # was initially "spine"
     # Recheck diffs
     backend_a.diff_from(backend_b).print_detailed()
     assert backend_a.diff_from(backend_b).has_diffs() is False
 
     # site_nyc and site_sfo should be updated, site_atl should be created, site_rdu should be deleted
-    site_nyc_a = backend_a.get(Site, ["nyc"])
+    site_nyc_a = backend_a.get(Site, "nyc")
     assert isinstance(site_nyc_a, Site)
     assert site_nyc_a.name == "nyc"
-    site_sfo_a = backend_a.get("site", ["sfo"])
+    site_sfo_a = backend_a.get("site", "sfo")
     assert isinstance(site_sfo_a, Site)
     assert site_sfo_a.name == "sfo"
-    site_atl_a = backend_a.get("site", ["atl"])
+    site_atl_a = backend_a.get("site", "atl")
     assert isinstance(site_atl_a, Site)
     assert site_atl_a.name == "atl"
-    assert backend_a.get(Site, ["rdu"]) is None
-    assert backend_a.get("nothing", [""]) is None
+    assert backend_a.get(Site, "rdu") is None
+    assert backend_a.get("nothing", "") is None
 
     assert list(backend_a.get_all(Site)) == [site_nyc_a, site_sfo_a, site_atl_a]
     assert list(backend_a.get_all("site")) == [site_nyc_a, site_sfo_a, site_atl_a]
@@ -180,15 +180,15 @@ def test_dsync_subclass_methods_diff_sync(backend_a, backend_b):
 
 def test_dsync_subclass_methods_crud(backend_a):
     """Test DSync CRUD APIs against a concrete subclass."""
-    site_nyc_a = backend_a.get(Site, ["nyc"])
-    site_sfo_a = backend_a.get("site", ["sfo"])
-    site_rdu_a = backend_a.get(Site, ["rdu"])
+    site_nyc_a = backend_a.get(Site, "nyc")
+    site_sfo_a = backend_a.get("site", "sfo")
+    site_rdu_a = backend_a.get(Site, "rdu")
     site_atl_a = Site(name="atl")
     backend_a.add(site_atl_a)
     with pytest.raises(ObjectAlreadyExists):
         backend_a.add(site_atl_a)
 
-    assert backend_a.get(Site, ["atl"]) == site_atl_a
+    assert backend_a.get(Site, "atl") == site_atl_a
     assert list(backend_a.get_all("site")) == [site_nyc_a, site_sfo_a, site_rdu_a, site_atl_a]
     assert backend_a.get_by_uids(["rdu", "sfo", "atl", "nyc"], "site") == [
         site_rdu_a,
@@ -203,28 +203,28 @@ def test_dsync_subclass_methods_crud(backend_a):
 
     # Test low-level default_* CRUD APIs
     backend_a.default_create("interface", {"device_name": "nyc-spine1", "name": "eth2"}, {"description": "Interface 2"})
-    new_interface = backend_a.get("interface", ["nyc-spine1", "eth2"])
+    new_interface = backend_a.get("interface", "nyc-spine1__eth2")
     assert new_interface.description == "Interface 2"
 
     backend_a.default_update("interface", {"device_name": "nyc-spine1", "name": "eth2"}, {"description": "Intf 2"})
-    new_interface_2 = backend_a.get("interface", ["nyc-spine1", "eth2"])
+    new_interface_2 = backend_a.get("interface", "nyc-spine1__eth2")
     assert new_interface.description == "Intf 2"
     assert new_interface_2 is new_interface
 
     backend_a.default_delete("interface", {"device_name": "nyc-spine1", "name": "eth2"}, {})
-    assert backend_a.get("interface", ["nyc-spine1", "eth2"]) is None
+    assert backend_a.get("interface", "nyc-spine1__eth2") is None
 
     # Test higher-level *_object CRUD APIs
     backend_a.create_object("device", {"name": "new_device"}, {"role": "new_role", "site_name": "nyc"})
-    new_device = backend_a.get("device", ["new_device"])
+    new_device = backend_a.get("device", "new_device")
     assert new_device.role == "new_role"
     assert new_device.site_name == "nyc"
 
     backend_a.update_object("device", {"name": "new_device"}, {"role": "another_role"})
-    new_device_2 = backend_a.get(Device, ["new_device"])
+    new_device_2 = backend_a.get(Device, "new_device")
     assert new_device_2 is new_device
     assert new_device.role == "another_role"
 
     backend_a.delete_object("device", {"name": "new_device"})
-    new_device_3 = backend_a.get("device", ["new_device"])
+    new_device_3 = backend_a.get("device", "new_device")
     assert new_device_3 is None

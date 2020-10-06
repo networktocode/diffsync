@@ -184,7 +184,7 @@ class BackendA(GenericBackend):
         super().load()
         person = self.person(name="Glenn Matthews")
         self.add(person)
-        self.get("site", ["rdu"]).add_child(person)
+        self.get("site", "rdu").add_child(person)
 
 
 @pytest.fixture
@@ -247,7 +247,7 @@ class BackendB(GenericBackend):
         super().load()
         place = self.place(name="Statue of Liberty")
         self.add(place)
-        self.get("site", ["nyc"]).add_child(place)
+        self.get("site", "nyc").add_child(place)
 
 
 @pytest.fixture

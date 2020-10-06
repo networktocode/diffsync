@@ -15,7 +15,7 @@ from inspect import isclass
 import logging
 from collections import defaultdict
 from collections.abc import Iterable as ABCIterable, Mapping as ABCMapping
-from typing import List, Mapping, Iterable, Tuple, Optional
+from typing import Iterable, List, Mapping, Optional, Tuple, Type, Union
 
 from pydantic import BaseModel
 
@@ -323,7 +323,9 @@ class DSync:
                 params={attr_key: element.source_attrs[attr_key] for attr_key in element.get_attrs_keys()},
             )
         else:
-            obj = self.get(element.type, element.keys.values())
+            object_class = getattr(self, element.type)
+            uid = object_class.create_unique_id(**element.keys)
+            obj = self.get(element.type, uid)
 
         for child in element.get_children():
             self._sync_from_diff_element(child, parent_model=obj)
@@ -571,7 +573,7 @@ class DSync:
         """
         object_class = getattr(self, object_type)
         uid = object_class.create_unique_id(**keys)
-        item = self.get(obj=object_class, keys=[uid])
+        item = self.get(object_type, uid)
 
         for attr, value in params.items():
             setattr(item, attr, value)
@@ -593,7 +595,7 @@ class DSync:
         """
         object_class = getattr(self, object_type)
         uid = object_class.create_unique_id(**keys)
-        item = self.get(obj=object_class, keys=[uid])
+        item = self.get(object_type, uid)
         self.remove(item)
         return item
 
@@ -601,28 +603,19 @@ class DSync:
     # Object Storage Management
     # ------------------------------------------------------------------------------
 
-    def get(self, obj, keys):
-        """Get one object from the data store based on its unique id or a list of its unique attributes.
+    def get(self, obj: Union[str, DSyncModel, Type[DSyncModel]], uid: str) -> Optional[DSyncModel]:
+        """Get one object from the data store based on its unique id.
 
         Args:
-            obj (DSyncModel, str): DSyncModel class or object or string that define the type of the objects to retrieve
-            keys (list[str]): List of attributes.
-
-        Returns:
-            DSyncModel, None
+            obj (class, DSyncModel, str): DSyncModel class or DSyncModel instance or modelname string
+            uid (str): Unique identifier of the object to retrieve
         """
         if isinstance(obj, str):
             modelname = obj
         else:
             modelname = obj.get_type()
 
-        # TODO: default_update() calls get(obj, [uid]) making the below rather redundant...
-        uid = "__".join(keys)
-
-        if uid in self._data[modelname]:
-            return self._data[modelname][uid]
-
-        return None
+        return self._data[modelname].get(uid)
 
     def get_all(self, obj):
         """Get all objects of a given type.
