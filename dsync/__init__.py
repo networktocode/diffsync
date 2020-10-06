@@ -236,7 +236,7 @@ class DSyncModel(BaseModel):
 class DSync:
     """Class for storing a group of DSyncModel instances and diffing or synchronizing to another DSync instance."""
 
-    # Add mapping to objects here:
+    # Add mapping of names to specific model classes here:
     # modelname1 = MyModelClass1
     # modelname2 = MyModelClass2
 
@@ -270,24 +270,26 @@ class DSync:
         """Load all desired data from whatever backend data source into this instance."""
         # No-op in this generic class
 
-    def sync_from(self, source: "DSync"):
+    def sync_from(self, source: "DSync", diff_class: Type[Diff] = Diff):
         """Synchronize data from the given source DSync object into the current DSync object.
 
         Args:
             source (DSync): object to sync data from into this one
+            diff_class (class): Diff or subclass thereof to use to calculate the diffs to use for synchronization
         """
-        diff = self.diff_from(source)
+        diff = self.diff_from(source, diff_class=diff_class)
 
         for child in diff.get_children():
             self._sync_from_diff_element(child)
 
-    def sync_to(self, target: "DSync"):
+    def sync_to(self, target: "DSync", diff_class: Type[Diff] = Diff):
         """Synchronize data from the current DSync object into the given target DSync object.
 
         Args:
             target (DSync): object to sync data into from this one.
+            diff_class (class): Diff or subclass thereof to use to calculate the diffs to use for synchronization
         """
-        target.sync_from(self)
+        target.sync_from(self, diff_class=diff_class)
 
     def _sync_from_diff_element(self, element: DiffElement, parent_model: DSyncModel = None) -> bool:
         """Synchronize a given DiffElement (and its children, if any) into this DSync.
@@ -332,13 +334,14 @@ class DSync:
 
         return True
 
-    def diff_from(self, source: "DSync") -> Diff:
+    def diff_from(self, source: "DSync", diff_class: Type[Diff] = Diff) -> Diff:
         """Generate a Diff describing the difference from the other DSync to this one.
 
         Args:
             source (DSync): Object to diff against.
+            diff_class (class): Diff or subclass thereof to use for diff calculation and storage.
         """
-        diff = Diff()
+        diff = diff_class()
 
         for obj_type in intersection(self.top_level, source.top_level):
 
@@ -349,15 +352,18 @@ class DSync:
             for diff_element in diff_elements:
                 diff.add(diff_element)
 
+        # Notify the diff that it has been fully populated, in case it wishes to print, save to a file, etc.
+        diff.complete()
         return diff
 
-    def diff_to(self, target: "DSync") -> Diff:
+    def diff_to(self, target: "DSync", diff_class: Type[Diff] = Diff) -> Diff:
         """Generate a Diff describing the difference from this DSync to another one.
 
         Args:
             target (DSync): Object to diff against.
+            diff_class (class): Diff or subclass thereof to use for diff calculation and storage.
         """
-        return target.diff_from(self)
+        return target.diff_from(self, diff_class=diff_class)
 
     def _diff_objects(
         self, source: Iterable[DSyncModel], dest: Iterable[DSyncModel], source_root: "DSync"

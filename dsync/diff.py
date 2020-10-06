@@ -31,6 +31,13 @@ class Diff:
         `self.children[group][unique_id] == DiffElement(...)`
         """
 
+    def complete(self):
+        """Method to call when this Diff has been fully populated with data and is "complete".
+
+        The default implementation does nothing, but a subclass could use this, for example, to save
+        the completed Diff to a file or database record.
+        """
+
     def add(self, element: "DiffElement"):
         """Add a new DiffElement to the changeset of this Diff.
 

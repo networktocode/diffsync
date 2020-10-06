@@ -4,6 +4,7 @@ from typing import List, Optional, Tuple
 import pytest
 
 from dsync import DSync, DSyncModel
+from dsync.diff import Diff
 
 
 @pytest.fixture()
@@ -256,3 +257,13 @@ def backend_b():
     dsync = BackendB()
     dsync.load()
     return dsync
+
+
+class TrackedDiff(Diff):
+    """Subclass of Diff that knows when it's completed."""
+
+    is_complete: bool = False
+
+    def complete(self):
+        """Function called when the Diff has been fully constructed and populated with data."""
+        self.is_complete = True

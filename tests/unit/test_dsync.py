@@ -5,7 +5,7 @@ import pytest
 from dsync import DSync, DSyncModel
 from dsync.exceptions import ObjectAlreadyExists, ObjectNotFound, ObjectNotCreated, ObjectNotUpdated, ObjectNotDeleted
 
-from .conftest import Site, Device, Interface
+from .conftest import Site, Device, Interface, TrackedDiff
 
 
 def test_generic_dsync_methods(generic_dsync, generic_dsync_model):
@@ -151,9 +151,12 @@ def test_dsync_subclass_methods_diff_sync(backend_a, backend_b):
     backend_a.sync_from(backend_b)
     # Make sure the sync descended through the diff elements to their children
     assert backend_a.get(Device, "sfo-spine1").role == "leaf"  # was initially "spine"
-    # Recheck diffs
-    backend_a.diff_from(backend_b).print_detailed()
-    assert backend_a.diff_from(backend_b).has_diffs() is False
+    # Recheck diffs, using a custom Diff subclass this time.
+    diff_ba = backend_a.diff_from(backend_b, diff_class=TrackedDiff)
+    assert isinstance(diff_ba, TrackedDiff)
+    assert diff_ba.is_complete is True
+    diff_ba.print_detailed()
+    assert diff_ba.has_diffs() is False
 
     # site_nyc and site_sfo should be updated, site_atl should be created, site_rdu should be deleted
     site_nyc_a = backend_a.get(Site, "nyc")
