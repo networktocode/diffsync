@@ -1,5 +1,5 @@
 """Used to setup fixtures to be used through tests"""
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import pytest
 
@@ -52,11 +52,11 @@ class Device(DSyncModel):
 
     _modelname = "device"
     _identifiers = ("name",)
-    _attributes = ("role",)
+    _attributes: Tuple[str, ...] = ("role",)
     _children = {"interface": "interfaces"}
 
     name: str
-    site_name: str  # note this is not included in _attributes
+    site_name: Optional[str]  # note this is not included in _attributes
     role: str
     interfaces: List = list()
 
@@ -104,29 +104,19 @@ def generic_dsync():
     return DSync()
 
 
-class BackendA(DSync):
-    """An example subclass of DSync."""
+class GenericBackend(DSync):
+    """An example semi-abstract subclass of DSync."""
 
-    site = Site
+    site = Site  # to be overridden by subclasses
     device = Device
     interface = Interface
 
     top_level = ["site"]
 
-    DATA = {
-        "nyc": {
-            "nyc-spine1": {"role": "spine", "interfaces": {"eth0": "Interface 0", "eth1": "Interface 1"}},
-            "nyc-spine2": {"role": "spine", "interfaces": {"eth0": "Interface 0", "eth1": "Interface 1"}},
-        },
-        "sfo": {
-            "sfo-spine1": {"role": "spine", "interfaces": {"eth0": "Interface 0", "eth1": "Interface 1"}},
-            "sfo-spine2": {"role": "spine", "interfaces": {"eth0": "TBD", "eth1": "ddd"}},
-        },
-    }
+    DATA: dict = {}
 
     def load(self):
-        """Initialize the BackendA Object by loading some site, device and interfaces from DATA_A."""
-
+        """Initialize the Backend object by loading some site, device and interfaces from DATA."""
         for site_name, site_data in self.DATA.items():
             site = self.site(name=site_name)
             self.add(site)
@@ -142,6 +132,61 @@ class BackendA(DSync):
                     device.add_child(intf)
 
 
+class SiteA(Site):
+    """Extend Site with a `people` list."""
+
+    _children = {"device": "devices", "person": "people"}
+
+    people: List = list()
+
+
+class DeviceA(Device):
+    """Extend Device with additional data fields."""
+
+    _attributes = ("role", "tag")
+
+    tag: str = ""
+
+
+class PersonA(DSyncModel):
+    """Concrete DSyncModel subclass representing a person; only used by BackendA."""
+
+    _modelname = "person"
+    _identifiers = ("name",)
+
+    name: str
+
+
+class BackendA(GenericBackend):
+    """An example concrete subclass of DSync."""
+
+    site = SiteA
+    device = DeviceA
+    person = PersonA
+
+    DATA = {
+        "nyc": {
+            "nyc-spine1": {"role": "spine", "interfaces": {"eth0": "Interface 0", "eth1": "Interface 1"}},
+            "nyc-spine2": {"role": "spine", "interfaces": {"eth0": "Interface 0", "eth1": "Interface 1"}},
+        },
+        "sfo": {
+            "sfo-spine1": {"role": "spine", "interfaces": {"eth0": "Interface 0", "eth1": "Interface 1"}},
+            "sfo-spine2": {"role": "spine", "interfaces": {"eth0": "TBD", "eth1": "ddd", "eth2": "Interface 2"}},
+        },
+        "rdu": {
+            "rdu-spine1": {"role": "spine", "interfaces": {"eth0": "Interface 0", "eth1": "Interface 1"}},
+            "rdu-spine2": {"role": "spine", "interfaces": {"eth0": "Interface 0", "eth1": "Interface 1"}},
+        },
+    }
+
+    def load(self):
+        """Extend the base load() implementation with subclass-specific logic."""
+        super().load()
+        person = self.person(name="Glenn Matthews")
+        self.add(person)
+        self.get("site", "rdu").add_child(person)
+
+
 @pytest.fixture
 def backend_a():
     """Provide an instance of BackendA subclass of DSync."""
@@ -150,8 +195,37 @@ def backend_a():
     return dsync
 
 
-class BackendB(BackendA):
-    """Another DSync subclass with different data from BackendA."""
+class SiteB(Site):
+    """Extend Site with a `places` list."""
+
+    _children = {"device": "devices", "place": "places"}
+
+    places: List = list()
+
+
+class DeviceB(Device):
+    """Extend Device with a `vlans` list."""
+
+    _attributes = ("role", "vlans")
+
+    vlans: List = list()
+
+
+class PlaceB(DSyncModel):
+    """Concrete DSyncModel subclass representing a place; only used by BackendB."""
+
+    _modelname = "place"
+    _identifiers = ("name",)
+
+    name: str
+
+
+class BackendB(GenericBackend):
+    """Another DSync concrete subclass with different data from BackendA."""
+
+    site = SiteB
+    device = DeviceB
+    place = PlaceB
 
     DATA = {
         "nyc": {
@@ -160,9 +234,20 @@ class BackendB(BackendA):
         },
         "sfo": {
             "sfo-spine1": {"role": "leaf", "interfaces": {"eth0": "Interface 0", "eth1": "Interface 1"}},
-            "sfo-spine2": {"role": "spine", "interfaces": {"eth0": "TBD", "eth1": "ddd"}},
+            "sfo-spine2": {"role": "spine", "interfaces": {"eth0": "TBD", "eth1": "ddd", "eth3": "Interface 3"}},
+        },
+        "atl": {
+            "atl-spine1": {"role": "spine", "interfaces": {"eth0": "Interface 0", "eth1": "Interface 1"}},
+            "atl-spine2": {"role": "spine", "interfaces": {"eth0": "Interface 0", "eth1": "Interface 1"}},
         },
     }
+
+    def load(self):
+        """Extend the base load() implementation with subclass-specific logic."""
+        super().load()
+        place = self.place(name="Statue of Liberty")
+        self.add(place)
+        self.get("site", "nyc").add_child(place)
 
 
 @pytest.fixture

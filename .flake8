@@ -1,3 +1,4 @@
 [flake8]
-# Line length is enforced by Black, so flake8 doesn't need to check it
-ignore = E501
+# E501: Line length is enforced by Black, so flake8 doesn't need to check it
+# W503: Black disagrees with this rule, so disable it
+ignore = E501, W503

@@ -13,8 +13,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from typing import Iterator, Optional
+from functools import total_ordering
+from typing import Iterator, Iterable, Optional
 
+from .exceptions import ObjectAlreadyExists
 from .utils import intersection, OrderedDefaultDict
 
 
@@ -29,19 +31,17 @@ class Diff:
         `self.children[group][unique_id] == DiffElement(...)`
         """
 
-    def add(self, group: str, element: "DiffElement"):
-        """Save a new DiffElement per group; if an element with the same name already exists it will be replaced.
+    def add(self, element: "DiffElement"):
+        """Add a new DiffElement to the changeset of this Diff.
 
-        Args:
-            group: (string) Group name to store the element
-            element: (DiffElement) element to store
+        Raises:
+            ObjectAlreadyExists: if an element of the same type and same name is already stored.
         """
-        # TODO: why is group an argument, why not just use element.obj_type?
-        # TODO: element.name is usually a DSyncModel.shortname() -- i.e., NOT guaranteed globally unique!!
-        name = element.name
+        # Note that element.name is usually a DSyncModel.shortname() -- i.e., NOT guaranteed globally unique!!
+        if element.name in self.children[element.type]:
+            raise ObjectAlreadyExists(f"Already storing a {element.type} named {element.name}")
 
-        # TODO: shouldn't it be an error if the element already exists, like in DSync.add()?
-        self.children[group][name] = element
+        self.children[element.type][element.name] = element
 
     def groups(self):
         """Get the list of all group keys in self.children."""
@@ -80,21 +80,18 @@ class Diff:
                     child.print_detailed(indent + 2)
 
 
+@total_ordering
 class DiffElement:
     """DiffElement object, designed to represent a single item/object that may or may not have any diffs."""
-
-    # TODO: make this a Pydantic.BaseModel subclass?
 
     def __init__(self, obj_type: str, name: str, keys: dict):
         """Instantiate a DiffElement.
 
         Args:
             obj_type (str): Name of the object type being described, as in DSyncModel.get_type().
-            name (str): Human-readable name of the object being described, as in DSyncModel.get_shortname()
-                        TODO: name is not guaranteed globally unique?
+            name (str): Human-readable name of the object being described, as in DSyncModel.get_shortname().
+                This name must be unique within the context of the Diff that is the direct parent of this DiffElement.
             keys (dict): Primary keys and values uniquely describing this object, as in DSyncModel.get_identifiers().
-
-        TODO: refactor so it just takes a DSyncModel as its only input parameter instead?
         """
         if not isinstance(obj_type, str):
             raise ValueError(f"obj_type must be a string (not {type(obj_type)})")
@@ -105,23 +102,37 @@ class DiffElement:
         self.type = obj_type
         self.name = name
         self.keys = keys
+        # Note: *_attrs == None if no target object exists; it'll be an empty dict if it exists but has no _attributes
         self.source_attrs: Optional[dict] = None
         self.dest_attrs: Optional[dict] = None
         self.child_diff = Diff()
 
-    # def __str__(self):
-    #     """ """
+    def __lt__(self, other):
+        """Logical ordering of DiffElements.
 
-    #     if self.missing_remote and self.missing_local:
-    #         return f"{self.type}:{self.name} MISSING BOTH"
-    #     if self.missing_remote:
-    #         return f"{self.type}:{self.name} MISSING REMOTE"
-    #     if self.missing_local:
-    #         return f"{self.type}:{self.name} MISSING LOCAL"
-    #     if not self.has_diffs():
-    #         return f"{self.type}:{self.name} NO DIFF"
+        Other comparison methods (__gt__, __le__, __ge__, etc.) are created by our use of the @total_ordering decorator.
+        """
+        return (self.type, self.name) < (other.type, other.name)
 
-    #     return f"{self.type}:{self.name} {self.nbr_diffs()} DIFFs"
+    def __eq__(self, other):
+        """Logical equality of DiffElements.
+
+        Other comparison methods (__gt__, __le__, __ge__, etc.) are created by our use of the @total_ordering decorator.
+        """
+        if not isinstance(other, DiffElement):
+            return NotImplemented
+        return (
+            self.type == other.type
+            and self.name == other.name
+            and self.keys == other.keys
+            and self.source_attrs == other.source_attrs
+            and self.dest_attrs == other.dest_attrs
+            # TODO also check that self.child_diff == other.child_diff, needs Diff to implement __eq__().
+        )
+
+    def __str__(self):
+        """Basic string representation of a DiffElement."""
+        return f"{self.type} : {self.name} : {self.keys} : {self.source_attrs} : {self.dest_attrs}"
 
     # TODO: separate into set_source_attrs() and set_dest_attrs() methods, or just use direct property access instead?
     def add_attrs(self, source: Optional[dict] = None, dest: Optional[dict] = None):
@@ -133,23 +144,20 @@ class DiffElement:
         if dest is not None:
             self.dest_attrs = dest
 
-    def get_attrs_keys(self):
-        """Return the list of shared attrs between source and dest, or the attrs of source or diff if only one is present.
+    def get_attrs_keys(self) -> Iterable[str]:
+        """Get the list of shared attrs between source and dest, or the attrs of source or dest if only one is present.
 
-        - If source_attrs is not defined return dest
-        - If dest is not defined, return source
-        - If both are defined, return the intersection of both
-
-        TODO: this obscures the difference between "source/dest does not exist at all" and
-        "source/dest exists but does not have any attrs defined beyond the base `keys`" - this seems problematic.
+        - If source_attrs is not set, return the keys of dest_attrs
+        - If dest_attrs is not set, return the keys of source_attrs
+        - If both are defined, return the intersection of both keys
         """
-        if self.source_attrs is None and self.dest_attrs is None:
-            return None
-        if self.source_attrs is None and self.dest_attrs:
+        if self.source_attrs is not None and self.dest_attrs is not None:
+            return intersection(self.dest_attrs.keys(), self.source_attrs.keys())
+        if self.source_attrs is None and self.dest_attrs is not None:
             return self.dest_attrs.keys()
-        if self.source_attrs and self.dest_attrs is None:
+        if self.source_attrs is not None and self.dest_attrs is None:
             return self.source_attrs.keys()
-        return intersection(self.dest_attrs.keys(), self.source_attrs.keys())
+        return []
 
     def add_child(self, element: "DiffElement"):
         """Attach a child object of type DiffElement.
@@ -159,7 +167,7 @@ class DiffElement:
         Args:
           element: DiffElement
         """
-        self.child_diff.add(group=element.type, element=element)
+        self.child_diff.add(element)
 
     def get_children(self) -> Iterator["DiffElement"]:
         """Iterate over all child DiffElements of this one."""
@@ -171,8 +179,14 @@ class DiffElement:
         Args:
           include_children: If True, recursively check children for diffs as well.
         """
-        if self.source_attrs != self.dest_attrs:
+        if (self.source_attrs is not None and self.dest_attrs is None) or (
+            self.source_attrs is None and self.dest_attrs is not None
+        ):
             return True
+        if self.source_attrs is not None and self.dest_attrs is not None:
+            for attr_key in self.get_attrs_keys():
+                if self.source_attrs.get(attr_key) != self.dest_attrs.get(attr_key):
+                    return True
 
         if include_children:
             if self.child_diff.has_diffs():
@@ -188,21 +202,15 @@ class DiffElement:
         """
         margin = " " * indent
 
-        # TODO: this obscures the difference between "source/dest does not exist" and
-        # "source/dest exists but has no specific `attrs` defined."
-
-        # if self.missing_remote and self.missing_local:
-        #     print(f"{margin}{self.type}: {self.name} MISSING BOTH")
         if self.source_attrs is None:
             print(f"{margin}{self.type}: {self.name} MISSING in SOURCE")
         elif self.dest_attrs is None:
             print(f"{margin}{self.type}: {self.name} MISSING in DEST")
         else:
             print(f"{margin}{self.type}: {self.name}")
-            # Currently we assume that source and dest have the same attrs,
-            # need to account for that
+            # Only print attrs that have meaning in both source and dest
             for attr in self.get_attrs_keys():
-                if self.source_attrs.get(attr, None) != self.dest_attrs.get(attr, None):
+                if self.source_attrs[attr] != self.dest_attrs[attr]:
                     print(f"{margin}  {attr}   S({self.source_attrs[attr]})   D({self.dest_attrs[attr]})")
 
         self.child_diff.print_detailed(indent + 2)
