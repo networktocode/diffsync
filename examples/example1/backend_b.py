@@ -1,5 +1,6 @@
 """Example of a DSync adapter implementation."""
 
+# pylint: disable=wrong-import-order
 from dsync import DSync
 from models import Site, Device, Interface
 

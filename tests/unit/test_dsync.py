@@ -95,6 +95,21 @@ def test_dsync_subclass_validation():
     assert "dev_class" in str(excinfo.value)
 
 
+def check_diff_symmetry(diff1, diff2):
+    """Recursively compare two Diffs to make sure they are equal and opposite to one another."""
+    assert len(list(diff1.get_children())) == len(list(diff2.get_children()))
+    for elem1, elem2 in zip(sorted(diff1.get_children()), sorted(diff2.get_children())):
+        # Same basic properties
+        assert elem1.type == elem2.type
+        assert elem1.name == elem2.name
+        assert elem1.keys == elem2.keys
+        assert elem1.has_diffs() == elem2.has_diffs()
+        # Opposite diffs, if any
+        assert elem1.source_attrs == elem2.dest_attrs
+        assert elem1.dest_attrs == elem2.source_attrs
+        check_diff_symmetry(elem1.child_diff, elem2.child_diff)
+
+
 def test_dsync_subclass_methods_diff_sync(backend_a, backend_b):
     """Test DSync diff/sync APIs on an actual concrete subclass."""
     diff_elements = backend_a._diff_objects(  # pylint: disable=protected-access
@@ -105,28 +120,14 @@ def test_dsync_subclass_methods_diff_sync(backend_a, backend_b):
         assert diff_element.has_diffs()
     # We don't inspect the contents of the diff elements in detail here - see test_diff_element.py for that
 
-    diff_aa = backend_a.diff_from(backend_a)
-    assert diff_aa.has_diffs() is False
-    diff_aa = backend_a.diff_to(backend_a)
-    assert diff_aa.has_diffs() is False
+    # Self diff should always show no diffs!
+    assert backend_a.diff_from(backend_a).has_diffs() is False
+    assert backend_a.diff_to(backend_a).has_diffs() is False
+
     diff_ab = backend_a.diff_to(backend_b)
     assert diff_ab.has_diffs() is True
     diff_ba = backend_a.diff_from(backend_b)
     assert diff_ba.has_diffs() is True
-
-    def check_diff_symmetry(diff1, diff2):
-        """Recursively compare two Diffs to make sure they are equal and opposite to one another."""
-        assert len(list(diff1.get_children())) == len(list(diff2.get_children()))
-        for elem1, elem2 in zip(sorted(diff1.get_children()), sorted(diff2.get_children())):
-            # Same basic properties
-            assert elem1.type == elem2.type
-            assert elem1.name == elem2.name
-            assert elem1.keys == elem2.keys
-            assert elem1.has_diffs() == elem2.has_diffs()
-            # Opposite diffs, if any
-            assert elem1.source_attrs == elem2.dest_attrs
-            assert elem1.dest_attrs == elem2.source_attrs
-            check_diff_symmetry(elem1.child_diff, elem2.child_diff)
 
     check_diff_symmetry(diff_ab, diff_ba)
 

@@ -15,7 +15,7 @@ from inspect import isclass
 import logging
 from collections import defaultdict
 from collections.abc import Iterable as ABCIterable, Mapping as ABCMapping
-from typing import List, Mapping, Iterable
+from typing import List, Mapping, Iterable, Tuple, Optional
 
 from pydantic import BaseModel
 
@@ -366,75 +366,98 @@ class DSync:
             dict_src = {item.get_unique_id(): item for item in source} if not isinstance(source, ABCMapping) else source
             dict_dst = {item.get_unique_id(): item for item in dest} if not isinstance(dest, ABCMapping) else dest
 
-            # TODO: should we check/enforce that all DSyncModels in dict_src/dict_dst have the same get_type() output?
-
-            combined_dict = {uid: (dict_src[uid], None) for uid in dict_src}
+            combined_dict = {}
+            for uid in dict_src:
+                combined_dict[uid] = (dict_src.get(uid), dict_dst.get(uid))
             for uid in dict_dst:
-                combined_dict[uid] = (dict_src.get(uid), dict_dst[uid])
-
-            for uid in combined_dict:
-                src_obj, dst_obj = combined_dict[uid]
-                if src_obj and dst_obj:
-                    if src_obj.get_type() != dst_obj.get_type():
-                        raise TypeError(f"Type mismatch: {src_obj.get_type()} vs {dst_obj.get_type()}")
-                    if src_obj.get_shortname() != dst_obj.get_shortname():
-                        raise ValueError(f"Shortname mismatch: {src_obj.get_shortname()} vs {dst_obj.get_shortname()}")
-                    if src_obj.get_identifiers() != dst_obj.get_identifiers():
-                        raise ValueError(f"Keys mismatch: {src_obj.get_identifiers()} vs {dst_obj.get_identifiers()}")
-                    if src_obj.get_children_mapping() != dst_obj.get_children_mapping():
-                        raise ValueError(
-                            f"Children mismatch: {src_obj.get_children_mapping()} vs {dst_obj.get_children_mapping()}"
-                        )
-
-                if src_obj:
-                    diff_element = DiffElement(
-                        obj_type=src_obj.get_type(), name=src_obj.get_shortname(), keys=src_obj.get_identifiers()
-                    )
-                    children_mapping = src_obj.get_children_mapping()
-                elif dst_obj:
-                    diff_element = DiffElement(
-                        obj_type=dst_obj.get_type(), name=dst_obj.get_shortname(), keys=dst_obj.get_identifiers()
-                    )
-                    children_mapping = dst_obj.get_children_mapping()
-                else:
-                    # Should be unreachable
-                    raise RuntimeError(f"UID {uid} is in combined_dict but has neither src_obj nor dst_obj??")
-
-                if src_obj:
-                    diff_element.add_attrs(source=src_obj.get_attrs(), dest=None)
-                if dst_obj:
-                    diff_element.add_attrs(source=None, dest=dst_obj.get_attrs())
-
-                # logger.debug(
-                #     f"{dict_src[i].get_type()} {dict_dst[i]} | {i}"
-                # )
-
-                # if dict_src[i].get_attrs() != dict_dst[i].get_attrs():
-                #     attrs = dict_src[i].get_attrs()
-                #     for k, v in attrs.items():
-                #         diff.add_item(k, v, getattr(dict_dst[i], k))
-
-                # logger.debug(
-                #     f"{dict_src[i].get_type()} {dict_dst[i]} | following the path for {dict_src[i].children}"
-                # )
-
-                for child_type, child_fieldname in children_mapping.items():
-                    src_uids: List[str] = getattr(src_obj, child_fieldname) if src_obj else []
-                    dst_uids: List[str] = getattr(dst_obj, child_fieldname) if dst_obj else []
-                    for child_diff_element in self._diff_objects(
-                        source=source_root.get_by_uids(src_uids, child_type),
-                        dest=self.get_by_uids(dst_uids, child_type),
-                        source_root=source_root,
-                    ):
-                        diff_element.add_child(child_diff_element)
-
-                diffs.append(diff_element)
-
+                combined_dict[uid] = (dict_src.get(uid), dict_dst.get(uid))
         else:
             # In the future we might support set, etc...
-            raise TypeError(f"Type {type(source)} is not supported... for now")
+            raise TypeError(f"Type combination {type(source)}/{type(dest)} is not supported... for now")
+
+        self._validate_objects_for_diff(combined_dict)
+
+        for uid in combined_dict:
+            src_obj, dst_obj = combined_dict[uid]
+
+            if src_obj:
+                diff_element = DiffElement(
+                    obj_type=src_obj.get_type(), name=src_obj.get_shortname(), keys=src_obj.get_identifiers()
+                )
+            elif dst_obj:
+                diff_element = DiffElement(
+                    obj_type=dst_obj.get_type(), name=dst_obj.get_shortname(), keys=dst_obj.get_identifiers()
+                )
+            else:
+                # Should be unreachable
+                raise RuntimeError(f"UID {uid} is in combined_dict but has neither src_obj nor dst_obj??")
+
+            if src_obj:
+                diff_element.add_attrs(source=src_obj.get_attrs(), dest=None)
+            if dst_obj:
+                diff_element.add_attrs(source=None, dest=dst_obj.get_attrs())
+
+            # Recursively diff the children of src_obj and dst_obj and attach the resulting diffs to the diff_element
+            self._diff_child_objects(diff_element, src_obj, dst_obj, source_root)
+
+            diffs.append(diff_element)
 
         return diffs
+
+    @staticmethod
+    def _validate_objects_for_diff(combined_dict: Mapping[str, Tuple[Optional[DSyncModel], Optional[DSyncModel]]]):
+        """Check whether all DSyncModels in the given dictionary are valid for comparison to one another.
+
+        Helper method for `_diff_objects`.
+
+        Raises:
+            TypeError: If any pair of objects in the dict have differing get_type() values.
+            ValueError: If any pair of objects in the dict have differing get_shortname(), get_identifiers(), or
+                get_children_mapping() values.
+        """
+        for uid in combined_dict:
+            # TODO: should we check/enforce whether ALL DSyncModels in this dict have the same get_type() output?
+            src_obj, dst_obj = combined_dict[uid]
+            if src_obj and dst_obj:
+                if src_obj.get_type() != dst_obj.get_type():
+                    raise TypeError(f"Type mismatch: {src_obj.get_type()} vs {dst_obj.get_type()}")
+                if src_obj.get_shortname() != dst_obj.get_shortname():
+                    raise ValueError(f"Shortname mismatch: {src_obj.get_shortname()} vs {dst_obj.get_shortname()}")
+                if src_obj.get_identifiers() != dst_obj.get_identifiers():
+                    raise ValueError(f"Keys mismatch: {src_obj.get_identifiers()} vs {dst_obj.get_identifiers()}")
+                if src_obj.get_children_mapping() != dst_obj.get_children_mapping():
+                    raise ValueError(
+                        f"Children mismatch: {src_obj.get_children_mapping()} vs {dst_obj.get_children_mapping()}"
+                    )
+
+    def _diff_child_objects(
+        self,
+        diff_element: DiffElement,
+        src_obj: Optional[DSyncModel],
+        dst_obj: Optional[DSyncModel],
+        source_root: "DSync",
+    ):
+        """For all children of the given DSyncModel pair, diff them recursively, and add diffs to the given diff_element.
+
+        Helper method for `_diff_objects`.
+        """
+        if src_obj:
+            children_mapping = src_obj.get_children_mapping()
+        elif dst_obj:
+            children_mapping = dst_obj.get_children_mapping()
+        else:
+            # Should be unreachable
+            raise RuntimeError("Called with neither src_obj nor dest_obj??")
+
+        for child_type, child_fieldname in children_mapping.items():
+            src_uids: List[str] = getattr(src_obj, child_fieldname) if src_obj else []
+            dst_uids: List[str] = getattr(dst_obj, child_fieldname) if dst_obj else []
+            for child_diff_element in self._diff_objects(
+                source=source_root.get_by_uids(src_uids, child_type),
+                dest=self.get_by_uids(dst_uids, child_type),
+                source_root=source_root,
+            ):
+                diff_element.add_child(child_diff_element)
 
     def create_object(self, object_type, keys, params):
         """TODO: move to a `create` method on DSyncModel class."""
