@@ -22,7 +22,7 @@ class ObjectStoreException(Exception):
 
 
 class ObjectAlreadyExists(ObjectStoreException):
-    """Exception raised when trying to store a DSyncModel that is already being stored."""
+    """Exception raised when trying to store a DSyncModel or DiffElement that is already being stored."""
 
 
 class ObjectNotFound(ObjectStoreException):

@@ -335,12 +335,14 @@ class DSync:
         """
         diff = Diff()
 
-        for obj in intersection(self.top_level, source.top_level):
+        for obj_type in intersection(self.top_level, source.top_level):
 
-            diff_elements = self._diff_objects(source=source.get_all(obj), dest=self.get_all(obj), source_root=source)
+            diff_elements = self._diff_objects(
+                source=source.get_all(obj_type), dest=self.get_all(obj_type), source_root=source,
+            )
 
-            for element in diff_elements:
-                diff.add(obj, element)
+            for diff_element in diff_elements:
+                diff.add(diff_element)
 
         return diff
 

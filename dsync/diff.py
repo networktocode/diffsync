@@ -16,6 +16,7 @@ limitations under the License.
 from functools import total_ordering
 from typing import Iterator, Iterable, Optional
 
+from .exceptions import ObjectAlreadyExists
 from .utils import intersection, OrderedDefaultDict
 
 
@@ -30,19 +31,17 @@ class Diff:
         `self.children[group][unique_id] == DiffElement(...)`
         """
 
-    def add(self, group: str, element: "DiffElement"):
-        """Save a new DiffElement per group; if an element with the same name already exists it will be replaced.
+    def add(self, element: "DiffElement"):
+        """Add a new DiffElement to the changeset of this Diff.
 
-        Args:
-            group: (string) Group name to store the element
-            element: (DiffElement) element to store
+        Raises:
+            ObjectAlreadyExists: if an element of the same type and same name is already stored.
         """
-        # TODO: why is group an argument, why not just use element.obj_type?
-        # TODO: element.name is usually a DSyncModel.shortname() -- i.e., NOT guaranteed globally unique!!
-        name = element.name
+        # Note that element.name is usually a DSyncModel.shortname() -- i.e., NOT guaranteed globally unique!!
+        if element.name in self.children[element.type]:
+            raise ObjectAlreadyExists(f"Already storing a {element.type} named {element.name}")
 
-        # TODO: shouldn't it be an error if the element already exists, like in DSync.add()?
-        self.children[group][name] = element
+        self.children[element.type][element.name] = element
 
     def groups(self):
         """Get the list of all group keys in self.children."""
@@ -172,7 +171,7 @@ class DiffElement:
         Args:
           element: DiffElement
         """
-        self.child_diff.add(group=element.type, element=element)
+        self.child_diff.add(element)
 
     def get_children(self) -> Iterator["DiffElement"]:
         """Iterate over all child DiffElements of this one."""
