@@ -84,18 +84,14 @@ class Diff:
 class DiffElement:
     """DiffElement object, designed to represent a single item/object that may or may not have any diffs."""
 
-    # TODO: make this a Pydantic.BaseModel subclass?
-
     def __init__(self, obj_type: str, name: str, keys: dict):
         """Instantiate a DiffElement.
 
         Args:
             obj_type (str): Name of the object type being described, as in DSyncModel.get_type().
-            name (str): Human-readable name of the object being described, as in DSyncModel.get_shortname()
-                        TODO: name is not guaranteed globally unique?
+            name (str): Human-readable name of the object being described, as in DSyncModel.get_shortname().
+                This name must be unique within the context of the Diff that is the direct parent of this DiffElement.
             keys (dict): Primary keys and values uniquely describing this object, as in DSyncModel.get_identifiers().
-
-        TODO: refactor so it just takes a DSyncModel as its only input parameter instead?
         """
         if not isinstance(obj_type, str):
             raise ValueError(f"obj_type must be a string (not {type(obj_type)})")
@@ -131,7 +127,7 @@ class DiffElement:
             and self.keys == other.keys
             and self.source_attrs == other.source_attrs
             and self.dest_attrs == other.dest_attrs
-            # TODO self.child_diff == other.child_diff
+            # TODO also check that self.child_diff == other.child_diff, needs Diff to implement __eq__().
         )
 
     def __str__(self):

@@ -172,10 +172,8 @@ def test_dsync_subclass_methods_diff_sync(backend_a, backend_b):
     assert list(backend_a.get_all("site")) == [site_nyc_a, site_sfo_a, site_atl_a]
     assert list(backend_a.get_all("nothing")) == []
 
-    # TODO: get_by_uids() currently orders its response based on the insertion order into the store,
-    #       not by the order of the provided keys. Probably a bug?
     assert backend_a.get_by_uids(["nyc", "sfo"], Site) == [site_nyc_a, site_sfo_a]
-    assert backend_a.get_by_uids(["sfo", "nyc"], "site") == [site_nyc_a, site_sfo_a]  # TODO: [site_sfo_a, site_nyc_a]
+    assert backend_a.get_by_uids(["sfo", "nyc"], "site") == [site_sfo_a, site_nyc_a]
     assert backend_a.get_by_uids(["nyc", "sfo"], Device) == []
     assert backend_a.get_by_uids(["nyc", "sfo"], "device") == []
 
@@ -192,12 +190,11 @@ def test_dsync_subclass_methods_crud(backend_a):
 
     assert backend_a.get(Site, ["atl"]) == site_atl_a
     assert list(backend_a.get_all("site")) == [site_nyc_a, site_sfo_a, site_rdu_a, site_atl_a]
-    # TODO: again, order of keys is not respected by get_by_uids()
     assert backend_a.get_by_uids(["rdu", "sfo", "atl", "nyc"], "site") == [
-        site_nyc_a,
-        site_sfo_a,
         site_rdu_a,
+        site_sfo_a,
         site_atl_a,
+        site_nyc_a,
     ]
 
     backend_a.remove(site_atl_a)

@@ -195,6 +195,7 @@ class DSyncModel(BaseModel):
 
         Raises:
             ObjectStoreWrongType: if the type is not part of `_children`
+            ObjectAlreadyExists: if the unique id is already stored
         """
         child_type = child.get_type()
 
@@ -205,6 +206,8 @@ class DSyncModel(BaseModel):
 
         attr_name = self._children[child_type]
         childs = getattr(self, attr_name)
+        if child.get_unique_id() in childs:
+            raise ObjectAlreadyExists(f"Already storing a {child_type} with unique_id {child.get_unique_id()}")
         childs.append(child.get_unique_id())
 
     def remove_child(self, child: "DSyncModel"):
@@ -649,11 +652,12 @@ class DSync:
         else:
             modelname = obj.get_type()
 
-        # TODO: this returns the results ordered by their storage order in self._data[modelname],
-        #       and NOT by the order given in uids. Seems like a bug?
-        #
         # TODO: should this raise an exception if any or all of the uids are not found?
-        return [value for uid, value in self._data[modelname].items() if uid in uids]
+        results = []
+        for uid in uids:
+            if uid in self._data[modelname]:
+                results.append(self._data[modelname][uid])
+        return results
 
     def add(self, obj: DSyncModel):
         """Add a DSyncModel object to the store.

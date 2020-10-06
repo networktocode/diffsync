@@ -15,7 +15,7 @@ def test_diff_empty():
     assert not diff.has_diffs()
     assert list(diff.get_children()) == []
 
-    # TODO: print_detailed
+    # TODO: test print_detailed
 
 
 def test_diff_children():
@@ -48,4 +48,4 @@ def test_diff_children():
 
     assert diff.has_diffs()
 
-    # TODO: print_detailed
+    # TODO: test print_detailed
