@@ -98,11 +98,11 @@ def test_dsync_subclass_validation():
 def test_dsync_subclass_methods_diff_sync(backend_a, backend_b):
     """Test DSync diff/sync APIs on an actual concrete subclass."""
     diff_elements = backend_a._diff_objects(  # pylint: disable=protected-access
-        source=backend_a.get_all("site"), dest=backend_b.get_all("site"), source_root=backend_b
+        source=backend_b.get_all("site"), dest=backend_a.get_all("site"), source_root=backend_b
     )
-    assert len(diff_elements) == 2  # nyc, sfo
-    assert diff_elements[0].has_diffs()
-    assert diff_elements[1].has_diffs()
+    assert len(diff_elements) == 4  # atl, nyc, sfo, rdu
+    for diff_element in diff_elements:
+        assert diff_element.has_diffs()
     # We don't inspect the contents of the diff elements in detail here - see test_diff_element.py for that
 
     diff_aa = backend_a.diff_from(backend_a)
@@ -117,7 +117,7 @@ def test_dsync_subclass_methods_diff_sync(backend_a, backend_b):
     def check_diff_symmetry(diff1, diff2):
         """Recursively compare two Diffs to make sure they are equal and opposite to one another."""
         assert len(list(diff1.get_children())) == len(list(diff2.get_children()))
-        for elem1, elem2 in zip(diff1.get_children(), diff2.get_children()):
+        for elem1, elem2 in zip(sorted(diff1.get_children()), sorted(diff2.get_children())):
             # Same basic properties
             assert elem1.type == elem2.type
             assert elem1.name == elem2.name
@@ -138,28 +138,35 @@ def test_dsync_subclass_methods_diff_sync(backend_a, backend_b):
     diff_elements = backend_a._diff_objects(  # pylint: disable=protected-access
         source=backend_a.get_all("site"), dest=backend_b.get_all("site"), source_root=backend_b
     )
-    assert len(diff_elements) == 2  # nyc, sfo
+    assert len(diff_elements) == 4  # atl, nyc, sfo, rdu
     assert not diff_elements[0].has_diffs()  # sync completed, no diffs
     assert diff_elements[1].has_diffs()
+    assert diff_elements[2].has_diffs()
+    assert diff_elements[3].has_diffs()
 
     # Perform full sync
     backend_a.sync_from(backend_b)
     # Make sure the sync descended through the diff elements to their children
     assert backend_a.get(Device, ["sfo-spine1"]).role == "leaf"  # was initially "spine"
     # Recheck diffs
+    backend_a.diff_from(backend_b).print_detailed()
     assert backend_a.diff_from(backend_b).has_diffs() is False
 
+    # site_nyc and site_sfo should be updated, site_atl should be created, site_rdu should be deleted
     site_nyc_a = backend_a.get(Site, ["nyc"])
     assert isinstance(site_nyc_a, Site)
     assert site_nyc_a.name == "nyc"
     site_sfo_a = backend_a.get("site", ["sfo"])
     assert isinstance(site_sfo_a, Site)
     assert site_sfo_a.name == "sfo"
-    assert backend_a.get("site", ["atl"]) is None
+    site_atl_a = backend_a.get("site", ["atl"])
+    assert isinstance(site_atl_a, Site)
+    assert site_atl_a.name == "atl"
+    assert backend_a.get(Site, ["rdu"]) is None
     assert backend_a.get("nothing", [""]) is None
 
-    assert list(backend_a.get_all(Site)) == [site_nyc_a, site_sfo_a]
-    assert list(backend_a.get_all("site")) == [site_nyc_a, site_sfo_a]
+    assert list(backend_a.get_all(Site)) == [site_nyc_a, site_sfo_a, site_atl_a]
+    assert list(backend_a.get_all("site")) == [site_nyc_a, site_sfo_a, site_atl_a]
     assert list(backend_a.get_all("nothing")) == []
 
     # TODO: get_by_uids() currently orders its response based on the insertion order into the store,
@@ -174,15 +181,21 @@ def test_dsync_subclass_methods_crud(backend_a):
     """Test DSync CRUD APIs against a concrete subclass."""
     site_nyc_a = backend_a.get(Site, ["nyc"])
     site_sfo_a = backend_a.get("site", ["sfo"])
+    site_rdu_a = backend_a.get(Site, ["rdu"])
     site_atl_a = Site(name="atl")
     backend_a.add(site_atl_a)
     with pytest.raises(ObjectAlreadyExists):
         backend_a.add(site_atl_a)
 
     assert backend_a.get(Site, ["atl"]) == site_atl_a
-    assert list(backend_a.get_all("site")) == [site_nyc_a, site_sfo_a, site_atl_a]
+    assert list(backend_a.get_all("site")) == [site_nyc_a, site_sfo_a, site_rdu_a, site_atl_a]
     # TODO: again, order of keys is not respected by get_by_uids()
-    assert backend_a.get_by_uids(["sfo", "atl", "nyc"], "site") == [site_nyc_a, site_sfo_a, site_atl_a]
+    assert backend_a.get_by_uids(["rdu", "sfo", "atl", "nyc"], "site") == [
+        site_nyc_a,
+        site_sfo_a,
+        site_rdu_a,
+        site_atl_a,
+    ]
 
     backend_a.remove(site_atl_a)
     with pytest.raises(ObjectNotFound):

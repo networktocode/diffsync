@@ -187,18 +187,14 @@ class DSyncModel(BaseModel):
             return "__".join([str(getattr(self, key)) for key in self._shortname])
         return self.get_unique_id()
 
-    def add_child(self, child):
-        """Add a child to an object.
+    def add_child(self, child: "DSyncModel"):
+        """Add a child reference to an object.
 
-        The child will be automatically saved/indexed by its unique id
+        The child object isn't stored, only its unique id.
         The name of the target attribute is defined in `_children` per object type
-
-        Args:
-            child (DSyncModel): Valid  DSyncModel object
 
         Raises:
             ObjectStoreWrongType: if the type is not part of `_children`
-            AttributeError: if the model doesn't have a field matching the entry in `_children`
         """
         child_type = child.get_type()
 
@@ -210,6 +206,28 @@ class DSyncModel(BaseModel):
         attr_name = self._children[child_type]
         childs = getattr(self, attr_name)
         childs.append(child.get_unique_id())
+
+    def remove_child(self, child: "DSyncModel"):
+        """Remove a child reference from an object.
+
+        The name of the storage attribute is defined in `_children` per object type.
+
+        Raises:
+            ObjectStoreWrongType: if the child model type is not part of `_children`
+            ObjectNotFound: if the child wasn't previously present.
+        """
+        child_type = child.get_type()
+
+        if child_type not in self._children:
+            raise ObjectStoreWrongType(
+                f"Unable to store {child_type} as a child; valid types are {sorted(self._children.keys())}"
+            )
+
+        attr_name = self._children[child_type]
+        childs = getattr(self, attr_name)
+        if child.get_unique_id() not in childs:
+            raise ObjectNotFound(f"{child} was not found as a child in {attr_name}")
+        childs.remove(child.get_unique_id())
 
 
 class DSync:
@@ -268,13 +286,14 @@ class DSync:
         """
         target.sync_from(self)
 
-    def _sync_from_diff_element(self, element: DiffElement) -> bool:
+    def _sync_from_diff_element(self, element: DiffElement, parent_model: DSyncModel = None) -> bool:
         """Synchronize a given DiffElement (and its children, if any) into this DSync.
 
         Helper method for `sync_from`/`sync_to`; this generally shouldn't be called on its own.
 
         Args:
-            element (DiffElement):
+            element: DiffElement to synchronize diffs from
+            parent_model: Parent object to update (`add_child`/`remove_child`) if the sync creates/deletes an object.
 
         Returns:
             bool: Return False if there is nothing to sync
@@ -283,14 +302,20 @@ class DSync:
             return False
 
         if element.source_attrs is None:
-            self.delete_object(object_type=element.type, keys=element.keys, params=element.dest_attrs)
+            obj = self.delete_object(object_type=element.type, keys=element.keys, params=element.dest_attrs)
+            if parent_model:
+                parent_model.remove_child(obj)
         elif element.dest_attrs is None:
-            self.create_object(object_type=element.type, keys=element.keys, params=element.source_attrs)
+            obj = self.create_object(object_type=element.type, keys=element.keys, params=element.source_attrs)
+            if parent_model:
+                parent_model.add_child(obj)
         elif element.source_attrs != element.dest_attrs:
-            self.update_object(object_type=element.type, keys=element.keys, params=element.source_attrs)
+            obj = self.update_object(object_type=element.type, keys=element.keys, params=element.source_attrs)
+        else:
+            obj = self.get(element.type, element.keys.values())
 
         for child in element.get_children():
-            self._sync_from_diff_element(child)
+            self._sync_from_diff_element(child, parent_model=obj)
 
         return True
 
@@ -413,19 +438,17 @@ class DSync:
 
     def create_object(self, object_type, keys, params):
         """TODO: move to a `create` method on DSyncModel class."""
-        self._crud_change(action="create", keys=keys, object_type=object_type, params=params)
+        return self._crud_change(action="create", keys=keys, object_type=object_type, params=params)
 
     def update_object(self, object_type, keys, params):
         """TODO: move to a `update` method on DSyncModel class."""
-        self._crud_change(
-            action="update", object_type=object_type, keys=keys, params=params,
-        )
+        return self._crud_change(action="update", object_type=object_type, keys=keys, params=params)
 
     def delete_object(self, object_type, keys, params=None):
         """TODO: move to a `delete` method on DSyncModel class."""
         if not params:
             params = {}
-        self._crud_change(action="delete", object_type=object_type, keys=keys, params=params)
+        return self._crud_change(action="delete", object_type=object_type, keys=keys, params=params)
 
     def _crud_change(self, action: str, object_type: str, keys: dict, params: dict) -> DSyncModel:
         """Dispatcher function to Create, Update or Delete an object.

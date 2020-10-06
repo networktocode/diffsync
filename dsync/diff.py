@@ -13,6 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+from functools import total_ordering
 from typing import Iterator, Optional
 
 from .utils import intersection, OrderedDefaultDict
@@ -80,6 +81,7 @@ class Diff:
                     child.print_detailed(indent + 2)
 
 
+@total_ordering
 class DiffElement:
     """DiffElement object, designed to represent a single item/object that may or may not have any diffs."""
 
@@ -109,19 +111,32 @@ class DiffElement:
         self.dest_attrs: Optional[dict] = None
         self.child_diff = Diff()
 
-    # def __str__(self):
-    #     """ """
+    def __lt__(self, other):
+        """Logical ordering of DiffElements.
 
-    #     if self.missing_remote and self.missing_local:
-    #         return f"{self.type}:{self.name} MISSING BOTH"
-    #     if self.missing_remote:
-    #         return f"{self.type}:{self.name} MISSING REMOTE"
-    #     if self.missing_local:
-    #         return f"{self.type}:{self.name} MISSING LOCAL"
-    #     if not self.has_diffs():
-    #         return f"{self.type}:{self.name} NO DIFF"
+        Other comparison methods (__gt__, __le__, __ge__, etc.) are created by our use of the @total_ordering decorator.
+        """
+        return (self.type, self.name) < (other.type, other.name)
 
-    #     return f"{self.type}:{self.name} {self.nbr_diffs()} DIFFs"
+    def __eq__(self, other):
+        """Logical equality of DiffElements.
+
+        Other comparison methods (__gt__, __le__, __ge__, etc.) are created by our use of the @total_ordering decorator.
+        """
+        if not isinstance(other, DiffElement):
+            return NotImplemented
+        return (
+            self.type == other.type
+            and self.name == other.name
+            and self.keys == other.keys
+            and self.source_attrs == other.source_attrs
+            and self.dest_attrs == other.dest_attrs
+            # TODO self.child_diff == other.child_diff
+        )
+
+    def __str__(self):
+        """Basic string representation of a DiffElement."""
+        return f"{self.type} : {self.name} : {self.keys} : {self.source_attrs} : {self.dest_attrs}"
 
     # TODO: separate into set_source_attrs() and set_dest_attrs() methods, or just use direct property access instead?
     def add_attrs(self, source: Optional[dict] = None, dest: Optional[dict] = None):

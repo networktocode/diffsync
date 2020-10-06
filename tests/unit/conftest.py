@@ -56,7 +56,7 @@ class Device(DSyncModel):
     _children = {"interface": "interfaces"}
 
     name: str
-    site_name: str  # note this is not included in _attributes
+    site_name: Optional[str]  # note this is not included in _attributes
     role: str
     interfaces: List = list()
 
@@ -120,7 +120,11 @@ class BackendA(DSync):
         },
         "sfo": {
             "sfo-spine1": {"role": "spine", "interfaces": {"eth0": "Interface 0", "eth1": "Interface 1"}},
-            "sfo-spine2": {"role": "spine", "interfaces": {"eth0": "TBD", "eth1": "ddd"}},
+            "sfo-spine2": {"role": "spine", "interfaces": {"eth0": "TBD", "eth1": "ddd", "eth2": "Interface 2"}},
+        },
+        "rdu": {
+            "rdu-spine1": {"role": "spine", "interfaces": {"eth0": "Interface 0", "eth1": "Interface 1"}},
+            "rdu-spine2": {"role": "spine", "interfaces": {"eth0": "Interface 0", "eth1": "Interface 1"}},
         },
     }
 
@@ -160,7 +164,11 @@ class BackendB(BackendA):
         },
         "sfo": {
             "sfo-spine1": {"role": "leaf", "interfaces": {"eth0": "Interface 0", "eth1": "Interface 1"}},
-            "sfo-spine2": {"role": "spine", "interfaces": {"eth0": "TBD", "eth1": "ddd"}},
+            "sfo-spine2": {"role": "spine", "interfaces": {"eth0": "TBD", "eth1": "ddd", "eth3": "Interface 3"}},
+        },
+        "atl": {
+            "atl-spine1": {"role": "spine", "interfaces": {"eth0": "Interface 0", "eth1": "Interface 1"}},
+            "atl-spine2": {"role": "spine", "interfaces": {"eth0": "Interface 0", "eth1": "Interface 1"}},
         },
     }
 
