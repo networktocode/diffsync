@@ -347,14 +347,14 @@ class DSync:
             self._sync_from_diff_element(child, continue_on_failure=continue_on_failure)
         logger.info("Sync complete")
 
-    def sync_to(self, target: "DSync", diff_class: Type[Diff] = Diff):
+    def sync_to(self, target: "DSync", diff_class: Type[Diff] = Diff, continue_on_failure: bool = False):
         """Synchronize data from the current DSync object into the given target DSync object.
 
         Args:
             target (DSync): object to sync data into from this one.
             diff_class (class): Diff or subclass thereof to use to calculate the diffs to use for synchronization
         """
-        target.sync_from(self, diff_class=diff_class)
+        target.sync_from(self, diff_class=diff_class, continue_on_failure=continue_on_failure)
 
     def _sync_from_diff_element(
         self, element: DiffElement, continue_on_failure: bool = False, parent_model: DSyncModel = None

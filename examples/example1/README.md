@@ -1,6 +1,6 @@
 
 
-This is a simple example to show how dsync can be used to compare and syncronize multiple data sources.
+This is a simple example to show how dsync can be used to compare and synchronize multiple data sources.
 
 For this example, we have a shared model for Device and Interface defined in `models.py`
 And we have 3 instances of DSync based on the same model but with different values (BackendA, BackendB & BackendC).
@@ -46,4 +46,4 @@ diff_a_b = a.diff_to(b)
 diff_a_b.print_detailed()
 ```
 
-> In the Device model, the role is not defined as an attribute so it's not showned with we are comparing the different objects, even if the value is different.
+> In the Device model, the role is not defined as an attribute so it's not shown when we are comparing the different objects, even if the value is different.
