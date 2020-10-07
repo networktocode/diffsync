@@ -215,32 +215,43 @@ def test_dsync_subclass_methods_crud(backend_a):
         backend_a.remove(site_atl_a)
 
     # Test low-level default_* CRUD APIs
-    backend_a.default_create("interface", {"device_name": "nyc-spine1", "name": "eth2"}, {"description": "Interface 2"})
-    new_interface = backend_a.get("interface", "nyc-spine1__eth2")
+    new_interface = backend_a.default_create(
+        "interface", {"device_name": "nyc-spine1", "name": "eth2"}, {"description": "Interface 2"},
+    )
     assert new_interface.description == "Interface 2"
+    # default_* APIs don't add/remove from the DSync
+    backend_a.add(new_interface)
 
-    backend_a.default_update("interface", {"device_name": "nyc-spine1", "name": "eth2"}, {"description": "Intf 2"})
-    new_interface_2 = backend_a.get("interface", "nyc-spine1__eth2")
+    new_interface_2 = backend_a.default_update(
+        "interface", {"device_name": "nyc-spine1", "name": "eth2"}, {"description": "Intf 2"},
+    )
     assert new_interface.description == "Intf 2"
     assert new_interface_2 is new_interface
 
-    backend_a.default_delete("interface", {"device_name": "nyc-spine1", "name": "eth2"}, {})
-    assert backend_a.get("interface", "nyc-spine1__eth2") is None
+    new_interface_3 = backend_a.default_delete("interface", {"device_name": "nyc-spine1", "name": "eth2"}, {})
+    assert new_interface_3 is new_interface
+    # default_* APIs don't add/remove from the DSync
+    backend_a.remove(new_interface)
 
     # Test higher-level *_object CRUD APIs
-    backend_a.create_object("device", {"name": "new_device"}, {"role": "new_role", "site_name": "nyc"})
-    new_device = backend_a.get("device", "new_device")
+    new_device = backend_a.create_object("device", {"name": "new_device"}, {"role": "new_role", "site_name": "nyc"})
+    backend_a.add(new_device)
+    new_device_b = backend_a.get("device", "new_device")
+    assert new_device is new_device_b
     assert new_device.role == "new_role"
     assert new_device.site_name == "nyc"
 
-    backend_a.update_object("device", {"name": "new_device"}, {"role": "another_role"})
-    new_device_2 = backend_a.get(Device, "new_device")
+    new_device_2 = backend_a.update_object("device", {"name": "new_device"}, {"role": "another_role"})
+    new_device_2_b = backend_a.get(Device, "new_device")
+    assert new_device_2 is new_device_2_b
     assert new_device_2 is new_device
     assert new_device.role == "another_role"
 
-    backend_a.delete_object("device", {"name": "new_device"})
-    new_device_3 = backend_a.get("device", "new_device")
-    assert new_device_3 is None
+    new_device_3 = backend_a.delete_object("device", {"name": "new_device"})
+    backend_a.remove(new_device_3)
+    new_device_3_b = backend_a.get("device", "new_device")
+    assert new_device_3 is new_device
+    assert new_device_3_b is None
 
 
 def test_dsync_subclass_methods_sync_exceptions(caplog, error_prone_backend_a, backend_b):

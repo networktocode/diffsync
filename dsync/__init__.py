@@ -316,8 +316,10 @@ class DSync:
             obj = self.delete_object(
                 object_type=element.type, keys=element.keys, continue_on_failure=continue_on_failure,
             )
-            if parent_model and obj is not None:
-                parent_model.remove_child(obj)
+            if obj is not None:
+                self.remove(obj)
+                if parent_model:
+                    parent_model.remove_child(obj)
         elif element.dest_attrs is None:
             obj = self.create_object(
                 object_type=element.type,
@@ -325,8 +327,10 @@ class DSync:
                 params={attr_key: element.source_attrs[attr_key] for attr_key in element.get_attrs_keys()},
                 continue_on_failure=continue_on_failure,
             )
-            if parent_model and obj is not None:
-                parent_model.add_child(obj)
+            if obj is not None:
+                self.add(obj)
+                if parent_model:
+                    parent_model.add_child(obj)
         elif any(
             element.source_attrs[attr_key] != element.dest_attrs[attr_key] for attr_key in element.get_attrs_keys()
         ):
@@ -500,20 +504,60 @@ class DSync:
             ):
                 diff_element.add_child(child_diff_element)
 
-    def create_object(self, object_type, keys, params, continue_on_failure: bool = False):
-        """TODO: move to a `create` method on DSyncModel class."""
+    def create_object(
+        self, object_type: str, keys: dict, params: dict, continue_on_failure: bool = False,
+    ) -> Optional[DSyncModel]:
+        """Create an instance of the given object type.
+
+        TODO: move this to a `create` method on DSyncModel class?
+
+        Returns:
+            DSyncModel: object that was successfully created
+            None: if object creation fails and `continue_on_failure` is True
+
+        Raises:
+            ObjectNotCreated: if object creation fails and `continue_on_failure` is False
+        """
         return self._crud_change(
             action="create", keys=keys, object_type=object_type, params=params, continue_on_failure=continue_on_failure,
         )
 
-    def update_object(self, object_type, keys, params, continue_on_failure: bool = False):
-        """TODO: move to a `update` method on DSyncModel class."""
+    def update_object(
+        self, object_type: str, keys: dict, params: dict, continue_on_failure: bool = False,
+    ) -> Optional[DSyncModel]:
+        """Update an existing instance of the given object type.
+
+        TODO: move this to an `update` method on DSyncModel class?
+
+        Returns:
+            DSyncModel: object that was successfully updated
+            DSyncModel: if object update fails, `continue_on_failure` is True, and child objects can still be managed.
+            None: If object update fails, `continue_on_failure` is True, but the failure means it is not appropriate
+                to proceed to creating/updating/deleting child objects of this model.
+
+        Raises:
+            ObjectNotUpdated: if object update fails and `continue_on_failure` is False
+        """
         return self._crud_change(
             action="update", object_type=object_type, keys=keys, params=params, continue_on_failure=continue_on_failure,
         )
 
-    def delete_object(self, object_type, keys, params=None, continue_on_failure: bool = False):
-        """TODO: move to a `delete` method on DSyncModel class."""
+    def delete_object(
+        self, object_type: str, keys: dict, params: Optional[dict] = None, continue_on_failure: bool = False,
+    ) -> Optional[DSyncModel]:
+        """Delete an existing instance of the given object type.
+
+        TODO: move this to a `delete` method on DSyncModel class?
+
+        Returns:
+            DSyncModel: object that was successfully deleted
+            DSyncModel: if object deletion fails, `continue_on_failure` is True, and child objects can still be managed.
+            None: if object delete fails, `continue_on_failure` is True, but the failure means it is not appropriate
+                to proceed to deleting child objects of this model.
+
+        Raises:
+            ObjectNotDeleted: if object delete fails and `continue_on_failure` is False
+        """
         if not params:
             params = {}
         return self._crud_change(
@@ -601,7 +645,6 @@ class DSync:
         """
         object_class = getattr(self, object_type)
         item = object_class(**keys, **params)
-        self.add(item)
         return item
 
     def default_update(self, object_type, keys, params):
@@ -638,7 +681,6 @@ class DSync:
             DSyncModel: Return the object that has been deleted
         """
         item = self.get(object_type, keys)
-        self.remove(item)
         return item
 
     # ------------------------------------------------------------------------------
