@@ -1,9 +1,18 @@
 """Unit tests for the DSync class."""
 
+import logging
+
 import pytest
 
 from dsync import DSync, DSyncModel
-from dsync.exceptions import ObjectAlreadyExists, ObjectNotFound, ObjectNotCreated, ObjectNotUpdated, ObjectNotDeleted
+from dsync.exceptions import (
+    ObjectAlreadyExists,
+    ObjectNotFound,
+    ObjectCrudException,
+    ObjectNotCreated,
+    ObjectNotUpdated,
+    ObjectNotDeleted,
+)
 
 from .conftest import Site, Device, Interface, TrackedDiff
 
@@ -37,7 +46,8 @@ def test_generic_dsync_methods(generic_dsync, generic_dsync_model):
 
     # The generic_dsync_model has an empty identifier/unique-id
     assert generic_dsync.get(DSyncModel, "") == generic_dsync_model
-    assert generic_dsync.get(DSyncModel.get_type(), "") == generic_dsync_model
+    # DSync doesn't know what a "dsyncmodel" is
+    assert generic_dsync.get(DSyncModel.get_type(), "") is None
     # Wrong object-type - no match
     assert generic_dsync.get("", "") is None
     # Wrong unique-id - no match
@@ -231,3 +241,37 @@ def test_dsync_subclass_methods_crud(backend_a):
     backend_a.delete_object("device", {"name": "new_device"})
     new_device_3 = backend_a.get("device", "new_device")
     assert new_device_3 is None
+
+
+def test_dsync_subclass_methods_sync_exceptions(caplog, error_prone_backend_a, backend_b):
+    """Test handling of exceptions during a sync."""
+    caplog.set_level(logging.INFO)
+    with pytest.raises(ObjectCrudException):
+        error_prone_backend_a.sync_from(backend_b)
+
+    error_prone_backend_a.sync_from(backend_b, continue_on_failure=True)
+    # Not all sync operations succeeded on the first try
+    remaining_diffs = error_prone_backend_a.diff_from(backend_b)
+    remaining_diffs.print_detailed()
+    assert remaining_diffs.has_diffs()
+
+    # Some ERROR messages should have been logged
+    assert [record.message for record in caplog.records if record.levelname == "ERROR"] != []
+    caplog.clear()
+
+    # Retry up to 10 times, we should sync successfully eventually
+    for i in range(10):
+        print(f"Sync retry #{i}")
+        error_prone_backend_a.sync_from(backend_b, continue_on_failure=True)
+        remaining_diffs = error_prone_backend_a.diff_from(backend_b)
+        remaining_diffs.print_detailed()
+        if remaining_diffs.has_diffs():
+            # If we still have diffs, some ERROR messages should have been logged
+            assert [record.message for record in caplog.records if record.levelname == "ERROR"] != []
+            caplog.clear()
+        else:
+            # No error messages should have been logged on the last, fully successful attempt
+            assert [record.message for record in caplog.records if record.levelname == "ERROR"] == []
+            break
+    else:
+        pytest.fail("Sync was still incomplete after 10 retries")

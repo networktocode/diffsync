@@ -270,17 +270,20 @@ class DSync:
         """Load all desired data from whatever backend data source into this instance."""
         # No-op in this generic class
 
-    def sync_from(self, source: "DSync", diff_class: Type[Diff] = Diff):
+    def sync_from(self, source: "DSync", diff_class: Type[Diff] = Diff, continue_on_failure: bool = False):
         """Synchronize data from the given source DSync object into the current DSync object.
 
         Args:
             source (DSync): object to sync data from into this one
             diff_class (class): Diff or subclass thereof to use to calculate the diffs to use for synchronization
+            continue_on_failure (bool): Whether to continue synchronizing even if failures or errors are encountered.
         """
         diff = self.diff_from(source, diff_class=diff_class)
 
+        logger.info("Beginning sync")
         for child in diff.get_children():
-            self._sync_from_diff_element(child)
+            self._sync_from_diff_element(child, continue_on_failure=continue_on_failure)
+        logger.info("Sync complete")
 
     def sync_to(self, target: "DSync", diff_class: Type[Diff] = Diff):
         """Synchronize data from the current DSync object into the given target DSync object.
@@ -291,13 +294,16 @@ class DSync:
         """
         target.sync_from(self, diff_class=diff_class)
 
-    def _sync_from_diff_element(self, element: DiffElement, parent_model: DSyncModel = None) -> bool:
+    def _sync_from_diff_element(
+        self, element: DiffElement, continue_on_failure: bool = False, parent_model: DSyncModel = None
+    ) -> bool:
         """Synchronize a given DiffElement (and its children, if any) into this DSync.
 
         Helper method for `sync_from`/`sync_to`; this generally shouldn't be called on its own.
 
         Args:
             element: DiffElement to synchronize diffs from
+            continue_on_failure: Whether to continue synchronizing even if failures or errors are encountered.
             parent_model: Parent object to update (`add_child`/`remove_child`) if the sync creates/deletes an object.
 
         Returns:
@@ -307,30 +313,38 @@ class DSync:
             return False
 
         if element.source_attrs is None:
-            obj = self.delete_object(object_type=element.type, keys=element.keys)
-            if parent_model:
+            obj = self.delete_object(
+                object_type=element.type, keys=element.keys, continue_on_failure=continue_on_failure,
+            )
+            if parent_model and obj is not None:
                 parent_model.remove_child(obj)
         elif element.dest_attrs is None:
             obj = self.create_object(
                 object_type=element.type,
                 keys=element.keys,
                 params={attr_key: element.source_attrs[attr_key] for attr_key in element.get_attrs_keys()},
+                continue_on_failure=continue_on_failure,
             )
-            if parent_model:
+            if parent_model and obj is not None:
                 parent_model.add_child(obj)
-        elif element.source_attrs != element.dest_attrs:
+        elif any(
+            element.source_attrs[attr_key] != element.dest_attrs[attr_key] for attr_key in element.get_attrs_keys()
+        ):
             obj = self.update_object(
                 object_type=element.type,
                 keys=element.keys,
                 params={attr_key: element.source_attrs[attr_key] for attr_key in element.get_attrs_keys()},
+                continue_on_failure=continue_on_failure,
             )
         else:
-            object_class = getattr(self, element.type)
-            uid = object_class.create_unique_id(**element.keys)
-            obj = self.get(element.type, uid)
+            # No change needed
+            obj = self.get(element.type, element.keys)
 
-        for child in element.get_children():
-            self._sync_from_diff_element(child, parent_model=obj)
+        if obj is not None:
+            for child in element.get_children():
+                self._sync_from_diff_element(child, continue_on_failure=continue_on_failure, parent_model=obj)
+        else:
+            logger.warning("Not syncing children of %s %s", element.type, element.keys)
 
         return True
 
@@ -341,6 +355,7 @@ class DSync:
             source (DSync): Object to diff against.
             diff_class (class): Diff or subclass thereof to use for diff calculation and storage.
         """
+        logger.info("Beginning diff")
         diff = diff_class()
 
         for obj_type in intersection(self.top_level, source.top_level):
@@ -353,6 +368,7 @@ class DSync:
                 diff.add(diff_element)
 
         # Notify the diff that it has been fully populated, in case it wishes to print, save to a file, etc.
+        logger.info("Diff complete")
         diff.complete()
         return diff
 
@@ -484,21 +500,29 @@ class DSync:
             ):
                 diff_element.add_child(child_diff_element)
 
-    def create_object(self, object_type, keys, params):
+    def create_object(self, object_type, keys, params, continue_on_failure: bool = False):
         """TODO: move to a `create` method on DSyncModel class."""
-        return self._crud_change(action="create", keys=keys, object_type=object_type, params=params)
+        return self._crud_change(
+            action="create", keys=keys, object_type=object_type, params=params, continue_on_failure=continue_on_failure,
+        )
 
-    def update_object(self, object_type, keys, params):
+    def update_object(self, object_type, keys, params, continue_on_failure: bool = False):
         """TODO: move to a `update` method on DSyncModel class."""
-        return self._crud_change(action="update", object_type=object_type, keys=keys, params=params)
+        return self._crud_change(
+            action="update", object_type=object_type, keys=keys, params=params, continue_on_failure=continue_on_failure,
+        )
 
-    def delete_object(self, object_type, keys, params=None):
+    def delete_object(self, object_type, keys, params=None, continue_on_failure: bool = False):
         """TODO: move to a `delete` method on DSyncModel class."""
         if not params:
             params = {}
-        return self._crud_change(action="delete", object_type=object_type, keys=keys, params=params)
+        return self._crud_change(
+            action="delete", object_type=object_type, keys=keys, params=params, continue_on_failure=continue_on_failure,
+        )
 
-    def _crud_change(self, action: str, object_type: str, keys: dict, params: dict) -> DSyncModel:
+    def _crud_change(  # pylint: disable=too-many-arguments
+        self, action: str, object_type: str, keys: dict, params: dict, continue_on_failure: bool = False,
+    ) -> Optional[DSyncModel]:
         """Dispatcher function to Create, Update or Delete an object.
 
         Based on the type of the action and the type of the object,
@@ -516,14 +540,17 @@ class DSync:
             object_type (str): Attribute name on this class describing the desired DSyncModel subclass.
             keys (dict): Dictionary containing the primary attributes of an object and their value
             params (dict): Dictionary containing the attributes of an object and their value
+            continue_on_failure (bool): Whether to continue even if a failure or exception is encountered.
 
         Raises:
             ObjectCrudException: Object type does not exist in this class
 
         Returns:
-            DSyncModel: object created/updated/deleted
+            DSyncModel: object successfully created/updated/deleted
+            DSyncModel: object that failed to be updated/deleted, if continue_on_failure == True
+            None: if object creation failed and continue_on_failure == True
         """
-
+        # This is a coding error and not an operation error, so continue_on_failure does not apply
         if not hasattr(self, object_type):
             if action == "create":
                 raise ObjectNotCreated(f"Unable to find object type {object_type}")
@@ -537,12 +564,25 @@ class DSync:
         #   update_interface or create_device etc ...
         # If not apply the default one
 
-        if hasattr(self, f"{action}_{object_type}"):
-            item = getattr(self, f"{action}_{object_type}")(keys=keys, params=params)
-            logger.debug("%sd %s - %s", action, object_type, params)
-        else:
-            item = getattr(self, f"default_{action}")(object_type=object_type, keys=keys, params=params)
-            logger.debug("%sd %s = %s - %s (default)", action, object_type, keys, params)
+        try:
+            logger.info("Performing %s of %s %s (%s)", action, object_type, keys, params)
+            if hasattr(self, f"{action}_{object_type}"):
+                item = getattr(self, f"{action}_{object_type}")(keys=keys, params=params)
+                logger.debug("%sd %s - %s", action, object_type, params)
+            else:
+                item = getattr(self, f"default_{action}")(object_type=object_type, keys=keys, params=params)
+                logger.debug("%sd %s = %s - %s (default)", action, object_type, keys, params)
+        except ObjectCrudException as exc:
+            if not continue_on_failure:
+                raise
+            logger.error("Error during %s of object %s %s (%s): %s", action, object_type, keys, params, exc)
+            if isinstance(exc, (ObjectNotUpdated, ObjectNotDeleted)):
+                # Get any existing object if any, it's better than nothing
+                item = self.get(object_type, keys)
+            else:
+                # ObjectNotCreated
+                item = None
+
         return item
 
     # ----------------------------------------------------------------------------
@@ -577,9 +617,7 @@ class DSync:
         Returns:
             DSyncModel: Return the object after update
         """
-        object_class = getattr(self, object_type)
-        uid = object_class.create_unique_id(**keys)
-        item = self.get(object_type, uid)
+        item = self.get(object_type, keys)
 
         for attr, value in params.items():
             setattr(item, attr, value)
@@ -599,9 +637,7 @@ class DSync:
         Returns:
             DSyncModel: Return the object that has been deleted
         """
-        object_class = getattr(self, object_type)
-        uid = object_class.create_unique_id(**keys)
-        item = self.get(object_type, uid)
+        item = self.get(object_type, keys)
         self.remove(item)
         return item
 
@@ -609,17 +645,26 @@ class DSync:
     # Object Storage Management
     # ------------------------------------------------------------------------------
 
-    def get(self, obj: Union[str, DSyncModel, Type[DSyncModel]], uid: str) -> Optional[DSyncModel]:
+    def get(self, obj: Union[str, DSyncModel, Type[DSyncModel]], identifier: Union[str, dict]) -> Optional[DSyncModel]:
         """Get one object from the data store based on its unique id.
 
         Args:
             obj (class, DSyncModel, str): DSyncModel class or DSyncModel instance or modelname string
-            uid (str): Unique identifier of the object to retrieve
+            identifier (str, dict): Unique ID of the object to retrieve, or dict of unique identifier keys/values
         """
         if isinstance(obj, str):
             modelname = obj
+            if not hasattr(self, obj):
+                return None
+            object_class = getattr(self, obj)
         else:
+            object_class = obj
             modelname = obj.get_type()
+
+        if isinstance(identifier, str):
+            uid = identifier
+        else:
+            uid = object_class.create_unique_id(**identifier)
 
         return self._data[modelname].get(uid)
 

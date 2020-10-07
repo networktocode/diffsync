@@ -5,6 +5,7 @@ import pytest
 
 from dsync import DSync, DSyncModel
 from dsync.diff import Diff
+from dsync.exceptions import ObjectNotCreated, ObjectNotUpdated, ObjectNotDeleted
 
 
 @pytest.fixture()
@@ -192,6 +193,38 @@ class BackendA(GenericBackend):
 def backend_a():
     """Provide an instance of BackendA subclass of DSync."""
     dsync = BackendA()
+    dsync.load()
+    return dsync
+
+
+class ErrorProneBackendA(BackendA):
+    """A variant of BackendA that sometimes fails to create/update/delete objects."""
+
+    counter: int = 0
+
+    def default_create(self, *args, **kwargs):
+        self.counter = self.counter + 1
+        if not self.counter % 3:
+            raise ObjectNotCreated("Failed to create object!")
+        return super().default_create(*args, **kwargs)
+
+    def default_update(self, *args, **kwargs):
+        self.counter = self.counter + 1
+        if not self.counter % 3:
+            raise ObjectNotUpdated("Failed to update object!")
+        return super().default_update(*args, **kwargs)
+
+    def default_delete(self, *args, **kwargs):
+        self.counter = self.counter + 1
+        if not self.counter % 3:
+            raise ObjectNotDeleted("Failed to delete object!")
+        return super().default_delete(*args, **kwargs)
+
+
+@pytest.fixture
+def error_prone_backend_a():
+    """Provide an instance of ErrorProneBackendA subclass of DSync."""
+    dsync = ErrorProneBackendA()
     dsync.load()
     return dsync
 
