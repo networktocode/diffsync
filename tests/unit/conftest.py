@@ -1,5 +1,5 @@
 """Used to setup fixtures to be used through tests"""
-from typing import List, Optional, Tuple
+from typing import ClassVar, List, Optional, Tuple
 
 import pytest
 
@@ -53,7 +53,7 @@ class Device(DSyncModel):
 
     _modelname = "device"
     _identifiers = ("name",)
-    _attributes: Tuple[str, ...] = ("role",)
+    _attributes: ClassVar[Tuple[str, ...]] = ("role",)
     _children = {"interface": "interfaces"}
 
     name: str

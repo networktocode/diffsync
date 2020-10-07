@@ -15,7 +15,7 @@ from inspect import isclass
 import logging
 from collections import defaultdict
 from collections.abc import Iterable as ABCIterable, Mapping as ABCMapping
-from typing import Iterable, List, Mapping, Optional, Tuple, Type, Union
+from typing import ClassVar, Iterable, List, Mapping, Optional, Tuple, Type, Union
 
 from pydantic import BaseModel
 
@@ -47,26 +47,26 @@ class DSyncModel(BaseModel):
           be included in **at most** one of these three tuples.
     """
 
-    _modelname: str = "dsyncmodel"
+    _modelname: ClassVar[str] = "dsyncmodel"
     """Name of this model, used by DSync to store and look up instances of this model or its equivalents.
 
     Lowercase by convention; typically corresponds to the class name, but that is not enforced.
     """
 
-    _identifiers: Tuple[str, ...] = ()
+    _identifiers: ClassVar[Tuple[str, ...]] = ()
     """List of model fields which together uniquely identify an instance of this model.
 
     This identifier MUST be globally unique among all instances of this class.
     """
 
-    _shortname: Tuple[str, ...] = ()
+    _shortname: ClassVar[Tuple[str, ...]] = ()
     """Optional: list of model fields that together form a shorter identifier of an instance.
 
     This MUST be locally unique (e.g., interface shortnames MUST be unique among all interfaces on a given device),
     but does not need to be guaranteed to be globally unique among all instances.
     """
 
-    _attributes: Tuple[str, ...] = ()
+    _attributes: ClassVar[Tuple[str, ...]] = ()
     """Optional: list of additional model fields (beyond those in `_identifiers`) that are relevant to this model.
 
     Only the fields in `_attributes` (as well as any `_children` fields, see below) will be considered
@@ -77,7 +77,7 @@ class DSyncModel(BaseModel):
     Note: inclusion in `_attributes` is mutually exclusive from inclusion in `_identifiers`; a field cannot be in both!
     """
 
-    _children: Mapping[str, str] = {}
+    _children: ClassVar[Mapping[str, str]] = {}
     """Optional: dict of `{_modelname: field_name}` entries describing how to store "child" models in this model.
 
     When calculating a Diff or performing a sync, DSync will automatically recurse into these child models.
