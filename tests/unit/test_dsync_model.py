@@ -5,7 +5,9 @@ from typing import List
 import pytest
 
 from dsync import DSyncModel
-from dsync.exceptions import ObjectStoreWrongType, ObjectAlreadyExists
+from dsync.exceptions import ObjectStoreWrongType, ObjectAlreadyExists, ObjectNotFound
+
+from .conftest import Device, Interface
 
 
 def test_generic_dsync_model_methods(generic_dsync_model, make_site):
@@ -23,7 +25,7 @@ def test_generic_dsync_model_methods(generic_dsync_model, make_site):
         generic_dsync_model.add_child(make_site())
 
 
-def test_dsync_model_subclass_methods(make_site, make_device, make_interface):
+def test_dsync_model_subclass_getters(make_site, make_device, make_interface):
     """Check that the DSyncModel APIs work correctly for various subclasses."""
     site1 = make_site()
     device1 = make_device()
@@ -61,6 +63,13 @@ def test_dsync_model_subclass_methods(make_site, make_device, make_interface):
     assert device1.get_shortname() == "device1"
     assert device1_eth0.get_shortname() == "eth0"
 
+
+def test_dsync_model_subclass_add_remove(make_site, make_device, make_interface):
+    """Check that the DSyncModel add_child/remove_child APIs work correctly for various subclasses."""
+    site1 = make_site()
+    device1 = make_device()
+    device1_eth0 = make_interface()
+
     assert site1.devices == []
     site1.add_child(device1)
     assert site1.devices == ["device1"]
@@ -69,6 +78,13 @@ def test_dsync_model_subclass_methods(make_site, make_device, make_interface):
     with pytest.raises(ObjectAlreadyExists):
         site1.add_child(device1)
 
+    site1.remove_child(device1)
+    assert site1.devices == []
+    with pytest.raises(ObjectStoreWrongType):
+        site1.remove_child(device1_eth0)
+    with pytest.raises(ObjectNotFound):
+        site1.remove_child(device1)
+
     assert device1.interfaces == []
     device1.add_child(device1_eth0)
     assert device1.interfaces == ["device1__eth0"]
@@ -76,6 +92,49 @@ def test_dsync_model_subclass_methods(make_site, make_device, make_interface):
         device1.add_child(site1)
     with pytest.raises(ObjectAlreadyExists):
         device1.add_child(device1_eth0)
+
+    device1.remove_child(device1_eth0)
+    assert device1.interfaces == []
+    with pytest.raises(ObjectStoreWrongType):
+        device1.remove_child(site1)
+    with pytest.raises(ObjectNotFound):
+        device1.remove_child(device1_eth0)
+
+
+def test_dsync_model_subclass_crud(generic_dsync):
+    """Test basic CRUD operations on generic DSyncModel subclasses."""
+    device1 = Device.create(generic_dsync, {"name": "device1"}, {"role": "spine"})
+    assert isinstance(device1, Device)
+    assert device1.name == "device1"
+    assert device1.role == "spine"
+
+    device1_eth0 = Interface.create(
+        generic_dsync, {"name": "eth0", "device_name": "device1"}, {"description": "some description"},
+    )
+    assert isinstance(device1_eth0, Interface)
+    assert device1_eth0.name == "eth0"
+    assert device1_eth0.device_name == "device1"
+    assert device1_eth0.description == "some description"
+
+    device1 = device1.update(generic_dsync, {"site_name": "site1", "role": "leaf"})
+    assert isinstance(device1, Device)
+    assert device1.name == "device1"
+    assert device1.site_name == "site1"
+    assert device1.role == "leaf"
+
+    device1_eth0 = device1_eth0.update(generic_dsync, {"description": ""})
+    assert isinstance(device1_eth0, Interface)
+    assert device1_eth0.name == "eth0"
+    assert device1_eth0.device_name == "device1"
+    assert device1_eth0.description == ""
+
+    # TODO: negative tests - try to update identifiers with update(), for example
+
+    device1 = device1.delete(generic_dsync)
+    assert isinstance(device1, Device)
+
+    device1_eth0.delete(generic_dsync)
+    assert isinstance(device1_eth0, Interface)
 
 
 def test_dsync_model_subclass_validation():

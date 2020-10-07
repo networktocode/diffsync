@@ -5,14 +5,7 @@ import logging
 import pytest
 
 from dsync import DSync, DSyncModel
-from dsync.exceptions import (
-    ObjectAlreadyExists,
-    ObjectNotFound,
-    ObjectCrudException,
-    ObjectNotCreated,
-    ObjectNotUpdated,
-    ObjectNotDeleted,
-)
+from dsync.exceptions import ObjectAlreadyExists, ObjectNotFound, ObjectCrudException
 
 from .conftest import Site, Device, Interface, TrackedDiff
 
@@ -73,21 +66,11 @@ def test_generic_dsync_methods(generic_dsync, generic_dsync_model):
     assert list(generic_dsync.get_all(DSyncModel)) == []
     assert generic_dsync.get_by_uids([""], DSyncModel) == []
 
-    # Default (empty) DSync class doesn't know how to create any objects
-    with pytest.raises(ObjectNotCreated):
-        generic_dsync.create_object("dsyncmodel", {}, {})
-    with pytest.raises(ObjectNotUpdated):
-        generic_dsync.update_object("dsyncmodel", {}, {})
-    with pytest.raises(ObjectNotDeleted):
-        generic_dsync.delete_object("dsyncmodel", {}, {})
-
     diff_elements = generic_dsync._diff_objects(  # pylint: disable=protected-access
         [generic_dsync_model], [generic_dsync_model], generic_dsync,
     )
     assert len(diff_elements) == 1
     assert not diff_elements[0].has_diffs()
-    # No-op as diff_element.has_diffs() is False
-    generic_dsync._sync_from_diff_element(diff_elements[0])  # pylint: disable=protected-access
 
 
 def test_dsync_subclass_validation():
@@ -142,7 +125,7 @@ def test_dsync_subclass_methods_diff_sync(backend_a, backend_b):
     check_diff_symmetry(diff_ab, diff_ba)
 
     # Perform sync of one subtree of diffs
-    assert backend_a._sync_from_diff_element(diff_elements[0]) is True  # pylint: disable=protected-access
+    backend_a._sync_from_diff_element(diff_elements[0])  # pylint: disable=protected-access
     # Make sure the sync descended through the diff element all the way to the leafs
     assert backend_a.get(Interface, "nyc-spine1__eth0").description == "Interface 0/0"  # was initially Interface 0
     # Recheck diffs
@@ -213,45 +196,6 @@ def test_dsync_subclass_methods_crud(backend_a):
     backend_a.remove(site_atl_a)
     with pytest.raises(ObjectNotFound):
         backend_a.remove(site_atl_a)
-
-    # Test low-level default_* CRUD APIs
-    new_interface = backend_a.default_create(
-        "interface", {"device_name": "nyc-spine1", "name": "eth2"}, {"description": "Interface 2"},
-    )
-    assert new_interface.description == "Interface 2"
-    # default_* APIs don't add/remove from the DSync
-    backend_a.add(new_interface)
-
-    new_interface_2 = backend_a.default_update(
-        "interface", {"device_name": "nyc-spine1", "name": "eth2"}, {"description": "Intf 2"},
-    )
-    assert new_interface.description == "Intf 2"
-    assert new_interface_2 is new_interface
-
-    new_interface_3 = backend_a.default_delete("interface", {"device_name": "nyc-spine1", "name": "eth2"}, {})
-    assert new_interface_3 is new_interface
-    # default_* APIs don't add/remove from the DSync
-    backend_a.remove(new_interface)
-
-    # Test higher-level *_object CRUD APIs
-    new_device = backend_a.create_object("device", {"name": "new_device"}, {"role": "new_role", "site_name": "nyc"})
-    backend_a.add(new_device)
-    new_device_b = backend_a.get("device", "new_device")
-    assert new_device is new_device_b
-    assert new_device.role == "new_role"
-    assert new_device.site_name == "nyc"
-
-    new_device_2 = backend_a.update_object("device", {"name": "new_device"}, {"role": "another_role"})
-    new_device_2_b = backend_a.get(Device, "new_device")
-    assert new_device_2 is new_device_2_b
-    assert new_device_2 is new_device
-    assert new_device.role == "another_role"
-
-    new_device_3 = backend_a.delete_object("device", {"name": "new_device"})
-    backend_a.remove(new_device_3)
-    new_device_3_b = backend_a.get("device", "new_device")
-    assert new_device_3 is new_device
-    assert new_device_3_b is None
 
 
 def test_dsync_subclass_methods_sync_exceptions(caplog, error_prone_backend_a, backend_b):

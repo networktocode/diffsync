@@ -121,6 +121,64 @@ class DSyncModel(BaseModel):
         return self.get_unique_id()
 
     @classmethod
+    def create(cls, dsync: "DSync", ids: dict, attrs: dict) -> Optional["DSyncModel"]:
+        """Instantiate this class, along with any platform-specific data creation.
+
+        Args:
+            dsync: The master data store for other DSyncModel instances that we might need to reference
+            ids: Dictionary of unique-identifiers needed to create the new object
+            attrs: Dictionary of additional attributes to set on the new object
+
+        Returns:
+            DSyncModel: instance of this class, if all data was successfully created.
+            None: if data creation failed in such a way that child objects of this model should not be created.
+
+        Raises:
+            ObjectNotCreated: if an error occurred.
+        """
+        # Generic implementation has no platform-specific data to create and therefore doesn't use the dsync object
+        # pylint: disable=unused-argument
+        return cls(**ids, **attrs)
+
+    def update(self, dsync: "DSync", attrs: dict) -> Optional["DSyncModel"]:
+        """Update the attributes of this instance, along with any platform-specific data updates.
+
+        Args:
+            dsync: The master data store for other DSyncModel instances that we might need to reference
+            attrs: Dictionary of attributes to update on the object
+
+        Returns:
+            DSyncModel: this instance, if all data was successfully updated.
+            None: if data updates failed in such a way that child objects of this model should not be modified.
+
+        Raises:
+            ObjectNotUpdated: if an error occurred.
+        """
+        # Generic implementation has no platform-specific data to update and therefore doesn't use the dsync object
+        # pylint: disable=unused-argument
+        for attr, value in attrs.items():
+            # TODO: enforce that only attrs in self._attributes can be updated in this way?
+            setattr(self, attr, value)
+        return self
+
+    def delete(self, dsync: "DSync") -> Optional["DSyncModel"]:
+        """Delete any platform-specific data corresponding to this instance.
+
+        Args:
+            dsync: The master data store for other DSyncModel instances that we might need to reference
+
+        Returns:
+            DSyncModel: this instance, if all data was successfully deleted.
+            None: if data deletion failed in such a way that child objects of this model should not be deleted.
+
+        Raises:
+            ObjectNotDeleted: if an error occurred.
+        """
+        # Generic implementation has no platform-specific data to delete and therefore doesn't use the dsync object
+        # pylint: disable=unused-argument
+        return self
+
+    @classmethod
     def get_type(cls):
         """Return the type AKA modelname of the object or the class
 
@@ -270,6 +328,10 @@ class DSync:
         """Load all desired data from whatever backend data source into this instance."""
         # No-op in this generic class
 
+    # ------------------------------------------------------------------------------
+    # Synchronization between DSync instances
+    # ------------------------------------------------------------------------------
+
     def sync_from(self, source: "DSync", diff_class: Type[Diff] = Diff, continue_on_failure: bool = False):
         """Synchronize data from the given source DSync object into the current DSync object.
 
@@ -296,7 +358,7 @@ class DSync:
 
     def _sync_from_diff_element(
         self, element: DiffElement, continue_on_failure: bool = False, parent_model: DSyncModel = None
-    ) -> bool:
+    ):
         """Synchronize a given DiffElement (and its children, if any) into this DSync.
 
         Helper method for `sync_from`/`sync_to`; this generally shouldn't be called on its own.
@@ -305,52 +367,65 @@ class DSync:
             element: DiffElement to synchronize diffs from
             continue_on_failure: Whether to continue synchronizing even if failures or errors are encountered.
             parent_model: Parent object to update (`add_child`/`remove_child`) if the sync creates/deletes an object.
-
-        Returns:
-            bool: Return False if there is nothing to sync
         """
-        if not element.has_diffs():
-            return False
+        # pylint: disable=too-many-branches
+        # GFM: I made a few attempts at refactoring this to reduce the branching, but found that it was less readable.
+        # So let's live with the slightly too high number of branches (14/12) for now.
+        object_class = getattr(self, element.type)
+        obj = self.get(object_class, element.keys)
+        attrs = (
+            {attr_key: element.source_attrs[attr_key] for attr_key in element.get_attrs_keys()}
+            if element.source_attrs is not None
+            else {}
+        )
 
-        if element.source_attrs is None:
-            obj = self.delete_object(
-                object_type=element.type, keys=element.keys, continue_on_failure=continue_on_failure,
+        try:
+            if element.action == "create":
+                if obj:
+                    raise ObjectNotCreated(f"Failed to create {object_class.get_type()} {element.keys} - it exists!")
+                logger.info("Creating %s %s (%s)", object_class.get_type(), element.keys, attrs)
+                obj = object_class.create(dsync=self, ids=element.keys, attrs=attrs)
+            elif element.action == "update":
+                if not obj:
+                    raise ObjectNotUpdated(f"Failed to update {object_class.get_type()} {element.keys} - not found!")
+                logger.info("Updating %s %s with %s", object_class.get_type(), element.keys, attrs)
+                obj = obj.update(dsync=self, attrs=attrs)
+            elif element.action == "delete":
+                if not obj:
+                    raise ObjectNotDeleted(f"Failed to delete {object_class.get_type()} {element.keys} - not found!")
+                logger.info("Deleting %s %s", object_class.get_type(), element.keys)
+                obj = obj.delete(dsync=self)
+        except ObjectCrudException as exception:
+            logger.error(
+                "Error during %s of %s %s (%s): %s",
+                element.action,
+                object_class.get_type(),
+                element.keys,
+                attrs,
+                exception,
             )
-            if obj is not None:
-                self.remove(obj)
-                if parent_model:
-                    parent_model.remove_child(obj)
-        elif element.dest_attrs is None:
-            obj = self.create_object(
-                object_type=element.type,
-                keys=element.keys,
-                params={attr_key: element.source_attrs[attr_key] for attr_key in element.get_attrs_keys()},
-                continue_on_failure=continue_on_failure,
-            )
-            if obj is not None:
-                self.add(obj)
-                if parent_model:
-                    parent_model.add_child(obj)
-        elif any(
-            element.source_attrs[attr_key] != element.dest_attrs[attr_key] for attr_key in element.get_attrs_keys()
-        ):
-            obj = self.update_object(
-                object_type=element.type,
-                keys=element.keys,
-                params={attr_key: element.source_attrs[attr_key] for attr_key in element.get_attrs_keys()},
-                continue_on_failure=continue_on_failure,
-            )
-        else:
-            # No change needed
-            obj = self.get(element.type, element.keys)
+            if not continue_on_failure:
+                raise
 
-        if obj is not None:
-            for child in element.get_children():
-                self._sync_from_diff_element(child, continue_on_failure=continue_on_failure, parent_model=obj)
-        else:
+        if obj is None:
             logger.warning("Not syncing children of %s %s", element.type, element.keys)
+            return
 
-        return True
+        if element.action == "create":
+            self.add(obj)
+            if parent_model:
+                parent_model.add_child(obj)
+        elif element.action == "delete":
+            self.remove(obj)
+            if parent_model:
+                parent_model.remove_child(obj)
+
+        for child in element.get_children():
+            self._sync_from_diff_element(child, continue_on_failure=continue_on_failure, parent_model=obj)
+
+    # ------------------------------------------------------------------------------
+    # Diff calculation and construction
+    # ------------------------------------------------------------------------------
 
     def diff_from(self, source: "DSync", diff_class: Type[Diff] = Diff) -> Diff:
         """Generate a Diff describing the difference from the other DSync to this one.
@@ -503,185 +578,6 @@ class DSync:
                 source_root=source_root,
             ):
                 diff_element.add_child(child_diff_element)
-
-    def create_object(
-        self, object_type: str, keys: dict, params: dict, continue_on_failure: bool = False,
-    ) -> Optional[DSyncModel]:
-        """Create an instance of the given object type.
-
-        TODO: move this to a `create` method on DSyncModel class?
-
-        Returns:
-            DSyncModel: object that was successfully created
-            None: if object creation fails and `continue_on_failure` is True
-
-        Raises:
-            ObjectNotCreated: if object creation fails and `continue_on_failure` is False
-        """
-        return self._crud_change(
-            action="create", keys=keys, object_type=object_type, params=params, continue_on_failure=continue_on_failure,
-        )
-
-    def update_object(
-        self, object_type: str, keys: dict, params: dict, continue_on_failure: bool = False,
-    ) -> Optional[DSyncModel]:
-        """Update an existing instance of the given object type.
-
-        TODO: move this to an `update` method on DSyncModel class?
-
-        Returns:
-            DSyncModel: object that was successfully updated
-            DSyncModel: if object update fails, `continue_on_failure` is True, and child objects can still be managed.
-            None: If object update fails, `continue_on_failure` is True, but the failure means it is not appropriate
-                to proceed to creating/updating/deleting child objects of this model.
-
-        Raises:
-            ObjectNotUpdated: if object update fails and `continue_on_failure` is False
-        """
-        return self._crud_change(
-            action="update", object_type=object_type, keys=keys, params=params, continue_on_failure=continue_on_failure,
-        )
-
-    def delete_object(
-        self, object_type: str, keys: dict, params: Optional[dict] = None, continue_on_failure: bool = False,
-    ) -> Optional[DSyncModel]:
-        """Delete an existing instance of the given object type.
-
-        TODO: move this to a `delete` method on DSyncModel class?
-
-        Returns:
-            DSyncModel: object that was successfully deleted
-            DSyncModel: if object deletion fails, `continue_on_failure` is True, and child objects can still be managed.
-            None: if object delete fails, `continue_on_failure` is True, but the failure means it is not appropriate
-                to proceed to deleting child objects of this model.
-
-        Raises:
-            ObjectNotDeleted: if object delete fails and `continue_on_failure` is False
-        """
-        if not params:
-            params = {}
-        return self._crud_change(
-            action="delete", object_type=object_type, keys=keys, params=params, continue_on_failure=continue_on_failure,
-        )
-
-    def _crud_change(  # pylint: disable=too-many-arguments
-        self, action: str, object_type: str, keys: dict, params: dict, continue_on_failure: bool = False,
-    ) -> Optional[DSyncModel]:
-        """Dispatcher function to Create, Update or Delete an object.
-
-        Based on the type of the action and the type of the object,
-        we'll first try to execute a function named after the object type and the action
-            "{action}_{object_type}"   update_interface or delete_device ...
-        if such function is not available, the default function will be executed instead
-            default_create, default_update or default_delete
-
-        The goal is to all each DSync class to insert its own logic per object type when we manipulate these objects
-
-        TODO: move to DSyncModel class?
-
-        Args:
-            action (str): type of action, must be create, update or delete
-            object_type (str): Attribute name on this class describing the desired DSyncModel subclass.
-            keys (dict): Dictionary containing the primary attributes of an object and their value
-            params (dict): Dictionary containing the attributes of an object and their value
-            continue_on_failure (bool): Whether to continue even if a failure or exception is encountered.
-
-        Raises:
-            ObjectCrudException: Object type does not exist in this class
-
-        Returns:
-            DSyncModel: object successfully created/updated/deleted
-            DSyncModel: object that failed to be updated/deleted, if continue_on_failure == True
-            None: if object creation failed and continue_on_failure == True
-        """
-        # This is a coding error and not an operation error, so continue_on_failure does not apply
-        if not hasattr(self, object_type):
-            if action == "create":
-                raise ObjectNotCreated(f"Unable to find object type {object_type}")
-            if action == "update":
-                raise ObjectNotUpdated(f"Unable to find object type {object_type}")
-            if action == "delete":
-                raise ObjectNotDeleted(f"Unable to find object type {object_type}")
-            raise ObjectCrudException(f"Unable to find object type {object_type}")
-
-        # Check if a specific crud function is available
-        #   update_interface or create_device etc ...
-        # If not apply the default one
-
-        try:
-            logger.info("Performing %s of %s %s (%s)", action, object_type, keys, params)
-            if hasattr(self, f"{action}_{object_type}"):
-                item = getattr(self, f"{action}_{object_type}")(keys=keys, params=params)
-                logger.debug("%sd %s - %s", action, object_type, params)
-            else:
-                item = getattr(self, f"default_{action}")(object_type=object_type, keys=keys, params=params)
-                logger.debug("%sd %s = %s - %s (default)", action, object_type, keys, params)
-        except ObjectCrudException as exc:
-            if not continue_on_failure:
-                raise
-            logger.error("Error during %s of object %s %s (%s): %s", action, object_type, keys, params, exc)
-            if isinstance(exc, (ObjectNotUpdated, ObjectNotDeleted)):
-                # Get any existing object if any, it's better than nothing
-                item = self.get(object_type, keys)
-            else:
-                # ObjectNotCreated
-                item = None
-
-        return item
-
-    # ----------------------------------------------------------------------------
-    def default_create(self, object_type, keys, params):
-        """Default function to create a new object in the local storage.
-
-        This function will be called if a more specific function of type create_<object_type> is not defined
-
-        Args:
-            object_type (str): Attribute name on this class identifying the DSyncModel subclass of the object
-            keys (dict): Dictionary containing the primary attributes of an object and their value
-            params (dict): Dictionary containing the attributes of an object and their value
-
-        Returns:
-            DSyncModel: Return the newly created object
-        """
-        object_class = getattr(self, object_type)
-        item = object_class(**keys, **params)
-        return item
-
-    def default_update(self, object_type, keys, params):
-        """Update an object locally based on its primary keys and attributes.
-
-        This function will be called if a more specific function of type update_<object_type> is not defined
-
-        Args:
-            object_type (str): Attribute name on this class identifying the DSyncModel subclass of the object
-            keys (dict): Dictionary containing the primary attributes of an object and their value
-            params (dict): Dictionary containing the attributes of an object and their value
-
-        Returns:
-            DSyncModel: Return the object after update
-        """
-        item = self.get(object_type, keys)
-
-        for attr, value in params.items():
-            setattr(item, attr, value)
-
-        return item
-
-    def default_delete(self, object_type, keys, params):  # pylint: disable=unused-argument
-        """Delete an object locally based on its primary keys and attributes.
-
-        This function will be called if a more specific function of type delete_<object_type> is not defined
-
-        Args:
-            object_type (str): Attribute name on this class identifying the DSyncModel subclass of the object
-            keys (dict): Dictionnary containings the primary attributes of an object and their value
-            params: Unused argument included only for parallels to the other APIs.
-
-        Returns:
-            DSyncModel: Return the object that has been deleted
-        """
-        item = self.get(object_type, keys)
-        return item
 
     # ------------------------------------------------------------------------------
     # Object Storage Management

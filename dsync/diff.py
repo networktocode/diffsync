@@ -141,6 +141,26 @@ class DiffElement:
         """Basic string representation of a DiffElement."""
         return f"{self.type} : {self.name} : {self.keys} : {self.source_attrs} : {self.dest_attrs}"
 
+    @property
+    def action(self) -> Optional[str]:
+        """Action, if any, that should be taken to remediate the diffs described by this element.
+
+        Returns:
+            str: "create", "update", "delete", or None
+        """
+        if self.source_attrs is not None and self.dest_attrs is None:
+            return "create"
+        if self.source_attrs is None and self.dest_attrs is not None:
+            return "delete"
+        if (
+            self.source_attrs is not None
+            and self.dest_attrs is not None
+            and any(self.source_attrs[attr_key] != self.dest_attrs[attr_key] for attr_key in self.get_attrs_keys())
+        ):
+            return "update"
+
+        return None
+
     # TODO: separate into set_source_attrs() and set_dest_attrs() methods, or just use direct property access instead?
     def add_attrs(self, source: Optional[dict] = None, dest: Optional[dict] = None):
         """Set additional attributes of a source and/or destination item that may result in diffs."""

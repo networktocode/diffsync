@@ -152,7 +152,7 @@ def mypy(context, name=NAME, python_ver=PYTHON_VER):
     # pty is set to true to properly run the docker commands due to the invocation process of docker
     # https://docs.pyinvoke.org/en/latest/api/runners.html - Search for pty for more information
     docker = f"docker run -it -v {PWD}:/local {name}-{python_ver}:latest"
-    context.run(f"{docker} sh -c \"find . -name '*.py' | xargs mypy\"", pty=True)
+    context.run(f"{docker} sh -c \"find . -name '*.py' | xargs mypy --show-error-codes \"", pty=True)
 
 
 @task

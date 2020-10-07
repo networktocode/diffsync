@@ -25,6 +25,36 @@ def generic_dsync_model():
     return DSyncModel()
 
 
+class ErrorProneModel(DSyncModel):
+    """Test class that sometimes throws exceptions when creating/updating/deleting instances."""
+
+    _counter: ClassVar[int] = 0
+
+    @classmethod
+    def create(cls, dsync: DSync, ids: dict, attrs: dict):
+        """As DSyncModel.create(), but periodically throw exceptions."""
+        cls._counter += 1
+        if not cls._counter % 3:
+            raise ObjectNotCreated("Random creation error!")
+        return super().create(dsync, ids, attrs)
+
+    def update(self, dsync: DSync, attrs: dict):
+        """As DSyncModel.update(), but periodically throw exceptions."""
+        # pylint: disable=protected-access
+        self.__class__._counter += 1
+        if not self.__class__._counter % 3:
+            raise ObjectNotUpdated("Random update error!")
+        return super().update(dsync, attrs)
+
+    def delete(self, dsync: DSync):
+        """As DSyncModel.delete(), but periodically throw exceptions."""
+        # pylint: disable=protected-access
+        self.__class__._counter += 1
+        if not self.__class__._counter % 3:
+            raise ObjectNotDeleted("Random deletion error!")
+        return super().delete(dsync)
+
+
 class Site(DSyncModel):
     """Concrete DSyncModel subclass representing a site or location that contains devices."""
 
@@ -197,28 +227,24 @@ def backend_a():
     return dsync
 
 
+class ErrorProneSiteA(ErrorProneModel, SiteA):
+    """A Site that sometimes throws exceptions."""
+
+
+class ErrorProneDeviceA(ErrorProneModel, DeviceA):
+    """A Device that sometimes throws exceptions."""
+
+
+class ErrorProneInterface(ErrorProneModel, Interface):
+    """An Interface that sometimes throws exceptions."""
+
+
 class ErrorProneBackendA(BackendA):
     """A variant of BackendA that sometimes fails to create/update/delete objects."""
 
-    counter: int = 0
-
-    def default_create(self, *args, **kwargs):
-        self.counter = self.counter + 1
-        if not self.counter % 3:
-            raise ObjectNotCreated("Failed to create object!")
-        return super().default_create(*args, **kwargs)
-
-    def default_update(self, *args, **kwargs):
-        self.counter = self.counter + 1
-        if not self.counter % 3:
-            raise ObjectNotUpdated("Failed to update object!")
-        return super().default_update(*args, **kwargs)
-
-    def default_delete(self, *args, **kwargs):
-        self.counter = self.counter + 1
-        if not self.counter % 3:
-            raise ObjectNotDeleted("Failed to delete object!")
-        return super().default_delete(*args, **kwargs)
+    site = ErrorProneSiteA
+    device = ErrorProneDeviceA
+    interface = ErrorProneInterface
 
 
 @pytest.fixture
