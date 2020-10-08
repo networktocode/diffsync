@@ -38,21 +38,21 @@ class ErrorProneModel(DSyncModel):
             raise ObjectNotCreated("Random creation error!")
         return super().create(dsync, ids, attrs)
 
-    def update(self, dsync: DSync, attrs: dict):
+    def update(self, attrs: dict):
         """As DSyncModel.update(), but periodically throw exceptions."""
         # pylint: disable=protected-access
         self.__class__._counter += 1
         if not self.__class__._counter % 3:
             raise ObjectNotUpdated("Random update error!")
-        return super().update(dsync, attrs)
+        return super().update(attrs)
 
-    def delete(self, dsync: DSync):
+    def delete(self):
         """As DSyncModel.delete(), but periodically throw exceptions."""
         # pylint: disable=protected-access
         self.__class__._counter += 1
         if not self.__class__._counter % 3:
             raise ObjectNotDeleted("Random deletion error!")
-        return super().delete(dsync)
+        return super().delete()
 
 
 class Site(DSyncModel):

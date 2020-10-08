@@ -105,6 +105,7 @@ def test_dsync_model_subclass_crud(generic_dsync):
     """Test basic CRUD operations on generic DSyncModel subclasses."""
     device1 = Device.create(generic_dsync, {"name": "device1"}, {"role": "spine"})
     assert isinstance(device1, Device)
+    assert device1.dsync == generic_dsync
     assert device1.name == "device1"
     assert device1.role == "spine"
 
@@ -112,17 +113,18 @@ def test_dsync_model_subclass_crud(generic_dsync):
         generic_dsync, {"name": "eth0", "device_name": "device1"}, {"description": "some description"},
     )
     assert isinstance(device1_eth0, Interface)
+    assert device1_eth0.dsync == generic_dsync
     assert device1_eth0.name == "eth0"
     assert device1_eth0.device_name == "device1"
     assert device1_eth0.description == "some description"
 
-    device1 = device1.update(generic_dsync, {"site_name": "site1", "role": "leaf"})
+    device1 = device1.update({"site_name": "site1", "role": "leaf"})
     assert isinstance(device1, Device)
     assert device1.name == "device1"
     assert device1.site_name == "site1"
     assert device1.role == "leaf"
 
-    device1_eth0 = device1_eth0.update(generic_dsync, {"description": ""})
+    device1_eth0 = device1_eth0.update({"description": ""})
     assert isinstance(device1_eth0, Interface)
     assert device1_eth0.name == "eth0"
     assert device1_eth0.device_name == "device1"
@@ -130,10 +132,10 @@ def test_dsync_model_subclass_crud(generic_dsync):
 
     # TODO: negative tests - try to update identifiers with update(), for example
 
-    device1 = device1.delete(generic_dsync)
+    device1 = device1.delete()
     assert isinstance(device1, Device)
 
-    device1_eth0.delete(generic_dsync)
+    device1_eth0.delete()
     assert isinstance(device1_eth0, Interface)
 
 

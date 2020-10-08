@@ -4,10 +4,10 @@ import logging
 
 import pytest
 
-from dsync import DSync, DSyncModel
+from dsync import DSync, DSyncModel, DSyncFlags
 from dsync.exceptions import ObjectAlreadyExists, ObjectNotFound, ObjectCrudException
 
-from .conftest import Site, Device, Interface, TrackedDiff
+from .conftest import Site, Device, Interface, TrackedDiff, BackendA
 
 
 def test_generic_dsync_methods(generic_dsync, generic_dsync_model):
@@ -110,6 +110,7 @@ def test_dsync_subclass_methods_diff_sync(backend_a, backend_b):
     )
     assert len(diff_elements) == 4  # atl, nyc, sfo, rdu
     for diff_element in diff_elements:
+        diff_element.print_detailed()
         assert diff_element.has_diffs()
     # We don't inspect the contents of the diff elements in detail here - see test_diff_element.py for that
 
@@ -204,7 +205,7 @@ def test_dsync_subclass_methods_sync_exceptions(caplog, error_prone_backend_a, b
     with pytest.raises(ObjectCrudException):
         error_prone_backend_a.sync_from(backend_b)
 
-    error_prone_backend_a.sync_from(backend_b, continue_on_failure=True)
+    error_prone_backend_a.sync_from(backend_b, flags=DSyncFlags.CONTINUE_ON_FAILURE)
     # Not all sync operations succeeded on the first try
     remaining_diffs = error_prone_backend_a.diff_from(backend_b)
     remaining_diffs.print_detailed()
@@ -217,7 +218,7 @@ def test_dsync_subclass_methods_sync_exceptions(caplog, error_prone_backend_a, b
     # Retry up to 10 times, we should sync successfully eventually
     for i in range(10):
         print(f"Sync retry #{i}")
-        error_prone_backend_a.sync_from(backend_b, continue_on_failure=True)
+        error_prone_backend_a.sync_from(backend_b, flags=DSyncFlags.CONTINUE_ON_FAILURE)
         remaining_diffs = error_prone_backend_a.diff_from(backend_b)
         remaining_diffs.print_detailed()
         if remaining_diffs.has_diffs():
@@ -230,3 +231,47 @@ def test_dsync_subclass_methods_sync_exceptions(caplog, error_prone_backend_a, b
             break
     else:
         pytest.fail("Sync was still incomplete after 10 retries")
+
+
+def test_dsync_subclass_methods_diff_sync_skip_flags():
+    """Test diff and sync behavior when using the SKIP_UNMATCHED_* flags."""
+    baseline = BackendA()
+    baseline.load()
+
+    extra_models = BackendA()
+    extra_models.load()
+    extra_site = extra_models.site(name="lax")
+    extra_models.add(extra_site)
+    extra_device = extra_models.device(name="nyc-spine3", site_name="nyc", role="spine")
+    extra_models.get(extra_models.site, "nyc").add_child(extra_device)
+    extra_models.add(extra_device)
+
+    missing_models = BackendA()
+    missing_models.load()
+    missing_models.remove(missing_models.get(missing_models.site, "rdu"))
+    missing_device = missing_models.get(missing_models.device, "sfo-spine2")
+    missing_models.get(missing_models.site, "sfo").remove_child(missing_device)
+    missing_models.remove(missing_device)
+
+    assert baseline.diff_from(extra_models).has_diffs()
+    assert baseline.diff_to(missing_models).has_diffs()
+
+    # SKIP_UNMATCHED_SRC should mean that extra models in the src are not flagged for creation in the dest
+    assert not baseline.diff_from(extra_models, flags=DSyncFlags.SKIP_UNMATCHED_SRC).has_diffs()
+    # SKIP_UNMATCHED_DST should mean that missing models in the src are not flagged for deletion from the dest
+    assert not baseline.diff_from(missing_models, flags=DSyncFlags.SKIP_UNMATCHED_DST).has_diffs()
+    # SKIP_UNMATCHED_BOTH means, well, both
+    assert not extra_models.diff_from(missing_models, flags=DSyncFlags.SKIP_UNMATCHED_BOTH).has_diffs()
+    assert not extra_models.diff_to(missing_models, flags=DSyncFlags.SKIP_UNMATCHED_BOTH).has_diffs()
+
+    baseline.sync_from(extra_models, flags=DSyncFlags.SKIP_UNMATCHED_SRC)
+    # New objects should not have been created
+    assert baseline.get(baseline.site, "lax") is None
+    assert baseline.get(baseline.device, "nyc-spine3") is None
+    assert "nyc-spine3" not in baseline.get(baseline.site, "nyc").devices
+
+    baseline.sync_from(missing_models, flags=DSyncFlags.SKIP_UNMATCHED_DST)
+    # Objects should not have been deleted
+    assert baseline.get(baseline.site, "rdu") is not None
+    assert baseline.get(baseline.device, "sfo-spine2") is not None
+    assert "sfo-spine2" in baseline.get(baseline.site, "sfo").devices

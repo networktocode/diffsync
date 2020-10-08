@@ -95,7 +95,7 @@ class BackendA(DSync):
 ## Update Remote system on Sync
 
 To update a remote system, you need to extend your DSyncModel class(es) to define your own `create`, `update` and/or `delete` methods for each model.
-These methods will receive a reference to your DSync class in case they need to use it to look up other model instances from the DSync's cache.
+A DSyncModel instance stores a reference to its parent DSync class in case you need to use it to look up other model instances from the DSync's cache.
 
 ```python
 class Device(DSyncModel):
@@ -106,13 +106,13 @@ class Device(DSyncModel):
         ## TODO add your own logic here to create the device on the remote system
         return cls(**ids, **attrs)
 
-    def update(self, dsync, attrs):
+    def update(self, attrs):
         ## TODO add your own logic here to update the device on the remote system
         for attr, value in attrs.items():
             setattr(self, attr, value)
         return self
 
-    def delete(self, dsync):
+    def delete(self):
         ## TODO add your own logic here to delete the device on the remote system
         return self
 ```
