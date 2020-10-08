@@ -107,7 +107,10 @@ def pytest(context, name=NAME, python_ver=PYTHON_VER):
     # https://docs.pyinvoke.org/en/latest/api/runners.html - Search for pty for more information
     # Install python module
     docker = f"docker run -it -v {PWD}:/local {name}-{python_ver}:latest"
-    context.run(f"{docker} /bin/bash -c 'poetry install && pytest -vv'", pty=True)
+    context.run(
+        f"{docker} /bin/bash -c 'poetry install && pytest --cov=dsync --cov-report html --cov-report term -vv'",
+        pty=True,
+    )
 
 
 @task
