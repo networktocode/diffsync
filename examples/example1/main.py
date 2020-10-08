@@ -9,10 +9,10 @@ def main():
     """Demonstrate DSync behavior using the example backends provided."""
     # pylint: disable=invalid-name
 
-    a = BackendA()
+    a = BackendA(name="Backend-A")
     a.load()
 
-    b = BackendB()
+    b = BackendB(name="Backend-B")
     b.load()
 
     c = BackendC()

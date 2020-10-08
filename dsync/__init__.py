@@ -240,10 +240,13 @@ class DSync:
     # modelname1 = MyModelClass1
     # modelname2 = MyModelClass2
 
+    type: Union[str, None] = None
+    """Type of the object, will default to the name of the class if not provided."""
+
     top_level: List[str] = []
     """List of top-level modelnames to begin from when diffing or synchronizing."""
 
-    def __init__(self):
+    def __init__(self, name=None):
         """Generic initialization function.
 
         Subclasses should be careful to call super().__init__() if they override this method.
@@ -253,6 +256,13 @@ class DSync:
 
         `self._data[modelname][unique_id] == model_instance`
         """
+
+        # If the type is not defined, use the name of the class as the default value
+        if self.type is None:
+            self.type = self.__class__.__name__
+
+        # If the name has not been provided, use the type as the name
+        self.name = name if name else self.type
 
     def __init_subclass__(cls):
         """Validate that references to specific DSyncModels use the correct modelnames.
@@ -397,11 +407,19 @@ class DSync:
 
             if src_obj:
                 diff_element = DiffElement(
-                    obj_type=src_obj.get_type(), name=src_obj.get_shortname(), keys=src_obj.get_identifiers()
+                    obj_type=src_obj.get_type(),
+                    name=src_obj.get_shortname(),
+                    keys=src_obj.get_identifiers(),
+                    source_name=source_root.name,
+                    dest_name=self.name,
                 )
             elif dst_obj:
                 diff_element = DiffElement(
-                    obj_type=dst_obj.get_type(), name=dst_obj.get_shortname(), keys=dst_obj.get_identifiers()
+                    obj_type=dst_obj.get_type(),
+                    name=dst_obj.get_shortname(),
+                    keys=dst_obj.get_identifiers(),
+                    source_name=source_root.name,
+                    dest_name=self.name,
                 )
             else:
                 # Should be unreachable
