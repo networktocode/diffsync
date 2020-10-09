@@ -88,10 +88,12 @@ class Diff:
 
 
 @total_ordering
-class DiffElement:
+class DiffElement:  # pylint: disable=too-many-instance-attributes
     """DiffElement object, designed to represent a single item/object that may or may not have any diffs."""
 
-    def __init__(self, obj_type: str, name: str, keys: dict):
+    def __init__(
+        self, obj_type: str, name: str, keys: dict, source_name: str = "source", dest_name: str = "dest"
+    ):  # pylint: disable=too-many-arguments
         """Instantiate a DiffElement.
 
         Args:
@@ -99,6 +101,8 @@ class DiffElement:
             name (str): Human-readable name of the object being described, as in DSyncModel.get_shortname().
                 This name must be unique within the context of the Diff that is the direct parent of this DiffElement.
             keys (dict): Primary keys and values uniquely describing this object, as in DSyncModel.get_identifiers().
+            source_name (str): Name of the source DSync object
+            dest_name (str): Name of the destination DSync object
         """
         if not isinstance(obj_type, str):
             raise ValueError(f"obj_type must be a string (not {type(obj_type)})")
@@ -109,6 +113,8 @@ class DiffElement:
         self.type = obj_type
         self.name = name
         self.keys = keys
+        self.source_name = source_name
+        self.dest_name = dest_name
         # Note: *_attrs == None if no target object exists; it'll be an empty dict if it exists but has no _attributes
         self.source_attrs: Optional[dict] = None
         self.dest_attrs: Optional[dict] = None
@@ -139,7 +145,7 @@ class DiffElement:
 
     def __str__(self):
         """Basic string representation of a DiffElement."""
-        return f"{self.type} : {self.name} : {self.keys} : {self.source_attrs} : {self.dest_attrs}"
+        return f"{self.type} : {self.name} : {self.keys} : {self.source_name}:{self.source_attrs} : {self.dest_name}:{self.dest_attrs}"
 
     @property
     def action(self) -> Optional[str]:
@@ -230,14 +236,16 @@ class DiffElement:
         margin = " " * indent
 
         if self.source_attrs is None:
-            print(f"{margin}{self.type}: {self.name} MISSING in SOURCE")
+            print(f"{margin}{self.type}: {self.name} MISSING in {self.source_name}")
         elif self.dest_attrs is None:
-            print(f"{margin}{self.type}: {self.name} MISSING in DEST")
+            print(f"{margin}{self.type}: {self.name} MISSING in {self.dest_name}")
         else:
             print(f"{margin}{self.type}: {self.name}")
             # Only print attrs that have meaning in both source and dest
             for attr in self.get_attrs_keys():
                 if self.source_attrs[attr] != self.dest_attrs[attr]:
-                    print(f"{margin}  {attr}   S({self.source_attrs[attr]})   D({self.dest_attrs[attr]})")
+                    print(
+                        f"{margin}  {attr}   {self.source_name}({self.source_attrs[attr]})   {self.dest_name}({self.dest_attrs[attr]})"
+                    )
 
         self.child_diff.print_detailed(indent + 2)

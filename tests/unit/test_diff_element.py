@@ -10,6 +10,8 @@ def test_diff_element_empty():
     assert element.type == "interface"
     assert element.name == "eth0"
     assert element.keys == {"device_name": "device1", "name": "eth0"}
+    assert element.source_name == "source"
+    assert element.dest_name == "dest"
     assert element.source_attrs is None
     assert element.dest_attrs is None
     assert list(element.get_children()) == []
@@ -18,6 +20,11 @@ def test_diff_element_empty():
     assert not element.has_diffs(include_children=False)
     assert element.get_attrs_keys() == []
 
+    element2 = DiffElement(
+        "interface", "eth0", {"device_name": "device1", "name": "eth0"}, source_name="S1", dest_name="D1"
+    )
+    assert element2.source_name == "S1"
+    assert element2.dest_name == "D1"
     # TODO: test print_detailed
 
 

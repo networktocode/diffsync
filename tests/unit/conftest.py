@@ -287,6 +287,8 @@ class BackendB(GenericBackend):
     device = DeviceB
     place = PlaceB
 
+    type = "Backend_B"
+
     DATA = {
         "nyc": {
             "nyc-spine1": {"role": "spine", "interfaces": {"eth0": "Interface 0/0", "eth1": "Interface 1"}},
@@ -313,7 +315,7 @@ class BackendB(GenericBackend):
 @pytest.fixture
 def backend_b():
     """Provide an instance of BackendB subclass of DSync."""
-    dsync = BackendB()
+    dsync = BackendB(name="backend-b")
     dsync.load()
     return dsync
 

@@ -25,6 +25,8 @@ class BackendA(DSync):
 
     top_level = ["site"]
 
+    type = "Backend A"
+
     nb = None
 
     def load(self):

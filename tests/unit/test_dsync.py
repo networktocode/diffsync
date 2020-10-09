@@ -71,6 +71,8 @@ def test_generic_dsync_methods(generic_dsync, generic_dsync_model):
     )
     assert len(diff_elements) == 1
     assert not diff_elements[0].has_diffs()
+    assert diff_elements[0].source_name == "DSync"
+    assert diff_elements[0].dest_name == "DSync"
 
 
 def test_dsync_subclass_validation():
@@ -173,6 +175,19 @@ def test_dsync_subclass_methods_diff_sync(backend_a, backend_b):
     assert backend_a.get_by_uids(["sfo", "nyc"], "site") == [site_sfo_a, site_nyc_a]
     assert backend_a.get_by_uids(["nyc", "sfo"], Device) == []
     assert backend_a.get_by_uids(["nyc", "sfo"], "device") == []
+
+
+def test_dsync_subclass_methods_name_type(backend_a, backend_b):
+    """Test DSync name and type an actual concrete subclass.
+
+    backend_a is using the default name and type
+    backend_b is using a user defined name and type
+    """
+    assert backend_a.name == "BackendA"
+    assert backend_a.type == "BackendA"
+
+    assert backend_b.name == "backend-b"
+    assert backend_b.type == "Backend_B"
 
 
 def test_dsync_subclass_methods_crud(backend_a):
