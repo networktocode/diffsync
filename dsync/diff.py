@@ -31,6 +31,13 @@ class Diff:
         `self.children[group][unique_id] == DiffElement(...)`
         """
 
+    def complete(self):
+        """Method to call when this Diff has been fully populated with data and is "complete".
+
+        The default implementation does nothing, but a subclass could use this, for example, to save
+        the completed Diff to a file or database record.
+        """
+
     def add(self, element: "DiffElement"):
         """Add a new DiffElement to the changeset of this Diff.
 
@@ -133,6 +140,26 @@ class DiffElement:
     def __str__(self):
         """Basic string representation of a DiffElement."""
         return f"{self.type} : {self.name} : {self.keys} : {self.source_attrs} : {self.dest_attrs}"
+
+    @property
+    def action(self) -> Optional[str]:
+        """Action, if any, that should be taken to remediate the diffs described by this element.
+
+        Returns:
+            str: "create", "update", "delete", or None
+        """
+        if self.source_attrs is not None and self.dest_attrs is None:
+            return "create"
+        if self.source_attrs is None and self.dest_attrs is not None:
+            return "delete"
+        if (
+            self.source_attrs is not None
+            and self.dest_attrs is not None
+            and any(self.source_attrs[attr_key] != self.dest_attrs[attr_key] for attr_key in self.get_attrs_keys())
+        ):
+            return "update"
+
+        return None
 
     # TODO: separate into set_source_attrs() and set_dest_attrs() methods, or just use direct property access instead?
     def add_attrs(self, source: Optional[dict] = None, dest: Optional[dict] = None):

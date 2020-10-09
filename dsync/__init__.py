@@ -11,11 +11,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from inspect import isclass
-import logging
 from collections import defaultdict
 from collections.abc import Iterable as ABCIterable, Mapping as ABCMapping
-from typing import Iterable, List, Mapping, Optional, Tuple, Type, Union
+import enum
+from inspect import isclass
+import logging
+from typing import ClassVar, Iterable, List, Mapping, MutableMapping, Optional, Tuple, Type, Union
 
 from pydantic import BaseModel
 
@@ -34,6 +35,29 @@ from .exceptions import (
 logger = logging.getLogger(__name__)
 
 
+class DSyncFlags(enum.Flag):
+    """Flags that can be passed to a sync_* or diff_* call to affect its behavior."""
+
+    NONE = 0
+
+    CONTINUE_ON_FAILURE = enum.auto()
+    """Continue synchronizing even if failures are encountered when syncing individual models."""
+
+    SKIP_UNMATCHED_SRC = enum.auto()
+    """Ignore objects that only exist in the source/"from" DSync when determining diffs and syncing.
+
+    If this flag is set, no new objects will be created in the target/"to" DSync.
+    """
+
+    SKIP_UNMATCHED_DST = enum.auto()
+    """Ignore objects that only exist in the target/"to" DSync when determining diffs and syncing.
+
+    If this flag is set, no objects will be deleted from the target/"to" DSync.
+    """
+
+    SKIP_UNMATCHED_BOTH = SKIP_UNMATCHED_SRC | SKIP_UNMATCHED_DST
+
+
 class DSyncModel(BaseModel):
     """Base class for all DSync object models.
 
@@ -47,26 +71,26 @@ class DSyncModel(BaseModel):
           be included in **at most** one of these three tuples.
     """
 
-    _modelname: str = "dsyncmodel"
+    _modelname: ClassVar[str] = "dsyncmodel"
     """Name of this model, used by DSync to store and look up instances of this model or its equivalents.
 
     Lowercase by convention; typically corresponds to the class name, but that is not enforced.
     """
 
-    _identifiers: Tuple[str, ...] = ()
+    _identifiers: ClassVar[Tuple[str, ...]] = ()
     """List of model fields which together uniquely identify an instance of this model.
 
     This identifier MUST be globally unique among all instances of this class.
     """
 
-    _shortname: Tuple[str, ...] = ()
+    _shortname: ClassVar[Tuple[str, ...]] = ()
     """Optional: list of model fields that together form a shorter identifier of an instance.
 
     This MUST be locally unique (e.g., interface shortnames MUST be unique among all interfaces on a given device),
     but does not need to be guaranteed to be globally unique among all instances.
     """
 
-    _attributes: Tuple[str, ...] = ()
+    _attributes: ClassVar[Tuple[str, ...]] = ()
     """Optional: list of additional model fields (beyond those in `_identifiers`) that are relevant to this model.
 
     Only the fields in `_attributes` (as well as any `_children` fields, see below) will be considered
@@ -77,11 +101,20 @@ class DSyncModel(BaseModel):
     Note: inclusion in `_attributes` is mutually exclusive from inclusion in `_identifiers`; a field cannot be in both!
     """
 
-    _children: Mapping[str, str] = {}
+    _children: ClassVar[Mapping[str, str]] = {}
     """Optional: dict of `{_modelname: field_name}` entries describing how to store "child" models in this model.
 
     When calculating a Diff or performing a sync, DSync will automatically recurse into these child models.
     """
+
+    dsync: Optional["DSync"] = None
+    """Optional: the DSync instance that owns this model instance."""
+
+    class Config:  # pylint: disable=too-few-public-methods
+        """Pydantic class configuration."""
+
+        # Let us have a DSync as an instance variable even though DSync is not a Pydantic model itself.
+        arbitrary_types_allowed = True
 
     def __init_subclass__(cls):
         """Validate that the various class attribute declarations correspond to actual instance fields.
@@ -119,6 +152,54 @@ class DSyncModel(BaseModel):
 
     def __str__(self):
         return self.get_unique_id()
+
+    @classmethod
+    def create(cls, dsync: "DSync", ids: dict, attrs: dict) -> Optional["DSyncModel"]:
+        """Instantiate this class, along with any platform-specific data creation.
+
+        Args:
+            dsync: The master data store for other DSyncModel instances that we might need to reference
+            ids: Dictionary of unique-identifiers needed to create the new object
+            attrs: Dictionary of additional attributes to set on the new object
+
+        Returns:
+            DSyncModel: instance of this class, if all data was successfully created.
+            None: if data creation failed in such a way that child objects of this model should not be created.
+
+        Raises:
+            ObjectNotCreated: if an error occurred.
+        """
+        return cls(**ids, dsync=dsync, **attrs)
+
+    def update(self, attrs: dict) -> Optional["DSyncModel"]:
+        """Update the attributes of this instance, along with any platform-specific data updates.
+
+        Args:
+            attrs: Dictionary of attributes to update on the object
+
+        Returns:
+            DSyncModel: this instance, if all data was successfully updated.
+            None: if data updates failed in such a way that child objects of this model should not be modified.
+
+        Raises:
+            ObjectNotUpdated: if an error occurred.
+        """
+        for attr, value in attrs.items():
+            # TODO: enforce that only attrs in self._attributes can be updated in this way?
+            setattr(self, attr, value)
+        return self
+
+    def delete(self) -> Optional["DSyncModel"]:
+        """Delete any platform-specific data corresponding to this instance.
+
+        Returns:
+            DSyncModel: this instance, if all data was successfully deleted.
+            None: if data deletion failed in such a way that child objects of this model should not be deleted.
+
+        Raises:
+            ObjectNotDeleted: if an error occurred.
+        """
+        return self
 
     @classmethod
     def get_type(cls):
@@ -236,12 +317,18 @@ class DSyncModel(BaseModel):
 class DSync:
     """Class for storing a group of DSyncModel instances and diffing or synchronizing to another DSync instance."""
 
-    # Add mapping to objects here:
+    # Add mapping of names to specific model classes here:
     # modelname1 = MyModelClass1
     # modelname2 = MyModelClass2
 
-    top_level: List[str] = []
+    top_level: ClassVar[List[str]] = []
     """List of top-level modelnames to begin from when diffing or synchronizing."""
+
+    _data: MutableMapping[str, MutableMapping[str, DSyncModel]]
+    """Defaultdict storing model instances.
+
+    `self._data[modelname][unique_id] == model_instance`
+    """
 
     def __init__(self):
         """Generic initialization function.
@@ -249,10 +336,6 @@ class DSync:
         Subclasses should be careful to call super().__init__() if they override this method.
         """
         self._data = defaultdict(dict)
-        """Defaultdict storing model instances.
-
-        `self._data[modelname][unique_id] == model_instance`
-        """
 
     def __init_subclass__(cls):
         """Validate that references to specific DSyncModels use the correct modelnames.
@@ -270,109 +353,160 @@ class DSync:
         """Load all desired data from whatever backend data source into this instance."""
         # No-op in this generic class
 
-    def sync_from(self, source: "DSync"):
+    # ------------------------------------------------------------------------------
+    # Synchronization between DSync instances
+    # ------------------------------------------------------------------------------
+
+    def sync_from(self, source: "DSync", diff_class: Type[Diff] = Diff, flags: DSyncFlags = DSyncFlags.NONE):
         """Synchronize data from the given source DSync object into the current DSync object.
 
         Args:
             source (DSync): object to sync data from into this one
+            diff_class (class): Diff or subclass thereof to use to calculate the diffs to use for synchronization
+            flags (DSyncFlags): Flags influencing the behavior of this sync.
         """
-        diff = self.diff_from(source)
+        diff = self.diff_from(source, diff_class=diff_class, flags=flags)
 
+        logger.info("Beginning sync")
         for child in diff.get_children():
-            self._sync_from_diff_element(child)
+            self._sync_from_diff_element(child, flags=flags)
+        logger.info("Sync complete")
 
-    def sync_to(self, target: "DSync"):
+    def sync_to(self, target: "DSync", diff_class: Type[Diff] = Diff, flags: DSyncFlags = DSyncFlags.NONE):
         """Synchronize data from the current DSync object into the given target DSync object.
 
         Args:
             target (DSync): object to sync data into from this one.
+            diff_class (class): Diff or subclass thereof to use to calculate the diffs to use for synchronization
+            flags (DSyncFlags): Flags influencing the behavior of this sync.
         """
-        target.sync_from(self)
+        target.sync_from(self, diff_class=diff_class, flags=flags)
 
-    def _sync_from_diff_element(self, element: DiffElement, parent_model: DSyncModel = None) -> bool:
+    def _sync_from_diff_element(
+        self, element: DiffElement, flags: DSyncFlags = DSyncFlags.NONE, parent_model: DSyncModel = None,
+    ):
         """Synchronize a given DiffElement (and its children, if any) into this DSync.
 
         Helper method for `sync_from`/`sync_to`; this generally shouldn't be called on its own.
 
         Args:
             element: DiffElement to synchronize diffs from
+            flags (DSyncFlags): Flags influencing the behavior of this sync.
             parent_model: Parent object to update (`add_child`/`remove_child`) if the sync creates/deletes an object.
-
-        Returns:
-            bool: Return False if there is nothing to sync
         """
-        if not element.has_diffs():
-            return False
+        # pylint: disable=too-many-branches
+        # GFM: I made a few attempts at refactoring this to reduce the branching, but found that it was less readable.
+        # So let's live with the slightly too high number of branches (14/12) for now.
+        object_class = getattr(self, element.type)
+        obj = self.get(object_class, element.keys)
+        attrs = (
+            {attr_key: element.source_attrs[attr_key] for attr_key in element.get_attrs_keys()}
+            if element.source_attrs is not None
+            else {}
+        )
 
-        if element.source_attrs is None:
-            obj = self.delete_object(object_type=element.type, keys=element.keys)
-            if parent_model:
-                parent_model.remove_child(obj)
-        elif element.dest_attrs is None:
-            obj = self.create_object(
-                object_type=element.type,
-                keys=element.keys,
-                params={attr_key: element.source_attrs[attr_key] for attr_key in element.get_attrs_keys()},
+        try:
+            if element.action == "create":
+                if obj:
+                    raise ObjectNotCreated(f"Failed to create {object_class.get_type()} {element.keys} - it exists!")
+                logger.info("Creating %s %s (%s)", object_class.get_type(), element.keys, attrs)
+                obj = object_class.create(dsync=self, ids=element.keys, attrs=attrs)
+            elif element.action == "update":
+                if not obj:
+                    raise ObjectNotUpdated(f"Failed to update {object_class.get_type()} {element.keys} - not found!")
+                logger.info("Updating %s %s with %s", object_class.get_type(), element.keys, attrs)
+                obj = obj.update(attrs=attrs)
+            elif element.action == "delete":
+                if not obj:
+                    raise ObjectNotDeleted(f"Failed to delete {object_class.get_type()} {element.keys} - not found!")
+                logger.info("Deleting %s %s", object_class.get_type(), element.keys)
+                obj = obj.delete()
+        except ObjectCrudException as exception:
+            logger.error(
+                "Error during %s of %s %s (%s): %s",
+                element.action,
+                object_class.get_type(),
+                element.keys,
+                attrs,
+                exception,
             )
+            if not flags & DSyncFlags.CONTINUE_ON_FAILURE:
+                raise
+
+        if obj is None:
+            logger.warning("Not syncing children of %s %s", element.type, element.keys)
+            return
+
+        if element.action == "create":
+            self.add(obj)
             if parent_model:
                 parent_model.add_child(obj)
-        elif element.source_attrs != element.dest_attrs:
-            obj = self.update_object(
-                object_type=element.type,
-                keys=element.keys,
-                params={attr_key: element.source_attrs[attr_key] for attr_key in element.get_attrs_keys()},
-            )
-        else:
-            object_class = getattr(self, element.type)
-            uid = object_class.create_unique_id(**element.keys)
-            obj = self.get(element.type, uid)
+        elif element.action == "delete":
+            self.remove(obj)
+            if parent_model:
+                parent_model.remove_child(obj)
 
         for child in element.get_children():
-            self._sync_from_diff_element(child, parent_model=obj)
+            self._sync_from_diff_element(child, flags=flags, parent_model=obj)
 
-        return True
+    # ------------------------------------------------------------------------------
+    # Diff calculation and construction
+    # ------------------------------------------------------------------------------
 
-    def diff_from(self, source: "DSync") -> Diff:
+    def diff_from(self, source: "DSync", diff_class: Type[Diff] = Diff, flags: DSyncFlags = DSyncFlags.NONE) -> Diff:
         """Generate a Diff describing the difference from the other DSync to this one.
 
         Args:
             source (DSync): Object to diff against.
+            diff_class (class): Diff or subclass thereof to use for diff calculation and storage.
+            flags (DSyncFlags): Flags influencing the behavior of this diff operation.
         """
-        diff = Diff()
+        logger.info("Beginning diff")
+        diff = diff_class()
 
         for obj_type in intersection(self.top_level, source.top_level):
 
             diff_elements = self._diff_objects(
-                source=source.get_all(obj_type), dest=self.get_all(obj_type), source_root=source,
+                source=source.get_all(obj_type), dest=self.get_all(obj_type), source_root=source, flags=flags,
             )
 
             for diff_element in diff_elements:
                 diff.add(diff_element)
 
+        # Notify the diff that it has been fully populated, in case it wishes to print, save to a file, etc.
+        logger.info("Diff complete")
+        diff.complete()
         return diff
 
-    def diff_to(self, target: "DSync") -> Diff:
+    def diff_to(self, target: "DSync", diff_class: Type[Diff] = Diff, flags: DSyncFlags = DSyncFlags.NONE) -> Diff:
         """Generate a Diff describing the difference from this DSync to another one.
 
         Args:
             target (DSync): Object to diff against.
+            diff_class (class): Diff or subclass thereof to use for diff calculation and storage.
+            flags (DSyncFlags): Flags influencing the behavior of this diff operation.
         """
-        return target.diff_from(self)
+        return target.diff_from(self, diff_class=diff_class, flags=flags)
 
     def _diff_objects(
-        self, source: Iterable[DSyncModel], dest: Iterable[DSyncModel], source_root: "DSync"
+        self,
+        source: Iterable[DSyncModel],
+        dest: Iterable[DSyncModel],
+        source_root: "DSync",
+        flags: DSyncFlags = DSyncFlags.NONE,
     ) -> List[DiffElement]:
         """Generate a list of DiffElement between the given lists of objects.
 
         Helper method for `diff_from`/`diff_to`; this generally shouldn't be called on its own.
 
         Args:
-          source: DSyncModel instances retrieved from another DSync instance
-          dest: DSyncModel instances retrieved from this DSync instance
-          source_root (DSync): The other DSync object being diffed against (owner of the `source` models).
+            source: DSyncModel instances retrieved from another DSync instance
+            dest: DSyncModel instances retrieved from this DSync instance
+            source_root (DSync): The other DSync object being diffed against (owner of the `source` models, if any)
+            flags (DSyncFlags): Flags influencing the behavior of this diff operation.
 
         Raises:
-          TypeError: if the source and dest args are not the same type, or if that type is unsupported
+            TypeError: if the source and dest args are not the same type, or if that type is unsupported
         """
         diffs = []
 
@@ -395,6 +529,13 @@ class DSync:
         for uid in combined_dict:
             src_obj, dst_obj = combined_dict[uid]
 
+            if flags & DSyncFlags.SKIP_UNMATCHED_SRC and not dst_obj:
+                logger.debug("Skipping unmatched source object {src_obj}")
+                continue
+            if flags & DSyncFlags.SKIP_UNMATCHED_DST and not src_obj:
+                logger.debug("Skipping unmatched dest object {dst_obj}")
+                continue
+
             if src_obj:
                 diff_element = DiffElement(
                     obj_type=src_obj.get_type(), name=src_obj.get_shortname(), keys=src_obj.get_identifiers()
@@ -413,7 +554,7 @@ class DSync:
                 diff_element.add_attrs(source=None, dest=dst_obj.get_attrs())
 
             # Recursively diff the children of src_obj and dst_obj and attach the resulting diffs to the diff_element
-            self._diff_child_objects(diff_element, src_obj, dst_obj, source_root)
+            self._diff_child_objects(diff_element, src_obj, dst_obj, source_root, flags)
 
             diffs.append(diff_element)
 
@@ -430,6 +571,7 @@ class DSync:
             ValueError: If any pair of objects in the dict have differing get_shortname() or get_identifiers() values.
         """
         for uid in combined_dict:
+            # TODO: should we check/enforce whether all source models have the same DSync, whether all dest likewise?
             # TODO: should we check/enforce whether ALL DSyncModels in this dict have the same get_type() output?
             src_obj, dst_obj = combined_dict[uid]
             if src_obj and dst_obj:
@@ -440,12 +582,13 @@ class DSync:
                 if src_obj.get_identifiers() != dst_obj.get_identifiers():
                     raise ValueError(f"Keys mismatch: {src_obj.get_identifiers()} vs {dst_obj.get_identifiers()}")
 
-    def _diff_child_objects(
+    def _diff_child_objects(  # pylint: disable=too-many-arguments
         self,
         diff_element: DiffElement,
         src_obj: Optional[DSyncModel],
         dst_obj: Optional[DSyncModel],
         source_root: "DSync",
+        flags: DSyncFlags,
     ):
         """For all children of the given DSyncModel pair, diff them recursively, adding diffs to the given diff_element.
 
@@ -469,151 +612,42 @@ class DSync:
             raise RuntimeError("Called with neither src_obj nor dest_obj??")
 
         for child_type, child_fieldname in children_mapping.items():
-            src_uids: List[str] = getattr(src_obj, child_fieldname) if src_obj else []
-            dst_uids: List[str] = getattr(dst_obj, child_fieldname) if dst_obj else []
+            # for example, child_type == "device" and child_fieldname == "devices"
+
+            # for example, getattr(src_obj, "devices") --> list of device uids
+            #          --> src_dsync.get_by_uids(<list of device uids>, "device") --> list of device instances
+            src_objs = source_root.get_by_uids(getattr(src_obj, child_fieldname), child_type) if src_obj else []
+            dst_objs = self.get_by_uids(getattr(dst_obj, child_fieldname), child_type) if dst_obj else []
+
             for child_diff_element in self._diff_objects(
-                source=source_root.get_by_uids(src_uids, child_type),
-                dest=self.get_by_uids(dst_uids, child_type),
-                source_root=source_root,
+                source=src_objs, dest=dst_objs, source_root=source_root, flags=flags
             ):
                 diff_element.add_child(child_diff_element)
-
-    def create_object(self, object_type, keys, params):
-        """TODO: move to a `create` method on DSyncModel class."""
-        return self._crud_change(action="create", keys=keys, object_type=object_type, params=params)
-
-    def update_object(self, object_type, keys, params):
-        """TODO: move to a `update` method on DSyncModel class."""
-        return self._crud_change(action="update", object_type=object_type, keys=keys, params=params)
-
-    def delete_object(self, object_type, keys, params=None):
-        """TODO: move to a `delete` method on DSyncModel class."""
-        if not params:
-            params = {}
-        return self._crud_change(action="delete", object_type=object_type, keys=keys, params=params)
-
-    def _crud_change(self, action: str, object_type: str, keys: dict, params: dict) -> DSyncModel:
-        """Dispatcher function to Create, Update or Delete an object.
-
-        Based on the type of the action and the type of the object,
-        we'll first try to execute a function named after the object type and the action
-            "{action}_{object_type}"   update_interface or delete_device ...
-        if such function is not available, the default function will be executed instead
-            default_create, default_update or default_delete
-
-        The goal is to all each DSync class to insert its own logic per object type when we manipulate these objects
-
-        TODO: move to DSyncModel class?
-
-        Args:
-            action (str): type of action, must be create, update or delete
-            object_type (str): Attribute name on this class describing the desired DSyncModel subclass.
-            keys (dict): Dictionary containing the primary attributes of an object and their value
-            params (dict): Dictionary containing the attributes of an object and their value
-
-        Raises:
-            ObjectCrudException: Object type does not exist in this class
-
-        Returns:
-            DSyncModel: object created/updated/deleted
-        """
-
-        if not hasattr(self, object_type):
-            if action == "create":
-                raise ObjectNotCreated(f"Unable to find object type {object_type}")
-            if action == "update":
-                raise ObjectNotUpdated(f"Unable to find object type {object_type}")
-            if action == "delete":
-                raise ObjectNotDeleted(f"Unable to find object type {object_type}")
-            raise ObjectCrudException(f"Unable to find object type {object_type}")
-
-        # Check if a specific crud function is available
-        #   update_interface or create_device etc ...
-        # If not apply the default one
-
-        if hasattr(self, f"{action}_{object_type}"):
-            item = getattr(self, f"{action}_{object_type}")(keys=keys, params=params)
-            logger.debug("%sd %s - %s", action, object_type, params)
-        else:
-            item = getattr(self, f"default_{action}")(object_type=object_type, keys=keys, params=params)
-            logger.debug("%sd %s = %s - %s (default)", action, object_type, keys, params)
-        return item
-
-    # ----------------------------------------------------------------------------
-    def default_create(self, object_type, keys, params):
-        """Default function to create a new object in the local storage.
-
-        This function will be called if a more specific function of type create_<object_type> is not defined
-
-        Args:
-            object_type (str): Attribute name on this class identifying the DSyncModel subclass of the object
-            keys (dict): Dictionary containing the primary attributes of an object and their value
-            params (dict): Dictionary containing the attributes of an object and their value
-
-        Returns:
-            DSyncModel: Return the newly created object
-        """
-        object_class = getattr(self, object_type)
-        item = object_class(**keys, **params)
-        self.add(item)
-        return item
-
-    def default_update(self, object_type, keys, params):
-        """Update an object locally based on its primary keys and attributes.
-
-        This function will be called if a more specific function of type update_<object_type> is not defined
-
-        Args:
-            object_type (str): Attribute name on this class identifying the DSyncModel subclass of the object
-            keys (dict): Dictionary containing the primary attributes of an object and their value
-            params (dict): Dictionary containing the attributes of an object and their value
-
-        Returns:
-            DSyncModel: Return the object after update
-        """
-        object_class = getattr(self, object_type)
-        uid = object_class.create_unique_id(**keys)
-        item = self.get(object_type, uid)
-
-        for attr, value in params.items():
-            setattr(item, attr, value)
-
-        return item
-
-    def default_delete(self, object_type, keys, params):  # pylint: disable=unused-argument
-        """Delete an object locally based on its primary keys and attributes.
-
-        This function will be called if a more specific function of type delete_<object_type> is not defined
-
-        Args:
-            object_type (str): Attribute name on this class identifying the DSyncModel subclass of the object
-            keys (dict): Dictionnary containings the primary attributes of an object and their value
-            params: Unused argument included only for parallels to the other APIs.
-
-        Returns:
-            DSyncModel: Return the object that has been deleted
-        """
-        object_class = getattr(self, object_type)
-        uid = object_class.create_unique_id(**keys)
-        item = self.get(object_type, uid)
-        self.remove(item)
-        return item
 
     # ------------------------------------------------------------------------------
     # Object Storage Management
     # ------------------------------------------------------------------------------
 
-    def get(self, obj: Union[str, DSyncModel, Type[DSyncModel]], uid: str) -> Optional[DSyncModel]:
+    def get(self, obj: Union[str, DSyncModel, Type[DSyncModel]], identifier: Union[str, dict]) -> Optional[DSyncModel]:
         """Get one object from the data store based on its unique id.
 
         Args:
             obj (class, DSyncModel, str): DSyncModel class or DSyncModel instance or modelname string
-            uid (str): Unique identifier of the object to retrieve
+            identifier (str, dict): Unique ID of the object to retrieve, or dict of unique identifier keys/values
         """
         if isinstance(obj, str):
             modelname = obj
+            if not hasattr(self, obj):
+                return None
+            object_class = getattr(self, obj)
         else:
+            object_class = obj
             modelname = obj.get_type()
+
+        if isinstance(identifier, str):
+            uid = identifier
+        else:
+            uid = object_class.create_unique_id(**identifier)
 
         return self._data[modelname].get(uid)
 
@@ -667,6 +701,9 @@ class DSync:
         if uid in self._data[modelname]:
             raise ObjectAlreadyExists(f"Object {uid} already present")
 
+        if not obj.dsync:
+            obj.dsync = self
+
         self._data[modelname][uid] = obj
 
     def remove(self, obj: DSyncModel):
@@ -684,4 +721,11 @@ class DSync:
         if uid not in self._data[modelname]:
             raise ObjectNotFound(f"Object {uid} not present")
 
+        if obj.dsync is self:
+            obj.dsync = None
+
         del self._data[modelname][uid]
+
+
+# DSyncModel references DSync and DSync references DSyncModel. Break the typing loop:
+DSyncModel.update_forward_refs()

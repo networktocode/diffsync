@@ -1,9 +1,11 @@
 """Used to setup fixtures to be used through tests"""
-from typing import List, Optional, Tuple
+from typing import ClassVar, List, Optional, Tuple
 
 import pytest
 
 from dsync import DSync, DSyncModel
+from dsync.diff import Diff
+from dsync.exceptions import ObjectNotCreated, ObjectNotUpdated, ObjectNotDeleted
 
 
 @pytest.fixture()
@@ -21,6 +23,36 @@ def give_me_success():
 def generic_dsync_model():
     """Provide a generic DSyncModel instance."""
     return DSyncModel()
+
+
+class ErrorProneModel(DSyncModel):
+    """Test class that sometimes throws exceptions when creating/updating/deleting instances."""
+
+    _counter: ClassVar[int] = 0
+
+    @classmethod
+    def create(cls, dsync: DSync, ids: dict, attrs: dict):
+        """As DSyncModel.create(), but periodically throw exceptions."""
+        cls._counter += 1
+        if not cls._counter % 3:
+            raise ObjectNotCreated("Random creation error!")
+        return super().create(dsync, ids, attrs)
+
+    def update(self, attrs: dict):
+        """As DSyncModel.update(), but periodically throw exceptions."""
+        # pylint: disable=protected-access
+        self.__class__._counter += 1
+        if not self.__class__._counter % 3:
+            raise ObjectNotUpdated("Random update error!")
+        return super().update(attrs)
+
+    def delete(self):
+        """As DSyncModel.delete(), but periodically throw exceptions."""
+        # pylint: disable=protected-access
+        self.__class__._counter += 1
+        if not self.__class__._counter % 3:
+            raise ObjectNotDeleted("Random deletion error!")
+        return super().delete()
 
 
 class Site(DSyncModel):
@@ -52,7 +84,7 @@ class Device(DSyncModel):
 
     _modelname = "device"
     _identifiers = ("name",)
-    _attributes: Tuple[str, ...] = ("role",)
+    _attributes: ClassVar[Tuple[str, ...]] = ("role",)
     _children = {"interface": "interfaces"}
 
     name: str
@@ -195,6 +227,34 @@ def backend_a():
     return dsync
 
 
+class ErrorProneSiteA(ErrorProneModel, SiteA):
+    """A Site that sometimes throws exceptions."""
+
+
+class ErrorProneDeviceA(ErrorProneModel, DeviceA):
+    """A Device that sometimes throws exceptions."""
+
+
+class ErrorProneInterface(ErrorProneModel, Interface):
+    """An Interface that sometimes throws exceptions."""
+
+
+class ErrorProneBackendA(BackendA):
+    """A variant of BackendA that sometimes fails to create/update/delete objects."""
+
+    site = ErrorProneSiteA
+    device = ErrorProneDeviceA
+    interface = ErrorProneInterface
+
+
+@pytest.fixture
+def error_prone_backend_a():
+    """Provide an instance of ErrorProneBackendA subclass of DSync."""
+    dsync = ErrorProneBackendA()
+    dsync.load()
+    return dsync
+
+
 class SiteB(Site):
     """Extend Site with a `places` list."""
 
@@ -256,3 +316,13 @@ def backend_b():
     dsync = BackendB()
     dsync.load()
     return dsync
+
+
+class TrackedDiff(Diff):
+    """Subclass of Diff that knows when it's completed."""
+
+    is_complete: bool = False
+
+    def complete(self):
+        """Function called when the Diff has been fully constructed and populated with data."""
+        self.is_complete = True
