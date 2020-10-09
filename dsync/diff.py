@@ -14,7 +14,7 @@ limitations under the License.
 """
 
 from functools import total_ordering
-from typing import Iterator, Iterable, Optional
+from typing import Any, Iterator, Iterable, Mapping, Optional
 
 from .exceptions import ObjectAlreadyExists
 from .utils import intersection, OrderedDefaultDict
@@ -145,7 +145,7 @@ class DiffElement:  # pylint: disable=too-many-instance-attributes
 
     def __str__(self):
         """Basic string representation of a DiffElement."""
-        return f"{self.type} : {self.name} : {self.keys} : {self.source_name}:{self.source_attrs} : {self.dest_name}:{self.dest_attrs}"
+        return f'{self.type} "{self.name}" : {self.keys} : {self.source_name} → {self.dest_name} : {self.get_attrs_diffs()}'
 
     @property
     def action(self) -> Optional[str]:
@@ -191,6 +191,26 @@ class DiffElement:  # pylint: disable=too-many-instance-attributes
         if self.source_attrs is not None and self.dest_attrs is None:
             return self.source_attrs.keys()
         return []
+
+    # The below would be more accurate but typing.Literal is only in Python 3.8 and later
+    # def get_attrs_diffs(self) -> Mapping[str, Mapping[Literal["src", "dst"], Any]]:
+    def get_attrs_diffs(self) -> Mapping[str, Mapping[str, Any]]:
+        """Get the dict of actual attribute diffs between source_attrs and dest_attrs.
+
+        Returns:
+            dict: of the form `{key: {src: <value>, dst: <value>}, key2: ...}`
+        """
+        if self.source_attrs is not None and self.dest_attrs is not None:
+            return {
+                key: dict(src=self.source_attrs[key], dst=self.dest_attrs[key])
+                for key in self.get_attrs_keys()
+                if self.source_attrs[key] != self.dest_attrs[key]
+            }
+        if self.source_attrs is None and self.dest_attrs is not None:
+            return {key: dict(src=None, dst=self.dest_attrs[key]) for key in self.get_attrs_keys()}
+        if self.source_attrs is not None and self.dest_attrs is None:
+            return {key: dict(src=self.source_attrs[key], dst=None) for key in self.get_attrs_keys()}
+        return {}
 
     def add_child(self, element: "DiffElement"):
         """Attach a child object of type DiffElement.
@@ -242,10 +262,7 @@ class DiffElement:  # pylint: disable=too-many-instance-attributes
         else:
             print(f"{margin}{self.type}: {self.name}")
             # Only print attrs that have meaning in both source and dest
-            for attr in self.get_attrs_keys():
-                if self.source_attrs[attr] != self.dest_attrs[attr]:
-                    print(
-                        f"{margin}  {attr}   {self.source_name}({self.source_attrs[attr]})   {self.dest_name}({self.dest_attrs[attr]})"
-                    )
+            for attr, item in self.get_attrs_diffs().items():
+                print(f"{margin}  {attr}   {self.source_name}({item.get('src')})   {self.dest_name}({item.get('dst')})")
 
         self.child_diff.print_detailed(indent + 2)

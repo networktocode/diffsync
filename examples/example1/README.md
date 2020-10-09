@@ -22,6 +22,14 @@ c = BackendC()
 c.load()
 ```
 
+Configure verbosity of DSync's structured logging to console; the default is full verbosity (all logs including debugging)
+```python
+from dsync.logging import enable_console_logging
+enable_console_logging(verbosity=0)  # Show WARNING and ERROR logs only
+# enable_console_logging(verbosity=1)  # Also include INFO logs
+# enable_console_logging(verbosity=2)  # Also include DEBUG logs
+```
+
 Show the differences between A and B
 ```python
 diff_a_b = a.diff_to(b)
@@ -46,4 +54,4 @@ diff_a_b = a.diff_to(b)
 diff_a_b.print_detailed()
 ```
 
-> In the Device model, the role is not defined as an attribute so it's not shown when we are comparing the different objects, even if the value is different.
+> In the Device model, the `site_name` and `role` are not included in the `_attributes`, so they are not shown when we are comparing the different objects, even if the value is different.

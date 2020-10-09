@@ -15,10 +15,10 @@ from collections import defaultdict
 from collections.abc import Iterable as ABCIterable, Mapping as ABCMapping
 import enum
 from inspect import isclass
-import logging
 from typing import ClassVar, Iterable, List, Mapping, MutableMapping, Optional, Tuple, Type, Union
 
 from pydantic import BaseModel
+import structlog  # type: ignore
 
 from .diff import Diff, DiffElement
 from .utils import intersection
@@ -32,7 +32,7 @@ from .exceptions import (
     ObjectNotFound,
 )
 
-logger = logging.getLogger(__name__)
+_logger = structlog.get_logger()
 
 
 class DSyncFlags(enum.Flag):
@@ -339,6 +339,7 @@ class DSync:
         Subclasses should be careful to call super().__init__() if they override this method.
         """
         self._data = defaultdict(dict)
+        self._log = _logger.new(dsync=self)
 
         # If the type is not defined, use the name of the class as the default value
         if self.type is None:
@@ -359,6 +360,15 @@ class DSync:
                     f'Incorrect field name - {value.__name__} has type name "{value.get_type()}", not "{name}"'
                 )
 
+    def __str__(self):
+        """String representation of a DSync."""
+        if self.type != self.name:
+            return f'{self.type} "{self.name}"'
+        return self.type
+
+    def __repr__(self):
+        return f"<{str(self)}>"
+
     def load(self):
         """Load all desired data from whatever backend data source into this instance."""
         # No-op in this generic class
@@ -375,12 +385,13 @@ class DSync:
             diff_class (class): Diff or subclass thereof to use to calculate the diffs to use for synchronization
             flags (DSyncFlags): Flags influencing the behavior of this sync.
         """
+        log = self._log.bind(src=source, dst=self, flags=flags).unbind("dsync")
         diff = self.diff_from(source, diff_class=diff_class, flags=flags)
 
-        logger.info("Beginning sync")
+        log.info("Beginning sync")
         for child in diff.get_children():
-            self._sync_from_diff_element(child, flags=flags)
-        logger.info("Sync complete")
+            self._sync_from_diff_element(child, flags=flags, logger=log)
+        log.info("Sync complete")
 
     def sync_to(self, target: "DSync", diff_class: Type[Diff] = Diff, flags: DSyncFlags = DSyncFlags.NONE):
         """Synchronize data from the current DSync object into the given target DSync object.
@@ -393,7 +404,11 @@ class DSync:
         target.sync_from(self, diff_class=diff_class, flags=flags)
 
     def _sync_from_diff_element(
-        self, element: DiffElement, flags: DSyncFlags = DSyncFlags.NONE, parent_model: DSyncModel = None,
+        self,
+        element: DiffElement,
+        flags: DSyncFlags = DSyncFlags.NONE,
+        logger: structlog.BoundLogger = None,
+        parent_model: DSyncModel = None,
     ):
         """Synchronize a given DiffElement (and its children, if any) into this DSync.
 
@@ -402,49 +417,53 @@ class DSync:
         Args:
             element: DiffElement to synchronize diffs from
             flags (DSyncFlags): Flags influencing the behavior of this sync.
+            logger: Parent logging context
             parent_model: Parent object to update (`add_child`/`remove_child`) if the sync creates/deletes an object.
         """
         # pylint: disable=too-many-branches
         # GFM: I made a few attempts at refactoring this to reduce the branching, but found that it was less readable.
         # So let's live with the slightly too high number of branches (14/12) for now.
+        log = logger or self._log
         object_class = getattr(self, element.type)
         obj = self.get(object_class, element.keys)
-        attrs = (
-            {attr_key: element.source_attrs[attr_key] for attr_key in element.get_attrs_keys()}
-            if element.source_attrs is not None
-            else {}
+        # Get the attributes that actually differ between source and dest
+        diffs = element.get_attrs_diffs()
+        log = log.bind(
+            action=element.action,
+            model=object_class.get_type(),
+            unique_id=object_class.create_unique_id(**element.keys),
+            diffs=diffs,
         )
 
         try:
             if element.action == "create":
+                log.debug("Attempting object creation")
                 if obj:
                     raise ObjectNotCreated(f"Failed to create {object_class.get_type()} {element.keys} - it exists!")
-                logger.info("Creating %s %s (%s)", object_class.get_type(), element.keys, attrs)
-                obj = object_class.create(dsync=self, ids=element.keys, attrs=attrs)
+                obj = object_class.create(dsync=self, ids=element.keys, attrs={key: diffs[key]["src"] for key in diffs})
+                log.info("Created successfully", status="success")
             elif element.action == "update":
+                log.debug("Attempting object update")
                 if not obj:
                     raise ObjectNotUpdated(f"Failed to update {object_class.get_type()} {element.keys} - not found!")
-                logger.info("Updating %s %s with %s", object_class.get_type(), element.keys, attrs)
-                obj = obj.update(attrs=attrs)
+                obj = obj.update(attrs={key: diffs[key]["src"] for key in diffs})
+                log.info("Updated successfully", status="success")
             elif element.action == "delete":
+                log.debug("Attempting object deletion")
                 if not obj:
                     raise ObjectNotDeleted(f"Failed to delete {object_class.get_type()} {element.keys} - not found!")
-                logger.info("Deleting %s %s", object_class.get_type(), element.keys)
                 obj = obj.delete()
+                log.info("Deleted successfully", status="success")
         except ObjectCrudException as exception:
-            logger.error(
-                "Error during %s of %s %s (%s): %s",
-                element.action,
-                object_class.get_type(),
-                element.keys,
-                attrs,
-                exception,
-            )
+            log.error(str(exception), status="error")
             if not flags & DSyncFlags.CONTINUE_ON_FAILURE:
                 raise
+        else:
+            if obj is None:
+                log.warning("Non-fatal failure encountered", status="failure")
 
         if obj is None:
-            logger.warning("Not syncing children of %s %s", element.type, element.keys)
+            log.warning("Not syncing children")
             return
 
         if element.action == "create":
@@ -457,7 +476,7 @@ class DSync:
                 parent_model.remove_child(obj)
 
         for child in element.get_children():
-            self._sync_from_diff_element(child, flags=flags, parent_model=obj)
+            self._sync_from_diff_element(child, flags=flags, parent_model=obj, logger=logger)
 
     # ------------------------------------------------------------------------------
     # Diff calculation and construction
@@ -471,20 +490,25 @@ class DSync:
             diff_class (class): Diff or subclass thereof to use for diff calculation and storage.
             flags (DSyncFlags): Flags influencing the behavior of this diff operation.
         """
-        logger.info("Beginning diff")
+        log = self._log.bind(src=source, dst=self, flags=flags).unbind("dsync")
+        log.info("Beginning diff")
         diff = diff_class()
 
         for obj_type in intersection(self.top_level, source.top_level):
 
             diff_elements = self._diff_objects(
-                source=source.get_all(obj_type), dest=self.get_all(obj_type), source_root=source, flags=flags,
+                source=source.get_all(obj_type),
+                dest=self.get_all(obj_type),
+                source_root=source,
+                flags=flags,
+                logger=log,
             )
 
             for diff_element in diff_elements:
                 diff.add(diff_element)
 
         # Notify the diff that it has been fully populated, in case it wishes to print, save to a file, etc.
-        logger.info("Diff complete")
+        log.info("Diff complete")
         diff.complete()
         return diff
 
@@ -498,12 +522,13 @@ class DSync:
         """
         return target.diff_from(self, diff_class=diff_class, flags=flags)
 
-    def _diff_objects(
+    def _diff_objects(  # pylint: disable=too-many-arguments
         self,
         source: Iterable[DSyncModel],
         dest: Iterable[DSyncModel],
         source_root: "DSync",
         flags: DSyncFlags = DSyncFlags.NONE,
+        logger: structlog.BoundLogger = None,
     ) -> List[DiffElement]:
         """Generate a list of DiffElement between the given lists of objects.
 
@@ -514,6 +539,7 @@ class DSync:
             dest: DSyncModel instances retrieved from this DSync instance
             source_root (DSync): The other DSync object being diffed against (owner of the `source` models, if any)
             flags (DSyncFlags): Flags influencing the behavior of this diff operation.
+            logger: Parent logging context
 
         Raises:
             TypeError: if the source and dest args are not the same type, or if that type is unsupported
@@ -537,16 +563,16 @@ class DSync:
         self._validate_objects_for_diff(combined_dict)
 
         for uid in combined_dict:
+            log = logger or self._log
             src_obj, dst_obj = combined_dict[uid]
-
-            if flags & DSyncFlags.SKIP_UNMATCHED_SRC and not dst_obj:
-                logger.debug("Skipping unmatched source object {src_obj}")
-                continue
-            if flags & DSyncFlags.SKIP_UNMATCHED_DST and not src_obj:
-                logger.debug("Skipping unmatched dest object {dst_obj}")
-                continue
-
+            if not src_obj and not dst_obj:
+                # Should never happen
+                raise RuntimeError(f"UID {uid} is in combined_dict but has neither src_obj nor dst_obj??")
             if src_obj:
+                log = log.bind(model=src_obj.get_type(), unique_id=src_obj.get_unique_id())
+                if flags & DSyncFlags.SKIP_UNMATCHED_SRC and not dst_obj:
+                    log.debug("Skipping unmatched source object")
+                    continue
                 diff_element = DiffElement(
                     obj_type=src_obj.get_type(),
                     name=src_obj.get_shortname(),
@@ -555,6 +581,10 @@ class DSync:
                     dest_name=self.name,
                 )
             elif dst_obj:
+                log = log.bind(model=dst_obj.get_type(), unique_id=dst_obj.get_unique_id())
+                if flags & DSyncFlags.SKIP_UNMATCHED_DST and not src_obj:
+                    log.debug("Skipping unmatched dest object")
+                    continue
                 diff_element = DiffElement(
                     obj_type=dst_obj.get_type(),
                     name=dst_obj.get_shortname(),
@@ -562,9 +592,6 @@ class DSync:
                     source_name=source_root.name,
                     dest_name=self.name,
                 )
-            else:
-                # Should be unreachable
-                raise RuntimeError(f"UID {uid} is in combined_dict but has neither src_obj nor dst_obj??")
 
             if src_obj:
                 diff_element.add_attrs(source=src_obj.get_attrs(), dest=None)
@@ -572,7 +599,7 @@ class DSync:
                 diff_element.add_attrs(source=None, dest=dst_obj.get_attrs())
 
             # Recursively diff the children of src_obj and dst_obj and attach the resulting diffs to the diff_element
-            self._diff_child_objects(diff_element, src_obj, dst_obj, source_root, flags)
+            self._diff_child_objects(diff_element, src_obj, dst_obj, source_root, flags=flags, logger=logger)
 
             diffs.append(diff_element)
 
@@ -607,6 +634,7 @@ class DSync:
         dst_obj: Optional[DSyncModel],
         source_root: "DSync",
         flags: DSyncFlags,
+        logger: structlog.BoundLogger,
     ):
         """For all children of the given DSyncModel pair, diff them recursively, adding diffs to the given diff_element.
 
@@ -638,7 +666,7 @@ class DSync:
             dst_objs = self.get_by_uids(getattr(dst_obj, child_fieldname), child_type) if dst_obj else []
 
             for child_diff_element in self._diff_objects(
-                source=src_objs, dest=dst_objs, source_root=source_root, flags=flags
+                source=src_objs, dest=dst_objs, source_root=source_root, flags=flags, logger=logger,
             ):
                 diff_element.add_child(child_diff_element)
 

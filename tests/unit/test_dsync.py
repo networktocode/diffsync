@@ -1,7 +1,5 @@
 """Unit tests for the DSync class."""
 
-import logging
-
 import pytest
 
 from dsync import DSync, DSyncModel, DSyncFlags
@@ -214,9 +212,8 @@ def test_dsync_subclass_methods_crud(backend_a):
         backend_a.remove(site_atl_a)
 
 
-def test_dsync_subclass_methods_sync_exceptions(caplog, error_prone_backend_a, backend_b):
+def test_dsync_subclass_methods_sync_exceptions(log, error_prone_backend_a, backend_b):
     """Test handling of exceptions during a sync."""
-    caplog.set_level(logging.INFO)
     with pytest.raises(ObjectCrudException):
         error_prone_backend_a.sync_from(backend_b)
 
@@ -226,9 +223,15 @@ def test_dsync_subclass_methods_sync_exceptions(caplog, error_prone_backend_a, b
     remaining_diffs.print_detailed()
     assert remaining_diffs.has_diffs()
 
+    # At least some operations of each type should have succeeded
+    assert log.has("Created successfully", status="success")
+    assert log.has("Updated successfully", status="success")
+    assert log.has("Deleted successfully", status="success")
     # Some ERROR messages should have been logged
-    assert [record.message for record in caplog.records if record.levelname == "ERROR"] != []
-    caplog.clear()
+    assert [event for event in log.events if event["level"] == "error"] != []
+    # Some messages with status="error" should have been logged - these may be the same as the above
+    assert [event for event in log.events if event.get("status") == "error"] != []
+    log.events = []
 
     # Retry up to 10 times, we should sync successfully eventually
     for i in range(10):
@@ -238,11 +241,15 @@ def test_dsync_subclass_methods_sync_exceptions(caplog, error_prone_backend_a, b
         remaining_diffs.print_detailed()
         if remaining_diffs.has_diffs():
             # If we still have diffs, some ERROR messages should have been logged
-            assert [record.message for record in caplog.records if record.levelname == "ERROR"] != []
-            caplog.clear()
+            assert [event for event in log.events if event["level"] == "error"] != []
+            # Some messages with status="errored" should have been logged - these may be the same as the above
+            assert [event for event in log.events if event.get("status") == "error"] != []
+            log.events = []
         else:
             # No error messages should have been logged on the last, fully successful attempt
-            assert [record.message for record in caplog.records if record.levelname == "ERROR"] == []
+            assert [event for event in log.events if event["level"] == "error"] == []
+            # Something must have succeeded for us to be done
+            assert [event for event in log.events if event.get("status") == "success"] != []
             break
     else:
         pytest.fail("Sync was still incomplete after 10 retries")
