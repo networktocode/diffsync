@@ -15,7 +15,7 @@ from inspect import isclass
 import logging
 from collections import defaultdict
 from collections.abc import Iterable as ABCIterable, Mapping as ABCMapping
-from typing import Iterable, List, Mapping, Optional, Tuple, Type, Union
+from typing import ClassVar, Iterable, List, Mapping, Optional, Tuple, Type, Union
 
 from pydantic import BaseModel
 
@@ -240,7 +240,7 @@ class DSync:
     # modelname1 = MyModelClass1
     # modelname2 = MyModelClass2
 
-    type: Union[str, None] = None
+    type: ClassVar[Optional[str]]
     """Type of the object, will default to the name of the class if not provided."""
 
     top_level: List[str] = []

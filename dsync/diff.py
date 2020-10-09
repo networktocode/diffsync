@@ -95,7 +95,7 @@ class DiffElement:  # pylint: disable=too-many-instance-attributes
                 This name must be unique within the context of the Diff that is the direct parent of this DiffElement.
             keys (dict): Primary keys and values uniquely describing this object, as in DSyncModel.get_identifiers().
             source_name (str): Name of the source DSync object
-            dest_name (str): Name of the destiantion DSync object
+            dest_name (str): Name of the destination DSync object
         """
         if not isinstance(obj_type, str):
             raise ValueError(f"obj_type must be a string (not {type(obj_type)})")
@@ -138,7 +138,7 @@ class DiffElement:  # pylint: disable=too-many-instance-attributes
 
     def __str__(self):
         """Basic string representation of a DiffElement."""
-        return f"{self.type} : {self.name} : {self.keys} : {self.source_name},{self.source_attrs} : {self.dest_name}:{self.dest_attrs}"
+        return f"{self.type} : {self.name} : {self.keys} : {self.source_name}:{self.source_attrs} : {self.dest_name}:{self.dest_attrs}"
 
     # TODO: separate into set_source_attrs() and set_dest_attrs() methods, or just use direct property access instead?
     def add_attrs(self, source: Optional[dict] = None, dest: Optional[dict] = None):
