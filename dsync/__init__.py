@@ -240,7 +240,7 @@ class DSync:
     # modelname1 = MyModelClass1
     # modelname2 = MyModelClass2
 
-    type: ClassVar[Optional[str]]
+    type: ClassVar[Optional[str]] = None
     """Type of the object, will default to the name of the class if not provided."""
 
     top_level: List[str] = []
