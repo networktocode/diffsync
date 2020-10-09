@@ -1,11 +1,13 @@
 """Unit tests for the DSync class."""
 
+import logging
+
 import pytest
 
-from dsync import DSync, DSyncModel
-from dsync.exceptions import ObjectAlreadyExists, ObjectNotFound, ObjectNotCreated, ObjectNotUpdated, ObjectNotDeleted
+from dsync import DSync, DSyncModel, DSyncFlags
+from dsync.exceptions import ObjectAlreadyExists, ObjectNotFound, ObjectCrudException
 
-from .conftest import Site, Device, Interface
+from .conftest import Site, Device, Interface, TrackedDiff, BackendA
 
 
 def test_generic_dsync_methods(generic_dsync, generic_dsync_model):
@@ -37,7 +39,8 @@ def test_generic_dsync_methods(generic_dsync, generic_dsync_model):
 
     # The generic_dsync_model has an empty identifier/unique-id
     assert generic_dsync.get(DSyncModel, "") == generic_dsync_model
-    assert generic_dsync.get(DSyncModel.get_type(), "") == generic_dsync_model
+    # DSync doesn't know what a "dsyncmodel" is
+    assert generic_dsync.get(DSyncModel.get_type(), "") is None
     # Wrong object-type - no match
     assert generic_dsync.get("", "") is None
     # Wrong unique-id - no match
@@ -63,21 +66,11 @@ def test_generic_dsync_methods(generic_dsync, generic_dsync_model):
     assert list(generic_dsync.get_all(DSyncModel)) == []
     assert generic_dsync.get_by_uids([""], DSyncModel) == []
 
-    # Default (empty) DSync class doesn't know how to create any objects
-    with pytest.raises(ObjectNotCreated):
-        generic_dsync.create_object("dsyncmodel", {}, {})
-    with pytest.raises(ObjectNotUpdated):
-        generic_dsync.update_object("dsyncmodel", {}, {})
-    with pytest.raises(ObjectNotDeleted):
-        generic_dsync.delete_object("dsyncmodel", {}, {})
-
     diff_elements = generic_dsync._diff_objects(  # pylint: disable=protected-access
         [generic_dsync_model], [generic_dsync_model], generic_dsync,
     )
     assert len(diff_elements) == 1
     assert not diff_elements[0].has_diffs()
-    # No-op as diff_element.has_diffs() is False
-    generic_dsync._sync_from_diff_element(diff_elements[0])  # pylint: disable=protected-access
     assert diff_elements[0].source_name == "DSync"
     assert diff_elements[0].dest_name == "DSync"
 
@@ -119,6 +112,7 @@ def test_dsync_subclass_methods_diff_sync(backend_a, backend_b):
     )
     assert len(diff_elements) == 4  # atl, nyc, sfo, rdu
     for diff_element in diff_elements:
+        diff_element.print_detailed()
         assert diff_element.has_diffs()
     # We don't inspect the contents of the diff elements in detail here - see test_diff_element.py for that
 
@@ -134,7 +128,7 @@ def test_dsync_subclass_methods_diff_sync(backend_a, backend_b):
     check_diff_symmetry(diff_ab, diff_ba)
 
     # Perform sync of one subtree of diffs
-    assert backend_a._sync_from_diff_element(diff_elements[0]) is True  # pylint: disable=protected-access
+    backend_a._sync_from_diff_element(diff_elements[0])  # pylint: disable=protected-access
     # Make sure the sync descended through the diff element all the way to the leafs
     assert backend_a.get(Interface, "nyc-spine1__eth0").description == "Interface 0/0"  # was initially Interface 0
     # Recheck diffs
@@ -153,9 +147,12 @@ def test_dsync_subclass_methods_diff_sync(backend_a, backend_b):
     backend_a.sync_from(backend_b)
     # Make sure the sync descended through the diff elements to their children
     assert backend_a.get(Device, "sfo-spine1").role == "leaf"  # was initially "spine"
-    # Recheck diffs
-    backend_a.diff_from(backend_b).print_detailed()
-    assert backend_a.diff_from(backend_b).has_diffs() is False
+    # Recheck diffs, using a custom Diff subclass this time.
+    diff_ba = backend_a.diff_from(backend_b, diff_class=TrackedDiff)
+    assert isinstance(diff_ba, TrackedDiff)
+    assert diff_ba.is_complete is True
+    diff_ba.print_detailed()
+    assert diff_ba.has_diffs() is False
 
     # site_nyc and site_sfo should be updated, site_atl should be created, site_rdu should be deleted
     site_nyc_a = backend_a.get(Site, "nyc")
@@ -216,30 +213,80 @@ def test_dsync_subclass_methods_crud(backend_a):
     with pytest.raises(ObjectNotFound):
         backend_a.remove(site_atl_a)
 
-    # Test low-level default_* CRUD APIs
-    backend_a.default_create("interface", {"device_name": "nyc-spine1", "name": "eth2"}, {"description": "Interface 2"})
-    new_interface = backend_a.get("interface", "nyc-spine1__eth2")
-    assert new_interface.description == "Interface 2"
 
-    backend_a.default_update("interface", {"device_name": "nyc-spine1", "name": "eth2"}, {"description": "Intf 2"})
-    new_interface_2 = backend_a.get("interface", "nyc-spine1__eth2")
-    assert new_interface.description == "Intf 2"
-    assert new_interface_2 is new_interface
+def test_dsync_subclass_methods_sync_exceptions(caplog, error_prone_backend_a, backend_b):
+    """Test handling of exceptions during a sync."""
+    caplog.set_level(logging.INFO)
+    with pytest.raises(ObjectCrudException):
+        error_prone_backend_a.sync_from(backend_b)
 
-    backend_a.default_delete("interface", {"device_name": "nyc-spine1", "name": "eth2"}, {})
-    assert backend_a.get("interface", "nyc-spine1__eth2") is None
+    error_prone_backend_a.sync_from(backend_b, flags=DSyncFlags.CONTINUE_ON_FAILURE)
+    # Not all sync operations succeeded on the first try
+    remaining_diffs = error_prone_backend_a.diff_from(backend_b)
+    remaining_diffs.print_detailed()
+    assert remaining_diffs.has_diffs()
 
-    # Test higher-level *_object CRUD APIs
-    backend_a.create_object("device", {"name": "new_device"}, {"role": "new_role", "site_name": "nyc"})
-    new_device = backend_a.get("device", "new_device")
-    assert new_device.role == "new_role"
-    assert new_device.site_name == "nyc"
+    # Some ERROR messages should have been logged
+    assert [record.message for record in caplog.records if record.levelname == "ERROR"] != []
+    caplog.clear()
 
-    backend_a.update_object("device", {"name": "new_device"}, {"role": "another_role"})
-    new_device_2 = backend_a.get(Device, "new_device")
-    assert new_device_2 is new_device
-    assert new_device.role == "another_role"
+    # Retry up to 10 times, we should sync successfully eventually
+    for i in range(10):
+        print(f"Sync retry #{i}")
+        error_prone_backend_a.sync_from(backend_b, flags=DSyncFlags.CONTINUE_ON_FAILURE)
+        remaining_diffs = error_prone_backend_a.diff_from(backend_b)
+        remaining_diffs.print_detailed()
+        if remaining_diffs.has_diffs():
+            # If we still have diffs, some ERROR messages should have been logged
+            assert [record.message for record in caplog.records if record.levelname == "ERROR"] != []
+            caplog.clear()
+        else:
+            # No error messages should have been logged on the last, fully successful attempt
+            assert [record.message for record in caplog.records if record.levelname == "ERROR"] == []
+            break
+    else:
+        pytest.fail("Sync was still incomplete after 10 retries")
 
-    backend_a.delete_object("device", {"name": "new_device"})
-    new_device_3 = backend_a.get("device", "new_device")
-    assert new_device_3 is None
+
+def test_dsync_subclass_methods_diff_sync_skip_flags():
+    """Test diff and sync behavior when using the SKIP_UNMATCHED_* flags."""
+    baseline = BackendA()
+    baseline.load()
+
+    extra_models = BackendA()
+    extra_models.load()
+    extra_site = extra_models.site(name="lax")
+    extra_models.add(extra_site)
+    extra_device = extra_models.device(name="nyc-spine3", site_name="nyc", role="spine")
+    extra_models.get(extra_models.site, "nyc").add_child(extra_device)
+    extra_models.add(extra_device)
+
+    missing_models = BackendA()
+    missing_models.load()
+    missing_models.remove(missing_models.get(missing_models.site, "rdu"))
+    missing_device = missing_models.get(missing_models.device, "sfo-spine2")
+    missing_models.get(missing_models.site, "sfo").remove_child(missing_device)
+    missing_models.remove(missing_device)
+
+    assert baseline.diff_from(extra_models).has_diffs()
+    assert baseline.diff_to(missing_models).has_diffs()
+
+    # SKIP_UNMATCHED_SRC should mean that extra models in the src are not flagged for creation in the dest
+    assert not baseline.diff_from(extra_models, flags=DSyncFlags.SKIP_UNMATCHED_SRC).has_diffs()
+    # SKIP_UNMATCHED_DST should mean that missing models in the src are not flagged for deletion from the dest
+    assert not baseline.diff_from(missing_models, flags=DSyncFlags.SKIP_UNMATCHED_DST).has_diffs()
+    # SKIP_UNMATCHED_BOTH means, well, both
+    assert not extra_models.diff_from(missing_models, flags=DSyncFlags.SKIP_UNMATCHED_BOTH).has_diffs()
+    assert not extra_models.diff_to(missing_models, flags=DSyncFlags.SKIP_UNMATCHED_BOTH).has_diffs()
+
+    baseline.sync_from(extra_models, flags=DSyncFlags.SKIP_UNMATCHED_SRC)
+    # New objects should not have been created
+    assert baseline.get(baseline.site, "lax") is None
+    assert baseline.get(baseline.device, "nyc-spine3") is None
+    assert "nyc-spine3" not in baseline.get(baseline.site, "nyc").devices
+
+    baseline.sync_from(missing_models, flags=DSyncFlags.SKIP_UNMATCHED_DST)
+    # Objects should not have been deleted
+    assert baseline.get(baseline.site, "rdu") is not None
+    assert baseline.get(baseline.device, "sfo-spine2") is not None
+    assert "sfo-spine2" in baseline.get(baseline.site, "sfo").devices
