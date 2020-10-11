@@ -9,7 +9,7 @@ from dsync import Diff
 
 
 class MyDiff(Diff):
-    """Custom Diff class to control the order of the site objects"""
+    """Custom Diff class to control the order of the site objects."""
 
     @classmethod
     def order_children_site(cls, children):

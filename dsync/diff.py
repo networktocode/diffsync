@@ -13,7 +13,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import itertools
 from functools import total_ordering
 from typing import Iterator, Iterable, Optional
 
@@ -76,7 +75,6 @@ class Diff:
         """
         order_default = "order_children_default"
 
-        children: Iterator["DiffElement"] = itertools.chain()
         for group in self.groups():
             order_method_name = f"order_children_{group}"
             if hasattr(self, order_method_name):
@@ -84,9 +82,7 @@ class Diff:
             else:
                 order_method = getattr(self, order_default)
 
-            children = itertools.chain(children, order_method(self.children[group]))
-
-        return children
+            yield from order_method(self.children[group])
 
     @classmethod
     def order_children_default(cls, children: dict) -> Iterator["DiffElement"]:
