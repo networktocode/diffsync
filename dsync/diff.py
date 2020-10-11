@@ -68,10 +68,30 @@ class Diff:
         return False
 
     def get_children(self) -> Iterator["DiffElement"]:
-        """Iterate over all child elements in all groups in self.children."""
+        """Iterate over all child elements in all groups in self.children.
+
+        For each group of children, check if an order method is defined,
+        Otherwise use the default method.
+        """
+        order_default = "order_children_default"
+
         for group in self.groups():
-            for child in self.children[group].values():
-                yield child
+            order_method_name = f"order_children_{group}"
+            if hasattr(self, order_method_name):
+                order_method = getattr(self, order_method_name)
+            else:
+                order_method = getattr(self, order_default)
+
+            yield from order_method(self.children[group])
+
+    @classmethod
+    def order_children_default(cls, children: dict) -> Iterator["DiffElement"]:
+        """Default method to an Iterator for children.
+
+        Since children is already an OrderedDefaultDict, this method is not doing anything special.
+        """
+        for child in children.values():
+            yield child
 
     def print_detailed(self, indent: int = 0):
         """Print all diffs to screen for all child elements.
@@ -82,7 +102,7 @@ class Diff:
         margin = " " * indent
         for group in self.groups():
             print(f"{margin}{group}")
-            for child in self.children[group].values():
+            for child in self.get_children():
                 if child.has_diffs():
                     child.print_detailed(indent + 2)
 
