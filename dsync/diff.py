@@ -102,7 +102,7 @@ class Diff:
         margin = " " * indent
         for group in self.groups():
             print(f"{margin}{group}")
-            for child in self.get_children():
+            for child in self.children[group].values():
                 if child.has_diffs():
                     child.print_detailed(indent + 2)
 
