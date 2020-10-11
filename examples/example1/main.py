@@ -1,4 +1,9 @@
 """Main executable for DSync "example1"."""
+# pylint: disable=wrong-import-order
+
+import argparse
+
+from dsync.logging import enable_console_logging
 
 from backend_a import BackendA
 from backend_b import BackendB
@@ -21,22 +26,31 @@ class MyDiff(Diff):
 
 def main():
     """Demonstrate DSync behavior using the example backends provided."""
-    # pylint: disable=invalid-name
+    parser = argparse.ArgumentParser("example1")
+    parser.add_argument("--verbosity", "-v", default=0, action="count")
+    args = parser.parse_args()
+    enable_console_logging(verbosity=args.verbosity)
 
-    a = BackendA(name="Backend-A")
-    a.load()
+    print("Initializing and loading Backend A...")
+    backend_a = BackendA(name="Backend-A")
+    backend_a.load()
 
-    b = BackendB(name="Backend-B")
-    b.load()
+    print("Initializing and loading Backend B...")
+    backend_b = BackendB(name="Backend-B")
+    backend_b.load()
 
-    c = BackendC()
-    c.load()
+    print("Initializing and loading Backend C...")
+    backend_c = BackendC()
+    backend_c.load()
 
-    diff_a_b = a.diff_to(b, diff_class=MyDiff)
+    print("Getting diffs from Backend A to Backend B...")
+    diff_a_b = backend_a.diff_to(backend_b, diff_class=MyDiff)
     diff_a_b.print_detailed()
 
-    a.sync_to(b)
-    a.diff_to(b).print_detailed()
+    print("Syncing changes from Backend A to Backend B...")
+    backend_a.sync_to(backend_b)
+    print("Getting updated diffs from Backend A to Backend B...")
+    backend_a.diff_to(backend_b).print_detailed()
 
 
 if __name__ == "__main__":

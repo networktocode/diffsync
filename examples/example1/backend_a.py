@@ -11,7 +11,7 @@ DATA = {
     },
     "sfo": {
         "sfo-spine1": {"role": "spine", "interfaces": {"eth0": "Interface 0", "eth1": "Interface 1"}},
-        "sfo-spine2": {"role": "spine", "interfaces": {"eth0": "TBD", "eth1": "ddd"}},
+        "sfo-spine2": {"role": "spine", "interfaces": {"eth0": "TBD", "eth1": "ddd", "eth2": "Interface 2"}},
     },
 }
 

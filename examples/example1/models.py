@@ -25,8 +25,8 @@ class Device(DSyncModel):
     _children = {"interface": "interfaces"}
 
     name: str
-    site_name: str
-    role: str
+    site_name: Optional[str]  # note that this attribute is NOT included in _attributes
+    role: Optional[str]  # note that this attribute is NOT included in _attributes
     interfaces: List = list()
 
 
