@@ -55,6 +55,8 @@ def test_order_children_default(backend_a, backend_b):
     """Test that order_children_default is properly called when calling get_children."""
 
     class MyDiff(Diff):
+        """custom diff class to test order_children_default."""
+
         @classmethod
         def order_children_default(cls, children):
             """Return the children ordered in alphabetical order."""
@@ -73,6 +75,8 @@ def test_order_children_custom(backend_a, backend_b):
     """Test that a custom order_children method is properly called when calling get_children."""
 
     class MyDiff(Diff):
+        """custom diff class to test order_children_site."""
+
         @classmethod
         def order_children_site(cls, children):
             """Return the site children ordered in reverse-alphabetical order."""
