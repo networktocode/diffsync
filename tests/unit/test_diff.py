@@ -49,3 +49,38 @@ def test_diff_children():
     assert diff.has_diffs()
 
     # TODO: test print_detailed
+
+
+def test_order_children_default(backend_a, backend_b):
+    """Test that order_children_default is properly called when calling get_children."""
+
+    class MyDiff(Diff):
+        @classmethod
+        def order_children_default(cls, children):
+            """Return the children ordered in alphabetical order."""
+            keys = sorted(children.keys(), reverse=False)
+            for key in keys:
+                yield children[key]
+
+    # Validating default order method
+    diff_a_b = backend_a.diff_from(backend_b, diff_class=MyDiff)
+    children = diff_a_b.get_children()
+    children_names = [child.name for child in children]
+    assert children_names == ["atl", "nyc", "rdu", "sfo"]
+
+
+def test_order_children_custom(backend_a, backend_b):
+    """Test that a custom order_children method is properly called when calling get_children."""
+
+    class MyDiff(Diff):
+        @classmethod
+        def order_children_site(cls, children):
+            """Return the site children ordered in reverse-alphabetical order."""
+            keys = sorted(children.keys(), reverse=True)
+            for key in keys:
+                yield children[key]
+
+    diff_a_b = backend_a.diff_from(backend_b, diff_class=MyDiff)
+    children = diff_a_b.get_children()
+    children_names = [child.name for child in children]
+    assert children_names == ["sfo", "rdu", "nyc", "atl"]
