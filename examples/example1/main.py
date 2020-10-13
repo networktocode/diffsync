@@ -3,14 +3,12 @@
 
 import argparse
 
+from dsync import Diff
 from dsync.logging import enable_console_logging
 
 from backend_a import BackendA
 from backend_b import BackendB
 from backend_c import BackendC
-
-
-from dsync import Diff
 
 
 class MyDiff(Diff):
