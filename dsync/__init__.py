@@ -32,8 +32,6 @@ from .exceptions import (
     ObjectNotFound,
 )
 
-_logger = structlog.get_logger()
-
 
 class DSyncFlags(enum.Flag):
     """Flags that can be passed to a sync_* or diff_* call to affect its behavior."""
@@ -56,6 +54,13 @@ class DSyncFlags(enum.Flag):
     """
 
     SKIP_UNMATCHED_BOTH = SKIP_UNMATCHED_SRC | SKIP_UNMATCHED_DST
+
+    LOG_UNCHANGED_RECORDS = enum.auto()
+    """If this flag is set, a log message will be generated during synchronization for each model, even unchanged ones.
+
+    By default, when this flag is unset, only models that have actual changes to synchronize will be logged.
+    This flag is off by default to reduce the default verbosity of DSync, but can be enabled when debugging.
+    """
 
 
 class DSyncModel(BaseModel):
@@ -339,7 +344,7 @@ class DSync:
         Subclasses should be careful to call super().__init__() if they override this method.
         """
         self._data = defaultdict(dict)
-        self._log = _logger.new(dsync=self)
+        self._log = structlog.get_logger().new(dsync=self)
 
         # If the type is not defined, use the name of the class as the default value
         if self.type is None:
@@ -454,6 +459,9 @@ class DSync:
                     raise ObjectNotDeleted(f"Failed to delete {object_class.get_type()} {element.keys} - not found!")
                 obj = obj.delete()
                 log.info("Deleted successfully", status="success")
+            else:
+                if flags & DSyncFlags.LOG_UNCHANGED_RECORDS:
+                    log.debug("No action needed", status="success")
         except ObjectCrudException as exception:
             log.error(str(exception), status="error")
             if not flags & DSyncFlags.CONTINUE_ON_FAILURE:
