@@ -2,7 +2,7 @@
 
 import pytest
 
-from dsync import DSync, DSyncModel, DSyncFlags
+from dsync import DSync, DSyncModel, DSyncFlags, DSyncModelFlags
 from dsync.exceptions import ObjectAlreadyExists, ObjectNotFound, ObjectCrudException
 
 from .conftest import Site, Device, Interface, TrackedDiff, BackendA
@@ -64,14 +64,6 @@ def test_generic_dsync_methods(generic_dsync, generic_dsync_model):
     assert list(generic_dsync.get_all(DSyncModel)) == []
     assert generic_dsync.get_by_uids([""], DSyncModel) == []
 
-    diff_elements = generic_dsync._diff_objects(  # pylint: disable=protected-access
-        [generic_dsync_model], [generic_dsync_model], generic_dsync,
-    )
-    assert len(diff_elements) == 1
-    assert not diff_elements[0].has_diffs()
-    assert diff_elements[0].source_name == "DSync"
-    assert diff_elements[0].dest_name == "DSync"
-
 
 def test_dsync_subclass_validation():
     """Test the declaration-time checks on a DSync subclass."""
@@ -105,15 +97,6 @@ def check_diff_symmetry(diff1, diff2):
 
 def test_dsync_subclass_methods_diff_sync(backend_a, backend_b):
     """Test DSync diff/sync APIs on an actual concrete subclass."""
-    diff_elements = backend_a._diff_objects(  # pylint: disable=protected-access
-        source=backend_b.get_all("site"), dest=backend_a.get_all("site"), source_root=backend_b
-    )
-    assert len(diff_elements) == 4  # atl, nyc, sfo, rdu
-    for diff_element in diff_elements:
-        diff_element.print_detailed()
-        assert diff_element.has_diffs()
-    # We don't inspect the contents of the diff elements in detail here - see test_diff_element.py for that
-
     # Self diff should always show no diffs!
     assert backend_a.diff_from(backend_a).has_diffs() is False
     assert backend_a.diff_to(backend_a).has_diffs() is False
@@ -126,20 +109,18 @@ def test_dsync_subclass_methods_diff_sync(backend_a, backend_b):
     check_diff_symmetry(diff_ab, diff_ba)
 
     # Perform sync of one subtree of diffs
-    backend_a._sync_from_diff_element(diff_elements[0])  # pylint: disable=protected-access
+    backend_a._sync_from_diff_element(diff_ba.children["site"]["nyc"])  # pylint: disable=protected-access
     # Make sure the sync descended through the diff element all the way to the leafs
     assert backend_a.get(Interface, "nyc-spine1__eth0").description == "Interface 0/0"  # was initially Interface 0
     # Recheck diffs
-    diff_elements = backend_a._diff_objects(  # pylint: disable=protected-access
-        source=backend_a.get_all("site"), dest=backend_b.get_all("site"), source_root=backend_b
-    )
-    for diff_element in diff_elements:
+    diff_elements = backend_a.diff_from(backend_b).children["site"]
+    for diff_element in diff_elements.values():
         diff_element.print_detailed()
-    assert len(diff_elements) == 4  # atl, nyc, sfo, rdu
-    assert not diff_elements[0].has_diffs()  # sync completed, no diffs
-    assert diff_elements[1].has_diffs()
-    assert diff_elements[2].has_diffs()
-    assert diff_elements[3].has_diffs()
+    assert len(diff_elements) == 4  # atl, nyc, rdu, sfo
+    assert diff_elements["atl"].has_diffs()
+    assert not diff_elements["nyc"].has_diffs()  # sync completed, no diffs
+    assert diff_elements["rdu"].has_diffs()
+    assert diff_elements["sfo"].has_diffs()
 
     # Perform full sync
     backend_a.sync_from(backend_b)
@@ -256,7 +237,7 @@ def test_dsync_subclass_methods_sync_exceptions(log, error_prone_backend_a, back
 
 
 def test_dsync_subclass_methods_diff_sync_skip_flags():
-    """Test diff and sync behavior when using the SKIP_UNMATCHED_* flags."""
+    """Test diff and sync behavior when using the SKIP_UNMATCHED_* DSyncFlags."""
     baseline = BackendA()
     baseline.load()
 
@@ -297,3 +278,72 @@ def test_dsync_subclass_methods_diff_sync_skip_flags():
     assert baseline.get(baseline.site, "rdu") is not None
     assert baseline.get(baseline.device, "sfo-spine2") is not None
     assert "sfo-spine2" in baseline.get(baseline.site, "sfo").devices
+
+
+def test_dsync_diff_ignore_models():
+    """Test diff behavior with the DSyncModelFlags.IGNORE flag."""
+    baseline = BackendA()
+    baseline.load()
+
+    extra_models = BackendA()
+    extra_models.load()
+    extra_site = extra_models.site(name="lax")
+    extra_models.add(extra_site)
+    extra_device = extra_models.device(name="nyc-spine3", site_name="nyc", role="spine")
+    extra_models.get(extra_models.site, "nyc").add_child(extra_device)
+    extra_models.add(extra_device)
+
+    missing_models = BackendA()
+    missing_models.load()
+    missing_models.remove(missing_models.get(missing_models.site, "rdu"))
+    missing_device = missing_models.get(missing_models.device, "sfo-spine2")
+    missing_models.get(missing_models.site, "sfo").remove_child(missing_device)
+    missing_models.remove(missing_device)
+
+    # Directly ignore the extra source site
+    extra_site.model_flags |= DSyncModelFlags.IGNORE
+    # Ignore any diffs on source site NYC, which should extend to its child nyc-spine3 device
+    extra_models.get(extra_models.site, "nyc").model_flags |= DSyncModelFlags.IGNORE
+
+    diff = baseline.diff_from(extra_models)
+    diff.print_detailed()
+    assert not diff.has_diffs()
+
+    # Directly ignore the extra target site
+    baseline.get(baseline.site, "rdu").model_flags |= DSyncModelFlags.IGNORE
+    # Ignore any diffs on target site SFO, which should extend to its child sfo-spine2 device
+    baseline.get(baseline.site, "sfo").model_flags |= DSyncModelFlags.IGNORE
+
+    diff = baseline.diff_from(missing_models)
+    diff.print_detailed()
+    assert not diff.has_diffs()
+
+
+def test_dsync_sync_skip_children_on_delete():
+    """Test sync behavior with the DSyncModelFlags.SKIP_CHILDREN_ON_DELETE flag."""
+    baseline = BackendA()
+    baseline.load()
+
+    class NoDeleteInterface(Interface):
+        """Interface that shouldn't be deleted directly."""
+
+        def delete(self):
+            raise RuntimeError("Don't delete me, bro!")
+
+    class NoDeleteInterfaceDSync(BackendA):
+        """BackendA, but using NoDeleteInterface."""
+
+        interface = NoDeleteInterface
+
+    extra_models = NoDeleteInterfaceDSync()
+    extra_models.load()
+    extra_device = extra_models.device(name="nyc-spine3", site_name="nyc", role="spine")
+    extra_device.model_flags |= DSyncModelFlags.SKIP_CHILDREN_ON_DELETE
+    extra_models.get(extra_models.site, "nyc").add_child(extra_device)
+    extra_models.add(extra_device)
+    extra_interface = extra_models.interface(name="eth0", device_name="nyc-spine3")
+    extra_device.add_child(extra_interface)
+    extra_models.add(extra_interface)
+
+    # NoDeleteInterface.delete() should not be called since we're deleting its parent only
+    extra_models.sync_from(baseline)
