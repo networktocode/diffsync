@@ -104,7 +104,7 @@ class Device(DSyncModel):
     @classmethod
     def create(cls, dsync, ids, attrs):
         ## TODO add your own logic here to create the device on the remote system
-        super().create(ids=ids, dsync=dsync, attrs=attrs)
+        return super().create(ids=ids, dsync=dsync, attrs=attrs)
 
     def update(self, attrs):
         ## TODO add your own logic here to update the device on the remote system
