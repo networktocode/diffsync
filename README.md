@@ -104,15 +104,14 @@ class Device(DSyncModel):
     @classmethod
     def create(cls, dsync, ids, attrs):
         ## TODO add your own logic here to create the device on the remote system
-        return cls(**ids, **attrs)
+        super().create(ids=ids, dsync=dsync, attrs=attrs)
 
     def update(self, attrs):
         ## TODO add your own logic here to update the device on the remote system
-        for attr, value in attrs.items():
-            setattr(self, attr, value)
-        return self
+        return super().update(attrs)
 
     def delete(self):
         ## TODO add your own logic here to delete the device on the remote system
+        super().delete()
         return self
 ```
