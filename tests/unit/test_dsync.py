@@ -332,6 +332,13 @@ def test_dsync_sync_skip_children_on_delete(backend_a):
     extra_interface = extra_models.interface(name="eth0", device_name="nyc-spine3")
     extra_device.add_child(extra_interface)
     extra_models.add(extra_interface)
+    assert extra_models.get(extra_models.interface, "nyc-spine3__eth0") is not None
 
     # NoDeleteInterface.delete() should not be called since we're deleting its parent only
     extra_models.sync_from(backend_a)
+    # The extra interface should have been removed from the DSync without calling its delete() method
+    assert extra_models.get(extra_models.interface, extra_interface.get_unique_id()) is None
+    # The sync should be complete, regardless
+    diff = extra_models.diff_from(backend_a)
+    diff.print_detailed()
+    assert not diff.has_diffs()

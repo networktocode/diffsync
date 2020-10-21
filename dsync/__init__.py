@@ -501,16 +501,17 @@ class DSync:
             return
 
         if element.action == "create":
-            self.add(obj)
             if parent_model:
                 parent_model.add_child(obj)
+            self.add(obj)
         elif element.action == "delete":
-            self.remove(obj)
             if parent_model:
                 parent_model.remove_child(obj)
-
-        if element.action == "delete" and obj.model_flags & DSyncModelFlags.SKIP_CHILDREN_ON_DELETE:
-            return
+            if obj.model_flags & DSyncModelFlags.SKIP_CHILDREN_ON_DELETE:
+                # We don't need to process the child objects, but we do need to discard them
+                self.remove(obj, remove_children=True)
+                return
+            self.remove(obj)
 
         for child in element.get_children():
             self._sync_from_diff_element(child, flags=flags, parent_model=obj, logger=logger)
@@ -622,11 +623,12 @@ class DSync:
 
         self._data[modelname][uid] = obj
 
-    def remove(self, obj: DSyncModel):
+    def remove(self, obj: DSyncModel, remove_children: bool = False):
         """Remove a DSyncModel object from the store.
 
         Args:
-            obj (DSyncModel): object to delete
+            obj (DSyncModel): object to remove
+            remove_children (bool): If True, also recursively remove any children of this object
 
         Raises:
             ObjectNotFound: if the object is not present
@@ -641,6 +643,13 @@ class DSync:
             obj.dsync = None
 
         del self._data[modelname][uid]
+
+        if remove_children:
+            for child_type, child_fieldname in obj.get_children_mapping().items():
+                for child_id in getattr(obj, child_fieldname):
+                    child_obj = self.get(child_type, child_id)
+                    if child_obj:
+                        self.remove(child_obj, remove_children=remove_children)
 
 
 # DSyncModel references DSync and DSync references DSyncModel. Break the typing loop:
