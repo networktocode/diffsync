@@ -14,24 +14,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from typing import ClassVar, List, Optional, Tuple
+from typing import ClassVar, List, Mapping, Optional, Tuple
 
 import pytest
 
 from dsync import DSync, DSyncModel
 from dsync.diff import Diff
 from dsync.exceptions import ObjectNotCreated, ObjectNotUpdated, ObjectNotDeleted
-
-
-@pytest.fixture()
-def give_me_success():
-    """
-    Provides True to make tests pass
-
-    Returns:
-        (bool): Returns True
-    """
-    return True
 
 
 @pytest.fixture
@@ -46,14 +35,14 @@ class ErrorProneModel(DSyncModel):
     _counter: ClassVar[int] = 0
 
     @classmethod
-    def create(cls, dsync: DSync, ids: dict, attrs: dict):
+    def create(cls, dsync: DSync, ids: Mapping, attrs: Mapping):
         """As DSyncModel.create(), but periodically throw exceptions."""
         cls._counter += 1
         if not cls._counter % 3:
             raise ObjectNotCreated("Random creation error!")
         return super().create(dsync, ids, attrs)
 
-    def update(self, attrs: dict):
+    def update(self, attrs: Mapping):
         """As DSyncModel.update(), but periodically throw exceptions."""
         # pylint: disable=protected-access
         self.__class__._counter += 1

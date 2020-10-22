@@ -37,6 +37,12 @@ def test_diff_str_with_no_diffs():
     assert diff.str() == "(no diffs)"
 
 
+def test_diff_dict_with_no_diffs():
+    diff = Diff()
+
+    assert diff.dict() == {}
+
+
 def test_diff_children():
     """Test the basic functionality of the Diff class when adding child elements."""
     diff = Diff()
@@ -87,6 +93,21 @@ interface
     description    source(my interface)    dest(your interface)\
 """
     )
+
+
+def test_diff_dict_with_diffs():
+    diff = Diff()
+    device_element = DiffElement("device", "device1", {"name": "device1"})
+    diff.add(device_element)
+    intf_element = DiffElement("interface", "eth0", {"device_name": "device1", "name": "eth0"})
+    source_attrs = {"interface_type": "ethernet", "description": "my interface"}
+    dest_attrs = {"description": "your interface"}
+    intf_element.add_attrs(source=source_attrs, dest=dest_attrs)
+    diff.add(intf_element)
+
+    assert diff.dict() == {
+        "interface": {"eth0": {"_dst": {"description": "your interface"}, "_src": {"description": "my interface"}}},
+    }
 
 
 def test_order_children_default(backend_a, backend_b):

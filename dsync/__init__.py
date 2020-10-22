@@ -222,7 +222,7 @@ class DSyncModel(BaseModel):
         return output
 
     @classmethod
-    def create(cls, dsync: "DSync", ids: Dict, attrs: Dict) -> Optional["DSyncModel"]:
+    def create(cls, dsync: "DSync", ids: Mapping, attrs: Mapping) -> Optional["DSyncModel"]:
         """Instantiate this class, along with any platform-specific data creation.
 
         Args:
@@ -239,7 +239,7 @@ class DSyncModel(BaseModel):
         """
         return cls(**ids, dsync=dsync, **attrs)
 
-    def update(self, attrs: Dict) -> Optional["DSyncModel"]:
+    def update(self, attrs: Mapping) -> Optional["DSyncModel"]:
         """Update the attributes of this instance, along with any platform-specific data updates.
 
         Args:
@@ -292,7 +292,7 @@ class DSyncModel(BaseModel):
         """Get the mapping of types to fieldnames for child models of this model."""
         return cls._children
 
-    def get_identifiers(self) -> Dict:
+    def get_identifiers(self) -> Mapping:
         """Get a dict of all identifiers (primary keys) and their values for this object.
 
         Returns:
@@ -300,7 +300,7 @@ class DSyncModel(BaseModel):
         """
         return self.dict(include=set(self._identifiers))
 
-    def get_attrs(self) -> Dict:
+    def get_attrs(self) -> Mapping:
         """Get all the non-primary-key attributes or parameters for this object.
 
         Similar to Pydantic's `BaseModel.dict()` method, with the following key differences:
@@ -441,9 +441,9 @@ class DSync:
         """Load all desired data from whatever backend data source into this instance."""
         # No-op in this generic class
 
-    def dict(self, exclude_defaults: bool = True, **kwargs) -> dict:
+    def dict(self, exclude_defaults: bool = True, **kwargs) -> Mapping:
         """Represent the DSync contents as a dict, as if it were a Pydantic model."""
-        data: Dict[str, Dict[str, dict]] = {}
+        data: Dict[str, Dict[str, Dict]] = {}
         for modelname in self._data:
             data[modelname] = {}
             for unique_id, model in self._data[modelname].items():
@@ -531,13 +531,13 @@ class DSync:
                 log.debug("Attempting object creation")
                 if obj:
                     raise ObjectNotCreated(f"Failed to create {object_class.get_type()} {element.keys} - it exists!")
-                obj = object_class.create(dsync=self, ids=element.keys, attrs={key: diffs[key]["src"] for key in diffs})
+                obj = object_class.create(dsync=self, ids=element.keys, attrs=diffs["src"])
                 log.info("Created successfully", status="success")
             elif element.action == "update":
                 log.debug("Attempting object update")
                 if not obj:
                     raise ObjectNotUpdated(f"Failed to update {object_class.get_type()} {element.keys} - not found!")
-                obj = obj.update(attrs={key: diffs[key]["src"] for key in diffs})
+                obj = obj.update(attrs=diffs["src"])
                 log.info("Updated successfully", status="success")
             elif element.action == "delete":
                 log.debug("Attempting object deletion")
@@ -606,7 +606,7 @@ class DSync:
     # ------------------------------------------------------------------------------
 
     def get(
-        self, obj: Union[Text, DSyncModel, Type[DSyncModel]], identifier: Union[Text, Dict]
+        self, obj: Union[Text, DSyncModel, Type[DSyncModel]], identifier: Union[Text, Mapping]
     ) -> Optional[DSyncModel]:
         """Get one object from the data store based on its unique id.
 
