@@ -227,6 +227,31 @@ def backend_a():
     return dsync
 
 
+@pytest.fixture
+def backend_a_with_extra_models():
+    """Provide an instance of BackendA subclass of DSync with some extra sites and devices."""
+    extra_models = BackendA()
+    extra_models.load()
+    extra_site = extra_models.site(name="lax")
+    extra_models.add(extra_site)
+    extra_device = extra_models.device(name="nyc-spine3", site_name="nyc", role="spine")
+    extra_models.get(extra_models.site, "nyc").add_child(extra_device)
+    extra_models.add(extra_device)
+    return extra_models
+
+
+@pytest.fixture
+def backend_a_minus_some_models():
+    """Provide an instance of BackendA subclass of DSync with fewer models than the default."""
+    missing_models = BackendA()
+    missing_models.load()
+    missing_models.remove(missing_models.get(missing_models.site, "rdu"))
+    missing_device = missing_models.get(missing_models.device, "sfo-spine2")
+    missing_models.get(missing_models.site, "sfo").remove_child(missing_device)
+    missing_models.remove(missing_device)
+    return missing_models
+
+
 class ErrorProneSiteA(ErrorProneModel, SiteA):
     """A Site that sometimes throws exceptions."""
 

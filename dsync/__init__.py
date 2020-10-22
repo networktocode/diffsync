@@ -33,21 +33,39 @@ from .exceptions import (
 )
 
 
+class DSyncModelFlags(enum.Flag):
+    """Flags that can be set on a DSyncModel class or instance to affect its usage."""
+
+    NONE = 0
+
+    IGNORE = 0b1
+    """Do not render diffs containing this model; do not make any changes to this model when synchronizing.
+
+    Can be used to indicate a model instance that exists but should not be changed by DSync.
+    """
+
+    SKIP_CHILDREN_ON_DELETE = 0b10
+    """When deleting this model, do not recursively delete its children.
+
+    Can be used for the case where deletion of a model results in the automatic deletion of all its children.
+    """
+
+
 class DSyncFlags(enum.Flag):
     """Flags that can be passed to a sync_* or diff_* call to affect its behavior."""
 
     NONE = 0
 
-    CONTINUE_ON_FAILURE = enum.auto()
+    CONTINUE_ON_FAILURE = 0b1
     """Continue synchronizing even if failures are encountered when syncing individual models."""
 
-    SKIP_UNMATCHED_SRC = enum.auto()
+    SKIP_UNMATCHED_SRC = 0b10
     """Ignore objects that only exist in the source/"from" DSync when determining diffs and syncing.
 
     If this flag is set, no new objects will be created in the target/"to" DSync.
     """
 
-    SKIP_UNMATCHED_DST = enum.auto()
+    SKIP_UNMATCHED_DST = 0b100
     """Ignore objects that only exist in the target/"to" DSync when determining diffs and syncing.
 
     If this flag is set, no objects will be deleted from the target/"to" DSync.
@@ -55,7 +73,7 @@ class DSyncFlags(enum.Flag):
 
     SKIP_UNMATCHED_BOTH = SKIP_UNMATCHED_SRC | SKIP_UNMATCHED_DST
 
-    LOG_UNCHANGED_RECORDS = enum.auto()
+    LOG_UNCHANGED_RECORDS = 0b1000
     """If this flag is set, a log message will be generated during synchronization for each model, even unchanged ones.
 
     By default, when this flag is unset, only models that have actual changes to synchronize will be logged.
@@ -66,7 +84,7 @@ class DSyncFlags(enum.Flag):
 class DSyncModel(BaseModel):
     """Base class for all DSync object models.
 
-    Note that APIs of this class are implemented as `get_*()` functions rather than as properties;
+    Note that read-only APIs of this class are implemented as `get_*()` functions rather than as properties;
     this is intentional as specific model classes may want to use these names (`type`, `keys`, `attrs`, etc.)
     as model attributes and we want to avoid any ambiguity or collisions.
 
@@ -110,6 +128,14 @@ class DSyncModel(BaseModel):
     """Optional: dict of `{_modelname: field_name}` entries describing how to store "child" models in this model.
 
     When calculating a Diff or performing a sync, DSync will automatically recurse into these child models.
+
+    Note: inclusion in `_children` is mutually exclusive from inclusion in `_identifiers` or `_attributes`.
+    """
+
+    model_flags: DSyncModelFlags = DSyncModelFlags.NONE
+    """Optional: any non-default behavioral flags for this DSyncModel.
+
+    Can be set as a class attribute or an instance attribute as needed.
     """
 
     dsync: Optional["DSync"] = None
@@ -227,7 +253,7 @@ class DSyncModel(BaseModel):
         return self
 
     @classmethod
-    def get_type(cls):
+    def get_type(cls) -> str:
         """Return the type AKA modelname of the object or the class
 
         Returns:
@@ -249,7 +275,7 @@ class DSyncModel(BaseModel):
         """Get the mapping of types to fieldnames for child models of this model."""
         return cls._children
 
-    def get_identifiers(self):
+    def get_identifiers(self) -> dict:
         """Get a dict of all identifiers (primary keys) and their values for this object.
 
         Returns:
@@ -257,7 +283,7 @@ class DSyncModel(BaseModel):
         """
         return self.dict(include=set(self._identifiers))
 
-    def get_attrs(self):
+    def get_attrs(self) -> dict:
         """Get all the non-primary-key attributes or parameters for this object.
 
         Similar to Pydantic's `BaseModel.dict()` method, with the following key differences:
@@ -270,7 +296,7 @@ class DSyncModel(BaseModel):
         """
         return self.dict(include=set(self._attributes))
 
-    def get_unique_id(self):
+    def get_unique_id(self) -> str:
         """Get the unique ID of an object.
 
         By default the unique ID is built based on all the primary keys defined in `_identifiers`.
@@ -280,7 +306,7 @@ class DSyncModel(BaseModel):
         """
         return self.create_unique_id(**self.get_identifiers())
 
-    def get_shortname(self):
+    def get_shortname(self) -> str:
         """Get the (not guaranteed-unique) shortname of an object, if any.
 
         By default the shortname is built based on all the keys defined in `_shortname`.
@@ -506,13 +532,17 @@ class DSync:
             return
 
         if element.action == "create":
-            self.add(obj)
             if parent_model:
                 parent_model.add_child(obj)
+            self.add(obj)
         elif element.action == "delete":
-            self.remove(obj)
             if parent_model:
                 parent_model.remove_child(obj)
+            if obj.model_flags & DSyncModelFlags.SKIP_CHILDREN_ON_DELETE:
+                # We don't need to process the child objects, but we do need to discard them
+                self.remove(obj, remove_children=True)
+                return
+            self.remove(obj)
 
         for child in element.get_children():
             self._sync_from_diff_element(child, flags=flags, parent_model=obj, logger=logger)
@@ -529,27 +559,8 @@ class DSync:
             diff_class (class): Diff or subclass thereof to use for diff calculation and storage.
             flags (DSyncFlags): Flags influencing the behavior of this diff operation.
         """
-        log = self._log.bind(src=source, dst=self, flags=flags).unbind("dsync")
-        log.info("Beginning diff")
-        diff = diff_class()
-
-        for obj_type in intersection(self.top_level, source.top_level):
-
-            diff_elements = self._diff_objects(
-                source=source.get_all(obj_type),
-                dest=self.get_all(obj_type),
-                source_root=source,
-                flags=flags,
-                logger=log,
-            )
-
-            for diff_element in diff_elements:
-                diff.add(diff_element)
-
-        # Notify the diff that it has been fully populated, in case it wishes to print, save to a file, etc.
-        log.info("Diff complete")
-        diff.complete()
-        return diff
+        differ = DSyncDiffer(src_dsync=source, dst_dsync=self, flags=flags, diff_class=diff_class)
+        return differ.calculate_diffs()
 
     def diff_to(self, target: "DSync", diff_class: Type[Diff] = Diff, flags: DSyncFlags = DSyncFlags.NONE) -> Diff:
         """Generate a Diff describing the difference from this DSync to another one.
@@ -560,154 +571,6 @@ class DSync:
             flags (DSyncFlags): Flags influencing the behavior of this diff operation.
         """
         return target.diff_from(self, diff_class=diff_class, flags=flags)
-
-    def _diff_objects(  # pylint: disable=too-many-arguments
-        self,
-        source: Iterable[DSyncModel],
-        dest: Iterable[DSyncModel],
-        source_root: "DSync",
-        flags: DSyncFlags = DSyncFlags.NONE,
-        logger: structlog.BoundLogger = None,
-    ) -> List[DiffElement]:
-        """Generate a list of DiffElement between the given lists of objects.
-
-        Helper method for `diff_from`/`diff_to`; this generally shouldn't be called on its own.
-
-        Args:
-            source: DSyncModel instances retrieved from another DSync instance
-            dest: DSyncModel instances retrieved from this DSync instance
-            source_root (DSync): The other DSync object being diffed against (owner of the `source` models, if any)
-            flags (DSyncFlags): Flags influencing the behavior of this diff operation.
-            logger: Parent logging context
-
-        Raises:
-            TypeError: if the source and dest args are not the same type, or if that type is unsupported
-        """
-        diffs = []
-
-        if isinstance(source, ABCIterable) and isinstance(dest, ABCIterable):
-            # Convert a list of DSyncModels into a dict using the unique_ids as keys
-            dict_src = {item.get_unique_id(): item for item in source} if not isinstance(source, ABCMapping) else source
-            dict_dst = {item.get_unique_id(): item for item in dest} if not isinstance(dest, ABCMapping) else dest
-
-            combined_dict = {}
-            for uid in dict_src:
-                combined_dict[uid] = (dict_src.get(uid), dict_dst.get(uid))
-            for uid in dict_dst:
-                combined_dict[uid] = (dict_src.get(uid), dict_dst.get(uid))
-        else:
-            # In the future we might support set, etc...
-            raise TypeError(f"Type combination {type(source)}/{type(dest)} is not supported... for now")
-
-        self._validate_objects_for_diff(combined_dict)
-
-        for uid in combined_dict:
-            log = logger or self._log
-            src_obj, dst_obj = combined_dict[uid]
-            if not src_obj and not dst_obj:
-                # Should never happen
-                raise RuntimeError(f"UID {uid} is in combined_dict but has neither src_obj nor dst_obj??")
-            if src_obj:
-                log = log.bind(model=src_obj.get_type(), unique_id=src_obj.get_unique_id())
-                if flags & DSyncFlags.SKIP_UNMATCHED_SRC and not dst_obj:
-                    log.debug("Skipping unmatched source object")
-                    continue
-                diff_element = DiffElement(
-                    obj_type=src_obj.get_type(),
-                    name=src_obj.get_shortname(),
-                    keys=src_obj.get_identifiers(),
-                    source_name=source_root.name,
-                    dest_name=self.name,
-                )
-            elif dst_obj:
-                log = log.bind(model=dst_obj.get_type(), unique_id=dst_obj.get_unique_id())
-                if flags & DSyncFlags.SKIP_UNMATCHED_DST and not src_obj:
-                    log.debug("Skipping unmatched dest object")
-                    continue
-                diff_element = DiffElement(
-                    obj_type=dst_obj.get_type(),
-                    name=dst_obj.get_shortname(),
-                    keys=dst_obj.get_identifiers(),
-                    source_name=source_root.name,
-                    dest_name=self.name,
-                )
-
-            if src_obj:
-                diff_element.add_attrs(source=src_obj.get_attrs(), dest=None)
-            if dst_obj:
-                diff_element.add_attrs(source=None, dest=dst_obj.get_attrs())
-
-            # Recursively diff the children of src_obj and dst_obj and attach the resulting diffs to the diff_element
-            self._diff_child_objects(diff_element, src_obj, dst_obj, source_root, flags=flags, logger=logger)
-
-            diffs.append(diff_element)
-
-        return diffs
-
-    @staticmethod
-    def _validate_objects_for_diff(combined_dict: Mapping[str, Tuple[Optional[DSyncModel], Optional[DSyncModel]]]):
-        """Check whether all DSyncModels in the given dictionary are valid for comparison to one another.
-
-        Helper method for `_diff_objects`.
-
-        Raises:
-            TypeError: If any pair of objects in the dict have differing get_type() values.
-            ValueError: If any pair of objects in the dict have differing get_shortname() or get_identifiers() values.
-        """
-        for uid in combined_dict:
-            # TODO: should we check/enforce whether all source models have the same DSync, whether all dest likewise?
-            # TODO: should we check/enforce whether ALL DSyncModels in this dict have the same get_type() output?
-            src_obj, dst_obj = combined_dict[uid]
-            if src_obj and dst_obj:
-                if src_obj.get_type() != dst_obj.get_type():
-                    raise TypeError(f"Type mismatch: {src_obj.get_type()} vs {dst_obj.get_type()}")
-                if src_obj.get_shortname() != dst_obj.get_shortname():
-                    raise ValueError(f"Shortname mismatch: {src_obj.get_shortname()} vs {dst_obj.get_shortname()}")
-                if src_obj.get_identifiers() != dst_obj.get_identifiers():
-                    raise ValueError(f"Keys mismatch: {src_obj.get_identifiers()} vs {dst_obj.get_identifiers()}")
-
-    def _diff_child_objects(  # pylint: disable=too-many-arguments
-        self,
-        diff_element: DiffElement,
-        src_obj: Optional[DSyncModel],
-        dst_obj: Optional[DSyncModel],
-        source_root: "DSync",
-        flags: DSyncFlags,
-        logger: structlog.BoundLogger,
-    ):
-        """For all children of the given DSyncModel pair, diff them recursively, adding diffs to the given diff_element.
-
-        Helper method for `_diff_objects`.
-        """
-        children_mapping: Mapping[str, str]
-        if src_obj and dst_obj:
-            # Get the subset of child types common to both src_obj and dst_obj
-            src_mapping = src_obj.get_children_mapping()
-            dst_mapping = dst_obj.get_children_mapping()
-            children_mapping = {}
-            for child_type, child_fieldname in src_mapping.items():
-                if child_type in dst_mapping:
-                    children_mapping[child_type] = child_fieldname
-        elif src_obj:
-            children_mapping = src_obj.get_children_mapping()
-        elif dst_obj:
-            children_mapping = dst_obj.get_children_mapping()
-        else:
-            # Should be unreachable
-            raise RuntimeError("Called with neither src_obj nor dest_obj??")
-
-        for child_type, child_fieldname in children_mapping.items():
-            # for example, child_type == "device" and child_fieldname == "devices"
-
-            # for example, getattr(src_obj, "devices") --> list of device uids
-            #          --> src_dsync.get_by_uids(<list of device uids>, "device") --> list of device instances
-            src_objs = source_root.get_by_uids(getattr(src_obj, child_fieldname), child_type) if src_obj else []
-            dst_objs = self.get_by_uids(getattr(dst_obj, child_fieldname), child_type) if dst_obj else []
-
-            for child_diff_element in self._diff_objects(
-                source=src_objs, dest=dst_objs, source_root=source_root, flags=flags, logger=logger,
-            ):
-                diff_element.add_child(child_diff_element)
 
     # ------------------------------------------------------------------------------
     # Object Storage Management
@@ -791,11 +654,12 @@ class DSync:
 
         self._data[modelname][uid] = obj
 
-    def remove(self, obj: DSyncModel):
+    def remove(self, obj: DSyncModel, remove_children: bool = False):
         """Remove a DSyncModel object from the store.
 
         Args:
-            obj (DSyncModel): object to delete
+            obj (DSyncModel): object to remove
+            remove_children (bool): If True, also recursively remove any children of this object
 
         Raises:
             ObjectNotFound: if the object is not present
@@ -811,6 +675,193 @@ class DSync:
 
         del self._data[modelname][uid]
 
+        if remove_children:
+            for child_type, child_fieldname in obj.get_children_mapping().items():
+                for child_id in getattr(obj, child_fieldname):
+                    child_obj = self.get(child_type, child_id)
+                    if child_obj:
+                        self.remove(child_obj, remove_children=remove_children)
+
 
 # DSyncModel references DSync and DSync references DSyncModel. Break the typing loop:
 DSyncModel.update_forward_refs()
+
+
+class DSyncDiffer:
+    """Helper class implementing diff calculation logic for DSync.
+
+    Independent from Diff and DiffElement as those classes are purely data objects, while this stores some state.
+    """
+
+    def __init__(self, src_dsync: DSync, dst_dsync: DSync, flags: DSyncFlags, diff_class: Type[Diff] = Diff):
+        """Create a DSyncDiffer for calculating diffs between the provided DSync instances."""
+        self.src_dsync = src_dsync
+        self.dst_dsync = dst_dsync
+        self.flags = flags
+
+        self.logger = structlog.get_logger().new(src=src_dsync, dst=dst_dsync, flags=flags)
+        self.diff_class = diff_class
+        self.diff: Optional[Diff] = None
+
+    def calculate_diffs(self) -> Diff:
+        """Calculate diffs between the src and dst DSync objects and return the resulting Diff."""
+        if self.diff is not None:
+            return self.diff
+
+        self.logger.info("Beginning diff calculation")
+        self.diff = self.diff_class()
+        for obj_type in intersection(self.dst_dsync.top_level, self.src_dsync.top_level):
+            diff_elements = self.diff_object_list(
+                src=self.src_dsync.get_all(obj_type), dst=self.dst_dsync.get_all(obj_type),
+            )
+
+            for diff_element in diff_elements:
+                self.diff.add(diff_element)
+
+        self.logger.info("Diff calculation complete")
+        self.diff.complete()
+        return self.diff
+
+    def diff_object_list(self, src: Iterable[DSyncModel], dst: Iterable[DSyncModel]) -> List[DiffElement]:
+        """Calculate diffs between two lists of like objects.
+
+        Helper method to `calculate_diffs`, usually doesn't need to be called directly.
+
+        These helper methods work in a recursive cycle:
+        diff_object_list -> diff_object_pair -> diff_child_objects -> diff_object_list -> etc.
+        """
+        diff_elements = []
+
+        if isinstance(src, ABCIterable) and isinstance(dst, ABCIterable):
+            # Convert a list of DSyncModels into a dict using the unique_ids as keys
+            dict_src = {item.get_unique_id(): item for item in src} if not isinstance(src, ABCMapping) else src
+            dict_dst = {item.get_unique_id(): item for item in dst} if not isinstance(dst, ABCMapping) else dst
+
+            combined_dict = {}
+            for uid in dict_src:
+                combined_dict[uid] = (dict_src.get(uid), dict_dst.get(uid))
+            for uid in dict_dst:
+                combined_dict[uid] = (dict_src.get(uid), dict_dst.get(uid))
+        else:
+            # In the future we might support set, etc...
+            raise TypeError(f"Type combination {type(src)}/{type(dst)} is not supported... for now")
+
+        self.validate_objects_for_diff(combined_dict.values())
+
+        for uid in combined_dict:
+            src_obj, dst_obj = combined_dict[uid]
+            diff_element = self.diff_object_pair(src_obj, dst_obj)
+
+            if diff_element:
+                diff_elements.append(diff_element)
+
+        return diff_elements
+
+    @staticmethod
+    def validate_objects_for_diff(object_pairs: Iterable[Tuple[Optional[DSyncModel], Optional[DSyncModel]]]):
+        """Check whether all DSyncModels in the given dictionary are valid for comparison to one another.
+
+        Helper method for `diff_object_list`.
+
+        Raises:
+            TypeError: If any pair of objects in the dict have differing get_type() values.
+            ValueError: If any pair of objects in the dict have differing get_shortname() or get_identifiers() values.
+        """
+        for src_obj, dst_obj in object_pairs:
+            # TODO: should we check/enforce whether all source models have the same DSync, whether all dest likewise?
+            # TODO: should we check/enforce whether ALL DSyncModels in this dict have the same get_type() output?
+            if src_obj and dst_obj:
+                if src_obj.get_type() != dst_obj.get_type():
+                    raise TypeError(f"Type mismatch: {src_obj.get_type()} vs {dst_obj.get_type()}")
+                if src_obj.get_shortname() != dst_obj.get_shortname():
+                    raise ValueError(f"Shortname mismatch: {src_obj.get_shortname()} vs {dst_obj.get_shortname()}")
+                if src_obj.get_identifiers() != dst_obj.get_identifiers():
+                    raise ValueError(f"Keys mismatch: {src_obj.get_identifiers()} vs {dst_obj.get_identifiers()}")
+
+    def diff_object_pair(self, src_obj: Optional[DSyncModel], dst_obj: Optional[DSyncModel]) -> Optional["DiffElement"]:
+        """Diff the two provided DSyncModel objects and return a DiffElement or None.
+
+        Helper method to `calculate_diffs`, usually doesn't need to be called directly.
+
+        These helper methods work in a recursive cycle:
+        diff_object_list -> diff_object_pair -> diff_child_objects -> diff_object_list -> etc.
+        """
+        if src_obj:
+            model = src_obj.get_type()
+            unique_id = src_obj.get_unique_id()
+            shortname = src_obj.get_shortname()
+            keys = src_obj.get_identifiers()
+        elif dst_obj:
+            model = dst_obj.get_type()
+            unique_id = dst_obj.get_unique_id()
+            shortname = dst_obj.get_shortname()
+            keys = dst_obj.get_identifiers()
+        else:
+            raise RuntimeError("diff_object_pair() called with neither src_obj nor dst_obj??")
+
+        log = self.logger.bind(model=model, unique_id=unique_id)
+        if self.flags & DSyncFlags.SKIP_UNMATCHED_SRC and not dst_obj:
+            log.debug("Skipping unmatched source object")
+            return None
+        if self.flags & DSyncFlags.SKIP_UNMATCHED_DST and not src_obj:
+            log.debug("Skipping unmatched dest object")
+            return None
+        if src_obj and src_obj.model_flags & DSyncModelFlags.IGNORE:
+            log.debug("Skipping due to IGNORE flag on source object")
+            return None
+        if dst_obj and dst_obj.model_flags & DSyncModelFlags.IGNORE:
+            log.debug("Skipping due to IGNORE flag on dest object")
+            return None
+
+        diff_element = DiffElement(
+            obj_type=model, name=shortname, keys=keys, source_name=self.src_dsync.name, dest_name=self.dst_dsync.name,
+        )
+
+        if src_obj:
+            diff_element.add_attrs(source=src_obj.get_attrs(), dest=None)
+        if dst_obj:
+            diff_element.add_attrs(source=None, dest=dst_obj.get_attrs())
+
+        # Recursively diff the children of src_obj and dst_obj and attach the resulting diffs to the diff_element
+        self.diff_child_objects(diff_element, src_obj, dst_obj)
+
+        return diff_element
+
+    def diff_child_objects(
+        self, diff_element: DiffElement, src_obj: Optional[DSyncModel], dst_obj: Optional[DSyncModel],
+    ):
+        """For all children of the given DSyncModel pair, diff them recursively, adding diffs to the given diff_element.
+
+        Helper method to `calculate_diffs`, usually doesn't need to be called directly.
+
+        These helper methods work in a recursive cycle:
+        diff_object_list -> diff_object_pair -> diff_child_objects -> diff_object_list -> etc.
+        """
+        children_mapping: Mapping[str, str]
+        if src_obj and dst_obj:
+            # Get the subset of child types common to both src_obj and dst_obj
+            src_mapping = src_obj.get_children_mapping()
+            dst_mapping = dst_obj.get_children_mapping()
+            children_mapping = {}
+            for child_type, child_fieldname in src_mapping.items():
+                if child_type in dst_mapping:
+                    children_mapping[child_type] = child_fieldname
+        elif src_obj:
+            children_mapping = src_obj.get_children_mapping()
+        elif dst_obj:
+            children_mapping = dst_obj.get_children_mapping()
+        else:
+            raise RuntimeError("Called with neither src_obj nor dest_obj??")
+
+        for child_type, child_fieldname in children_mapping.items():
+            # for example, child_type == "device" and child_fieldname == "devices"
+
+            # for example, getattr(src_obj, "devices") --> list of device uids
+            #          --> src_dsync.get_by_uids(<list of device uids>, "device") --> list of device instances
+            src_objs = self.src_dsync.get_by_uids(getattr(src_obj, child_fieldname), child_type) if src_obj else []
+            dst_objs = self.dst_dsync.get_by_uids(getattr(dst_obj, child_fieldname), child_type) if dst_obj else []
+
+            for child_diff_element in self.diff_object_list(src=src_objs, dst=dst_objs):
+                diff_element.add_child(child_diff_element)
+
+        return diff_element
