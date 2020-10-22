@@ -30,7 +30,11 @@ def test_diff_empty():
     assert not diff.has_diffs()
     assert list(diff.get_children()) == []
 
-    # TODO: test print_detailed
+
+def test_diff_str_with_no_diffs():
+    diff = Diff()
+
+    assert diff.str() == "(no diffs)"
 
 
 def test_diff_children():
@@ -63,7 +67,26 @@ def test_diff_children():
 
     assert diff.has_diffs()
 
-    # TODO: test print_detailed
+
+def test_diff_str_with_diffs():
+    diff = Diff()
+    device_element = DiffElement("device", "device1", {"name": "device1"})
+    diff.add(device_element)
+    intf_element = DiffElement("interface", "eth0", {"device_name": "device1", "name": "eth0"})
+    source_attrs = {"interface_type": "ethernet", "description": "my interface"}
+    dest_attrs = {"description": "your interface"}
+    intf_element.add_attrs(source=source_attrs, dest=dest_attrs)
+    diff.add(intf_element)
+
+    # Since device_element has no diffs, we don't have any "device" entry in the diff string:
+    assert (
+        diff.str()
+        == """\
+interface
+  interface: eth0
+    description    source(my interface)    dest(your interface)\
+"""
+    )
 
 
 def test_order_children_default(backend_a, backend_b):

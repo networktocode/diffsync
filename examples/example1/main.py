@@ -61,12 +61,12 @@ def main():
 
     print("Getting diffs from Backend A to Backend B...")
     diff_a_b = backend_a.diff_to(backend_b, diff_class=MyDiff)
-    diff_a_b.print_detailed()
+    print(diff_a_b.str())
 
     print("Syncing changes from Backend A to Backend B...")
     backend_a.sync_to(backend_b)
     print("Getting updated diffs from Backend A to Backend B...")
-    backend_a.diff_to(backend_b).print_detailed()
+    print(backend_a.diff_to(backend_b).str())
 
 
 if __name__ == "__main__":

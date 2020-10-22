@@ -38,25 +38,25 @@ enable_console_logging(verbosity=0)  # Show WARNING and ERROR logs only
 Show the differences between A and B
 ```python
 diff_a_b = a.diff_to(b)
-diff_a_b.print_detailed()
+print(diff_a_b.str())
 ```
 
 Show the differences between B and C
 ```python
 diff_b_c = c.diff_from(b)
-diff_b_c.print_detailed()
+print(diff_b_c.str())
 ```
 
 Synchronize A and B (update B with the contents of A)
 ```python
 a.sync_to(b)
-a.diff_to(b).print_detailed()
+print(a.diff_to(b).str())
 ```
 
 Now A and B will show no differences
 ```python
 diff_a_b = a.diff_to(b)
-diff_a_b.print_detailed()
+print(diff_a_b.str())
 ```
 
 > In the Device model, the `site_name` and `role` are not included in the `_attributes`, so they are not shown when we are comparing the different objects, even if the value is different.

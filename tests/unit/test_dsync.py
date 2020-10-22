@@ -346,7 +346,7 @@ def test_dsync_sync_from_with_continue_on_failure_flag(log, error_prone_backend_
     error_prone_backend_a.sync_from(backend_b, flags=DSyncFlags.CONTINUE_ON_FAILURE)
     # Not all sync operations succeeded on the first try
     remaining_diffs = error_prone_backend_a.diff_from(backend_b)
-    remaining_diffs.print_detailed()
+    print(remaining_diffs.str())  # for debugging of any failure
     assert remaining_diffs.has_diffs()
 
     # At least some operations of each type should have succeeded
@@ -364,7 +364,7 @@ def test_dsync_sync_from_with_continue_on_failure_flag(log, error_prone_backend_
         print(f"Sync retry #{i}")
         error_prone_backend_a.sync_from(backend_b, flags=DSyncFlags.CONTINUE_ON_FAILURE)
         remaining_diffs = error_prone_backend_a.diff_from(backend_b)
-        remaining_diffs.print_detailed()
+        print(remaining_diffs.str())  # for debugging of any failure
         if remaining_diffs.has_diffs():
             # If we still have diffs, some ERROR messages should have been logged
             assert [event for event in log.events if event["level"] == "error"] != []
@@ -427,7 +427,7 @@ def test_dsync_diff_with_ignore_flag_on_source_models(backend_a, backend_a_with_
     backend_a_with_extra_models.get(backend_a_with_extra_models.site, "nyc").model_flags |= DSyncModelFlags.IGNORE
 
     diff = backend_a.diff_from(backend_a_with_extra_models)
-    diff.print_detailed()
+    print(diff.str())  # for debugging of any failure
     assert not diff.has_diffs()
 
 
@@ -438,7 +438,7 @@ def test_dsync_diff_with_ignore_flag_on_target_models(backend_a, backend_a_minus
     backend_a.get(backend_a.site, "sfo").model_flags |= DSyncModelFlags.IGNORE
 
     diff = backend_a.diff_from(backend_a_minus_some_models)
-    diff.print_detailed()
+    print(diff.str())  # for debugging of any failure
     assert not diff.has_diffs()
 
 
@@ -471,5 +471,5 @@ def test_dsync_sync_skip_children_on_delete(backend_a):
     assert extra_models.get(extra_models.interface, extra_interface.get_unique_id()) is None
     # The sync should be complete, regardless
     diff = extra_models.diff_from(backend_a)
-    diff.print_detailed()
+    print(diff.str())  # for debugging of any failure
     assert not diff.has_diffs()
