@@ -158,6 +158,26 @@ class DSyncModel(BaseModel):
     def __str__(self):
         return self.get_unique_id()
 
+    def print_detailed(self, dsync: "Optional[DSync]" = None, indent: int = 0):
+        """Print this model and its children."""
+        margin = " " * indent
+        if not dsync:
+            dsync = self.dsync
+        print(f"{margin}{self.get_type()}: {self.get_unique_id()}")
+        for modelname, fieldname in self._children.items():
+            print(f"{margin}  {modelname}")
+            child_ids = getattr(self, fieldname)
+            if not child_ids:
+                print(f"{margin}    (none)")
+            for child_id in child_ids:
+                child = None
+                if dsync:
+                    child = dsync.get(modelname, child_id)
+                if not child:
+                    print(f"{margin}    {child_id} (no details available)")
+                else:
+                    child.print_detailed(dsync, indent + 4)
+
     @classmethod
     def create(cls, dsync: "DSync", ids: dict, attrs: dict) -> Optional["DSyncModel"]:
         """Instantiate this class, along with any platform-specific data creation.
@@ -377,6 +397,17 @@ class DSync:
     def load(self):
         """Load all desired data from whatever backend data source into this instance."""
         # No-op in this generic class
+
+    def print_detailed(self, indent: int = 0):
+        """Recursively print this DSync and its contained models."""
+        margin = " " * indent
+        for modelname in self.top_level:
+            print(f"{margin}{modelname}")
+            models = self.get_all(modelname)
+            if not models:
+                print(f"{margin}  (none)")
+            for model in models:
+                model.print_detailed(self, indent + 2)
 
     # ------------------------------------------------------------------------------
     # Synchronization between DSync instances
