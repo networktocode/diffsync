@@ -33,6 +33,14 @@ def test_dsync_generic_load_is_noop(generic_dsync):
     assert len(generic_dsync._data) == 0  # pylint: disable=protected-access
 
 
+def test_dsync_dict_with_no_data(generic_dsync):
+    assert generic_dsync.dict() == {}
+
+
+def test_dsync_str_with_no_data(generic_dsync):
+    assert generic_dsync.str() == ""
+
+
 def test_dsync_diff_self_with_no_data_has_no_diffs(generic_dsync):
     assert generic_dsync.diff_from(generic_dsync).has_diffs() is False
     assert generic_dsync.diff_to(generic_dsync).has_diffs() is False
@@ -69,8 +77,9 @@ def test_dsync_get_with_generic_model(generic_dsync, generic_dsync_model):
     generic_dsync.add(generic_dsync_model)
     # The generic_dsync_model has an empty identifier/unique-id
     assert generic_dsync.get(DSyncModel, "") == generic_dsync_model
-    # DSync doesn't know what a "dsyncmodel" is
-    assert generic_dsync.get(DSyncModel.get_type(), "") is None
+    assert generic_dsync.get(DSyncModel.get_type(), "") == generic_dsync_model
+    # DSync doesn't know how to construct a uid str for a "dsyncmodel"
+    assert generic_dsync.get(DSyncModel.get_type(), {}) is None
     # Wrong object-type - no match
     assert generic_dsync.get("", "") is None
     # Wrong unique-id - no match
@@ -119,6 +128,113 @@ def test_dsync_subclass_validation():
     assert "Device" in str(excinfo.value)
     assert "device" in str(excinfo.value)
     assert "dev_class" in str(excinfo.value)
+
+
+def test_dsync_dict_with_data(backend_a):
+    assert backend_a.dict() == {
+        "device": {
+            "nyc-spine1": {
+                "interfaces": ["nyc-spine1__eth0", "nyc-spine1__eth1"],
+                "name": "nyc-spine1",
+                "role": "spine",
+                "site_name": "nyc",
+            },
+            "nyc-spine2": {
+                "interfaces": ["nyc-spine2__eth0", "nyc-spine2__eth1"],
+                "name": "nyc-spine2",
+                "role": "spine",
+                "site_name": "nyc",
+            },
+            "rdu-spine1": {
+                "interfaces": ["rdu-spine1__eth0", "rdu-spine1__eth1"],
+                "name": "rdu-spine1",
+                "role": "spine",
+                "site_name": "rdu",
+            },
+            "rdu-spine2": {
+                "interfaces": ["rdu-spine2__eth0", "rdu-spine2__eth1"],
+                "name": "rdu-spine2",
+                "role": "spine",
+                "site_name": "rdu",
+            },
+            "sfo-spine1": {
+                "interfaces": ["sfo-spine1__eth0", "sfo-spine1__eth1"],
+                "name": "sfo-spine1",
+                "role": "spine",
+                "site_name": "sfo",
+            },
+            "sfo-spine2": {
+                "interfaces": ["sfo-spine2__eth0", "sfo-spine2__eth1", "sfo-spine2__eth2"],
+                "name": "sfo-spine2",
+                "role": "spine",
+                "site_name": "sfo",
+            },
+        },
+        "interface": {
+            "nyc-spine1__eth0": {"description": "Interface 0", "device_name": "nyc-spine1", "name": "eth0"},
+            "nyc-spine1__eth1": {"description": "Interface 1", "device_name": "nyc-spine1", "name": "eth1"},
+            "nyc-spine2__eth0": {"description": "Interface 0", "device_name": "nyc-spine2", "name": "eth0"},
+            "nyc-spine2__eth1": {"description": "Interface 1", "device_name": "nyc-spine2", "name": "eth1"},
+            "rdu-spine1__eth0": {"description": "Interface 0", "device_name": "rdu-spine1", "name": "eth0"},
+            "rdu-spine1__eth1": {"description": "Interface 1", "device_name": "rdu-spine1", "name": "eth1"},
+            "rdu-spine2__eth0": {"description": "Interface 0", "device_name": "rdu-spine2", "name": "eth0"},
+            "rdu-spine2__eth1": {"description": "Interface 1", "device_name": "rdu-spine2", "name": "eth1"},
+            "sfo-spine1__eth0": {"description": "Interface 0", "device_name": "sfo-spine1", "name": "eth0"},
+            "sfo-spine1__eth1": {"description": "Interface 1", "device_name": "sfo-spine1", "name": "eth1"},
+            "sfo-spine2__eth0": {"description": "TBD", "device_name": "sfo-spine2", "name": "eth0"},
+            "sfo-spine2__eth1": {"description": "ddd", "device_name": "sfo-spine2", "name": "eth1"},
+            "sfo-spine2__eth2": {"description": "Interface 2", "device_name": "sfo-spine2", "name": "eth2"},
+        },
+        "person": {"Glenn Matthews": {"name": "Glenn Matthews"}},
+        "site": {
+            "nyc": {"devices": ["nyc-spine1", "nyc-spine2"], "name": "nyc"},
+            "rdu": {"devices": ["rdu-spine1", "rdu-spine2"], "name": "rdu", "people": ["Glenn Matthews"]},
+            "sfo": {"devices": ["sfo-spine1", "sfo-spine2"], "name": "sfo"},
+        },
+    }
+
+
+def test_dsync_str_with_data(backend_a):
+    assert (
+        backend_a.str()
+        == """\
+site
+  site: nyc: {}
+    devices
+      device: nyc-spine1: {'role': 'spine', 'tag': ''}
+        interfaces
+          interface: nyc-spine1__eth0: {'interface_type': 'ethernet', 'description': 'Interface 0'}
+          interface: nyc-spine1__eth1: {'interface_type': 'ethernet', 'description': 'Interface 1'}
+      device: nyc-spine2: {'role': 'spine', 'tag': ''}
+        interfaces
+          interface: nyc-spine2__eth0: {'interface_type': 'ethernet', 'description': 'Interface 0'}
+          interface: nyc-spine2__eth1: {'interface_type': 'ethernet', 'description': 'Interface 1'}
+    people: []
+  site: sfo: {}
+    devices
+      device: sfo-spine1: {'role': 'spine', 'tag': ''}
+        interfaces
+          interface: sfo-spine1__eth0: {'interface_type': 'ethernet', 'description': 'Interface 0'}
+          interface: sfo-spine1__eth1: {'interface_type': 'ethernet', 'description': 'Interface 1'}
+      device: sfo-spine2: {'role': 'spine', 'tag': ''}
+        interfaces
+          interface: sfo-spine2__eth0: {'interface_type': 'ethernet', 'description': 'TBD'}
+          interface: sfo-spine2__eth1: {'interface_type': 'ethernet', 'description': 'ddd'}
+          interface: sfo-spine2__eth2: {'interface_type': 'ethernet', 'description': 'Interface 2'}
+    people: []
+  site: rdu: {}
+    devices
+      device: rdu-spine1: {'role': 'spine', 'tag': ''}
+        interfaces
+          interface: rdu-spine1__eth0: {'interface_type': 'ethernet', 'description': 'Interface 0'}
+          interface: rdu-spine1__eth1: {'interface_type': 'ethernet', 'description': 'Interface 1'}
+      device: rdu-spine2: {'role': 'spine', 'tag': ''}
+        interfaces
+          interface: rdu-spine2__eth0: {'interface_type': 'ethernet', 'description': 'Interface 0'}
+          interface: rdu-spine2__eth1: {'interface_type': 'ethernet', 'description': 'Interface 1'}
+    people
+      person: Glenn Matthews: {}"""
+    )
 
 
 def test_dsync_diff_self_with_data_has_no_diffs(backend_a):

@@ -18,7 +18,7 @@ from collections import defaultdict
 from collections.abc import Iterable as ABCIterable, Mapping as ABCMapping
 import enum
 from inspect import isclass
-from typing import ClassVar, Iterable, List, Mapping, MutableMapping, Optional, Tuple, Type, Union
+from typing import ClassVar, Dict, Iterable, List, Mapping, MutableMapping, Optional, Text, Tuple, Type, Union
 
 from pydantic import BaseModel
 import structlog  # type: ignore
@@ -187,28 +187,42 @@ class DSyncModel(BaseModel):
     def __str__(self):
         return self.get_unique_id()
 
-    def print_detailed(self, dsync: "Optional[DSync]" = None, indent: int = 0):
-        """Print this model and its children."""
+    def dict(self, **kwargs) -> dict:
+        """Convert this DSyncModel to a dict, excluding the dsync field by default as it is not serializable."""
+        if "exclude" not in kwargs:
+            kwargs["exclude"] = {"dsync"}
+        return super().dict(**kwargs)
+
+    def json(self, **kwargs) -> str:
+        """Convert this DSyncModel to a JSON string, excluding the dsync field by default as it is not serializable."""
+        if "exclude" not in kwargs:
+            kwargs["exclude"] = {"dsync"}
+        if "exclude_defaults" not in kwargs:
+            kwargs["exclude_defaults"] = True
+        return super().json(**kwargs)
+
+    def str(self, include_children: bool = True, indent: int = 0) -> str:
+        """Build a detailed string representation of this DSyncModel and optionally its children."""
         margin = " " * indent
-        if not dsync:
-            dsync = self.dsync
-        print(f"{margin}{self.get_type()}: {self.get_unique_id()}")
+        output = f"{margin}{self.get_type()}: {self.get_unique_id()}: {self.get_attrs()}"
         for modelname, fieldname in self._children.items():
-            print(f"{margin}  {modelname}")
+            output += f"\n{margin}  {fieldname}"
             child_ids = getattr(self, fieldname)
             if not child_ids:
-                print(f"{margin}    (none)")
-            for child_id in child_ids:
-                child = None
-                if dsync:
-                    child = dsync.get(modelname, child_id)
-                if not child:
-                    print(f"{margin}    {child_id} (no details available)")
-                else:
-                    child.print_detailed(dsync, indent + 4)
+                output += ": []"
+            elif not self.dsync or not include_children:
+                output += f": {child_ids}"
+            else:
+                for child_id in child_ids:
+                    child = self.dsync.get(modelname, child_id)
+                    if not child:
+                        output += f"\n{margin}    {child_id} (details unavailable)"
+                    else:
+                        output += "\n" + child.str(include_children=include_children, indent=indent + 4)
+        return output
 
     @classmethod
-    def create(cls, dsync: "DSync", ids: dict, attrs: dict) -> Optional["DSyncModel"]:
+    def create(cls, dsync: "DSync", ids: Dict, attrs: Dict) -> Optional["DSyncModel"]:
         """Instantiate this class, along with any platform-specific data creation.
 
         Args:
@@ -225,7 +239,7 @@ class DSyncModel(BaseModel):
         """
         return cls(**ids, dsync=dsync, **attrs)
 
-    def update(self, attrs: dict) -> Optional["DSyncModel"]:
+    def update(self, attrs: Dict) -> Optional["DSyncModel"]:
         """Update the attributes of this instance, along with any platform-specific data updates.
 
         Args:
@@ -256,7 +270,7 @@ class DSyncModel(BaseModel):
         return self
 
     @classmethod
-    def get_type(cls) -> str:
+    def get_type(cls) -> Text:
         """Return the type AKA modelname of the object or the class
 
         Returns:
@@ -265,7 +279,7 @@ class DSyncModel(BaseModel):
         return cls._modelname
 
     @classmethod
-    def create_unique_id(cls, **identifiers) -> str:
+    def create_unique_id(cls, **identifiers) -> Text:
         """Construct a unique identifier for this model class.
 
         Args:
@@ -274,11 +288,11 @@ class DSyncModel(BaseModel):
         return "__".join(str(identifiers[key]) for key in cls._identifiers)
 
     @classmethod
-    def get_children_mapping(cls) -> Mapping[str, str]:
+    def get_children_mapping(cls) -> Mapping[Text, Text]:
         """Get the mapping of types to fieldnames for child models of this model."""
         return cls._children
 
-    def get_identifiers(self) -> dict:
+    def get_identifiers(self) -> Dict:
         """Get a dict of all identifiers (primary keys) and their values for this object.
 
         Returns:
@@ -286,7 +300,7 @@ class DSyncModel(BaseModel):
         """
         return self.dict(include=set(self._identifiers))
 
-    def get_attrs(self) -> dict:
+    def get_attrs(self) -> Dict:
         """Get all the non-primary-key attributes or parameters for this object.
 
         Similar to Pydantic's `BaseModel.dict()` method, with the following key differences:
@@ -299,7 +313,7 @@ class DSyncModel(BaseModel):
         """
         return self.dict(include=set(self._attributes))
 
-    def get_unique_id(self) -> str:
+    def get_unique_id(self) -> Text:
         """Get the unique ID of an object.
 
         By default the unique ID is built based on all the primary keys defined in `_identifiers`.
@@ -309,7 +323,7 @@ class DSyncModel(BaseModel):
         """
         return self.create_unique_id(**self.get_identifiers())
 
-    def get_shortname(self) -> str:
+    def get_shortname(self) -> Text:
         """Get the (not guaranteed-unique) shortname of an object, if any.
 
         By default the shortname is built based on all the keys defined in `_shortname`.
@@ -427,16 +441,28 @@ class DSync:
         """Load all desired data from whatever backend data source into this instance."""
         # No-op in this generic class
 
-    def print_detailed(self, indent: int = 0):
-        """Recursively print this DSync and its contained models."""
+    def dict(self, exclude_defaults: bool = True, **kwargs) -> dict:
+        """Represent the DSync contents as a dict, as if it were a Pydantic model."""
+        data: Dict[str, Dict[str, dict]] = {}
+        for modelname in self._data:
+            data[modelname] = {}
+            for unique_id, model in self._data[modelname].items():
+                data[modelname][unique_id] = model.dict(exclude_defaults=exclude_defaults, **kwargs)
+        return data
+
+    def str(self, indent: int = 0) -> str:
+        """Build a detailed string representation of this DSync."""
         margin = " " * indent
+        output = ""
         for modelname in self.top_level:
-            print(f"{margin}{modelname}")
+            output += f"{margin}{modelname}"
             models = self.get_all(modelname)
             if not models:
-                print(f"{margin}  (none)")
-            for model in models:
-                model.print_detailed(self, indent + 2)
+                output += ": []"
+            else:
+                for model in models:
+                    output += "\n" + model.str(indent=indent + 2)
+        return output
 
     # ------------------------------------------------------------------------------
     # Synchronization between DSync instances
@@ -579,7 +605,9 @@ class DSync:
     # Object Storage Management
     # ------------------------------------------------------------------------------
 
-    def get(self, obj: Union[str, DSyncModel, Type[DSyncModel]], identifier: Union[str, dict]) -> Optional[DSyncModel]:
+    def get(
+        self, obj: Union[Text, DSyncModel, Type[DSyncModel]], identifier: Union[Text, Dict]
+    ) -> Optional[DSyncModel]:
         """Get one object from the data store based on its unique id.
 
         Args:
@@ -589,16 +617,23 @@ class DSync:
         if isinstance(obj, str):
             modelname = obj
             if not hasattr(self, obj):
-                return None
-            object_class = getattr(self, obj)
+                object_class = None
+            else:
+                object_class = getattr(self, obj)
         else:
             object_class = obj
             modelname = obj.get_type()
 
         if isinstance(identifier, str):
             uid = identifier
-        else:
+        elif object_class:
             uid = object_class.create_unique_id(**identifier)
+        else:
+            self._log.warning(
+                f"Tried to look up a {modelname} by identifier {identifier}, "
+                "but don't know how to convert that to a uid string",
+            )
+            return None
 
         return self._data[modelname].get(uid)
 
@@ -618,7 +653,7 @@ class DSync:
 
         return self._data[modelname].values()
 
-    def get_by_uids(self, uids: List[str], obj) -> List[DSyncModel]:
+    def get_by_uids(self, uids: List[Text], obj) -> List[DSyncModel]:
         """Get multiple objects from the store by their unique IDs/Keys and type.
 
         Args:

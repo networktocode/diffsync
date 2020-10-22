@@ -16,15 +16,15 @@ from backend_c import BackendC
 
 a = BackendA()
 a.load()
-a.print_detailed()
+print(a.str())
 
 b = BackendB()
 b.load()
-b.print_detailed()
+print(b.str())
 
 c = BackendC()
 c.load()
-c.print_detailed()
+print(c.str())
 ```
 
 Configure verbosity of DSync's structured logging to console; the default is full verbosity (all logs including debugging)
