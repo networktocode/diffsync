@@ -19,7 +19,7 @@ from typing import List
 
 import pytest
 
-from dsync import DSyncModel
+from dsync import DSyncModel, DSyncModelFlags
 from dsync.exceptions import ObjectStoreWrongType, ObjectAlreadyExists, ObjectNotFound
 
 from .conftest import Device, Interface
@@ -38,6 +38,18 @@ def test_generic_dsync_model_methods(generic_dsync_model, make_site):
 
     with pytest.raises(ObjectStoreWrongType):
         generic_dsync_model.add_child(make_site())
+
+
+def test_dsync_model_dict_with_no_data(generic_dsync_model):
+    assert generic_dsync_model.dict() == {"model_flags": DSyncModelFlags.NONE}
+
+
+def test_dsync_model_json_with_no_data(generic_dsync_model):
+    assert generic_dsync_model.json() == "{}"
+
+
+def test_dsync_model_str_with_no_data(generic_dsync_model):
+    assert generic_dsync_model.str() == "dsyncmodel: : {}"
 
 
 def test_dsync_model_subclass_getters(make_site, make_device, make_interface):
@@ -79,6 +91,30 @@ def test_dsync_model_subclass_getters(make_site, make_device, make_interface):
     assert device1_eth0.get_shortname() == "eth0"
 
 
+def test_dsync_model_dict_with_data(make_interface):
+    intf = make_interface()
+    # dict() includes all fields, even those set to default values
+    assert intf.dict() == {
+        "description": None,
+        "device_name": "device1",
+        "interface_type": "ethernet",
+        "model_flags": DSyncModelFlags.NONE,
+        "name": "eth0",
+    }
+
+
+def test_dsync_model_json_with_data(make_interface):
+    intf = make_interface()
+    # json() omits default values for brevity
+    assert intf.json() == '{"device_name": "device1", "name": "eth0"}'
+
+
+def test_dsync_model_str_with_data(make_interface):
+    intf = make_interface()
+    # str() only includes _attributes
+    assert intf.str() == "interface: device1__eth0: {'interface_type': 'ethernet', 'description': None}"
+
+
 def test_dsync_model_subclass_add_remove(make_site, make_device, make_interface):
     """Check that the DSyncModel add_child/remove_child APIs work correctly for various subclasses."""
     site1 = make_site()
@@ -114,6 +150,62 @@ def test_dsync_model_subclass_add_remove(make_site, make_device, make_interface)
         device1.remove_child(site1)
     with pytest.raises(ObjectNotFound):
         device1.remove_child(device1_eth0)
+
+
+def test_dsync_model_dict_with_children(generic_dsync, make_site, make_device, make_interface):
+    site1 = make_site(dsync=generic_dsync)
+    device1 = make_device(dsync=generic_dsync)
+    device1_eth0 = make_interface(dsync=generic_dsync)
+    site1.add_child(device1)
+    device1.add_child(device1_eth0)
+    # test error handling - dsync knows about site and device but not interface
+    generic_dsync.add(site1)
+    generic_dsync.add(device1)
+
+    assert site1.dict() == {"devices": ["device1"], "model_flags": DSyncModelFlags.NONE, "name": "site1"}
+
+
+def test_dsync_model_json_with_children(generic_dsync, make_site, make_device, make_interface):
+    site1 = make_site(dsync=generic_dsync)
+    device1 = make_device(dsync=generic_dsync)
+    device1_eth0 = make_interface(dsync=generic_dsync)
+    site1.add_child(device1)
+    device1.add_child(device1_eth0)
+    # test error handling - dsync knows about site and device but not interface
+    generic_dsync.add(site1)
+    generic_dsync.add(device1)
+
+    assert site1.json() == '{"name": "site1", "devices": ["device1"]}'
+
+
+def test_dsync_model_str_with_children(generic_dsync, make_site, make_device, make_interface):
+    site1 = make_site(dsync=generic_dsync)
+    device1 = make_device(dsync=generic_dsync)
+    device1_eth0 = make_interface(dsync=generic_dsync)
+    site1.add_child(device1)
+    device1.add_child(device1_eth0)
+    # test error handling - dsync knows about site and device but not interface
+    generic_dsync.add(site1)
+    generic_dsync.add(device1)
+
+    assert (
+        site1.str()
+        == """\
+site: site1: {}
+  devices
+    device: device1: {'role': 'default'}
+      interfaces
+        device1__eth0 (details unavailable)\
+"""
+    )
+
+    assert (
+        site1.str(include_children=False)
+        == """\
+site: site1: {}
+  devices: ['device1']\
+"""
+    )
 
 
 def test_dsync_model_subclass_crud(generic_dsync):

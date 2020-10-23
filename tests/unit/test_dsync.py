@@ -33,6 +33,14 @@ def test_dsync_generic_load_is_noop(generic_dsync):
     assert len(generic_dsync._data) == 0  # pylint: disable=protected-access
 
 
+def test_dsync_dict_with_no_data(generic_dsync):
+    assert generic_dsync.dict() == {}
+
+
+def test_dsync_str_with_no_data(generic_dsync):
+    assert generic_dsync.str() == ""
+
+
 def test_dsync_diff_self_with_no_data_has_no_diffs(generic_dsync):
     assert generic_dsync.diff_from(generic_dsync).has_diffs() is False
     assert generic_dsync.diff_to(generic_dsync).has_diffs() is False
@@ -69,8 +77,9 @@ def test_dsync_get_with_generic_model(generic_dsync, generic_dsync_model):
     generic_dsync.add(generic_dsync_model)
     # The generic_dsync_model has an empty identifier/unique-id
     assert generic_dsync.get(DSyncModel, "") == generic_dsync_model
-    # DSync doesn't know what a "dsyncmodel" is
-    assert generic_dsync.get(DSyncModel.get_type(), "") is None
+    assert generic_dsync.get(DSyncModel.get_type(), "") == generic_dsync_model
+    # DSync doesn't know how to construct a uid str for a "dsyncmodel"
+    assert generic_dsync.get(DSyncModel.get_type(), {}) is None
     # Wrong object-type - no match
     assert generic_dsync.get("", "") is None
     # Wrong unique-id - no match
@@ -119,6 +128,113 @@ def test_dsync_subclass_validation():
     assert "Device" in str(excinfo.value)
     assert "device" in str(excinfo.value)
     assert "dev_class" in str(excinfo.value)
+
+
+def test_dsync_dict_with_data(backend_a):
+    assert backend_a.dict() == {
+        "device": {
+            "nyc-spine1": {
+                "interfaces": ["nyc-spine1__eth0", "nyc-spine1__eth1"],
+                "name": "nyc-spine1",
+                "role": "spine",
+                "site_name": "nyc",
+            },
+            "nyc-spine2": {
+                "interfaces": ["nyc-spine2__eth0", "nyc-spine2__eth1"],
+                "name": "nyc-spine2",
+                "role": "spine",
+                "site_name": "nyc",
+            },
+            "rdu-spine1": {
+                "interfaces": ["rdu-spine1__eth0", "rdu-spine1__eth1"],
+                "name": "rdu-spine1",
+                "role": "spine",
+                "site_name": "rdu",
+            },
+            "rdu-spine2": {
+                "interfaces": ["rdu-spine2__eth0", "rdu-spine2__eth1"],
+                "name": "rdu-spine2",
+                "role": "spine",
+                "site_name": "rdu",
+            },
+            "sfo-spine1": {
+                "interfaces": ["sfo-spine1__eth0", "sfo-spine1__eth1"],
+                "name": "sfo-spine1",
+                "role": "spine",
+                "site_name": "sfo",
+            },
+            "sfo-spine2": {
+                "interfaces": ["sfo-spine2__eth0", "sfo-spine2__eth1", "sfo-spine2__eth2"],
+                "name": "sfo-spine2",
+                "role": "spine",
+                "site_name": "sfo",
+            },
+        },
+        "interface": {
+            "nyc-spine1__eth0": {"description": "Interface 0", "device_name": "nyc-spine1", "name": "eth0"},
+            "nyc-spine1__eth1": {"description": "Interface 1", "device_name": "nyc-spine1", "name": "eth1"},
+            "nyc-spine2__eth0": {"description": "Interface 0", "device_name": "nyc-spine2", "name": "eth0"},
+            "nyc-spine2__eth1": {"description": "Interface 1", "device_name": "nyc-spine2", "name": "eth1"},
+            "rdu-spine1__eth0": {"description": "Interface 0", "device_name": "rdu-spine1", "name": "eth0"},
+            "rdu-spine1__eth1": {"description": "Interface 1", "device_name": "rdu-spine1", "name": "eth1"},
+            "rdu-spine2__eth0": {"description": "Interface 0", "device_name": "rdu-spine2", "name": "eth0"},
+            "rdu-spine2__eth1": {"description": "Interface 1", "device_name": "rdu-spine2", "name": "eth1"},
+            "sfo-spine1__eth0": {"description": "Interface 0", "device_name": "sfo-spine1", "name": "eth0"},
+            "sfo-spine1__eth1": {"description": "Interface 1", "device_name": "sfo-spine1", "name": "eth1"},
+            "sfo-spine2__eth0": {"description": "TBD", "device_name": "sfo-spine2", "name": "eth0"},
+            "sfo-spine2__eth1": {"description": "ddd", "device_name": "sfo-spine2", "name": "eth1"},
+            "sfo-spine2__eth2": {"description": "Interface 2", "device_name": "sfo-spine2", "name": "eth2"},
+        },
+        "person": {"Glenn Matthews": {"name": "Glenn Matthews"}},
+        "site": {
+            "nyc": {"devices": ["nyc-spine1", "nyc-spine2"], "name": "nyc"},
+            "rdu": {"devices": ["rdu-spine1", "rdu-spine2"], "name": "rdu", "people": ["Glenn Matthews"]},
+            "sfo": {"devices": ["sfo-spine1", "sfo-spine2"], "name": "sfo"},
+        },
+    }
+
+
+def test_dsync_str_with_data(backend_a):
+    assert (
+        backend_a.str()
+        == """\
+site
+  site: nyc: {}
+    devices
+      device: nyc-spine1: {'role': 'spine', 'tag': ''}
+        interfaces
+          interface: nyc-spine1__eth0: {'interface_type': 'ethernet', 'description': 'Interface 0'}
+          interface: nyc-spine1__eth1: {'interface_type': 'ethernet', 'description': 'Interface 1'}
+      device: nyc-spine2: {'role': 'spine', 'tag': ''}
+        interfaces
+          interface: nyc-spine2__eth0: {'interface_type': 'ethernet', 'description': 'Interface 0'}
+          interface: nyc-spine2__eth1: {'interface_type': 'ethernet', 'description': 'Interface 1'}
+    people: []
+  site: sfo: {}
+    devices
+      device: sfo-spine1: {'role': 'spine', 'tag': ''}
+        interfaces
+          interface: sfo-spine1__eth0: {'interface_type': 'ethernet', 'description': 'Interface 0'}
+          interface: sfo-spine1__eth1: {'interface_type': 'ethernet', 'description': 'Interface 1'}
+      device: sfo-spine2: {'role': 'spine', 'tag': ''}
+        interfaces
+          interface: sfo-spine2__eth0: {'interface_type': 'ethernet', 'description': 'TBD'}
+          interface: sfo-spine2__eth1: {'interface_type': 'ethernet', 'description': 'ddd'}
+          interface: sfo-spine2__eth2: {'interface_type': 'ethernet', 'description': 'Interface 2'}
+    people: []
+  site: rdu: {}
+    devices
+      device: rdu-spine1: {'role': 'spine', 'tag': ''}
+        interfaces
+          interface: rdu-spine1__eth0: {'interface_type': 'ethernet', 'description': 'Interface 0'}
+          interface: rdu-spine1__eth1: {'interface_type': 'ethernet', 'description': 'Interface 1'}
+      device: rdu-spine2: {'role': 'spine', 'tag': ''}
+        interfaces
+          interface: rdu-spine2__eth0: {'interface_type': 'ethernet', 'description': 'Interface 0'}
+          interface: rdu-spine2__eth1: {'interface_type': 'ethernet', 'description': 'Interface 1'}
+    people
+      person: Glenn Matthews: {}"""
+    )
 
 
 def test_dsync_diff_self_with_data_has_no_diffs(backend_a):
@@ -230,7 +346,7 @@ def test_dsync_sync_from_with_continue_on_failure_flag(log, error_prone_backend_
     error_prone_backend_a.sync_from(backend_b, flags=DSyncFlags.CONTINUE_ON_FAILURE)
     # Not all sync operations succeeded on the first try
     remaining_diffs = error_prone_backend_a.diff_from(backend_b)
-    remaining_diffs.print_detailed()
+    print(remaining_diffs.str())  # for debugging of any failure
     assert remaining_diffs.has_diffs()
 
     # At least some operations of each type should have succeeded
@@ -248,7 +364,7 @@ def test_dsync_sync_from_with_continue_on_failure_flag(log, error_prone_backend_
         print(f"Sync retry #{i}")
         error_prone_backend_a.sync_from(backend_b, flags=DSyncFlags.CONTINUE_ON_FAILURE)
         remaining_diffs = error_prone_backend_a.diff_from(backend_b)
-        remaining_diffs.print_detailed()
+        print(remaining_diffs.str())  # for debugging of any failure
         if remaining_diffs.has_diffs():
             # If we still have diffs, some ERROR messages should have been logged
             assert [event for event in log.events if event["level"] == "error"] != []
@@ -311,7 +427,7 @@ def test_dsync_diff_with_ignore_flag_on_source_models(backend_a, backend_a_with_
     backend_a_with_extra_models.get(backend_a_with_extra_models.site, "nyc").model_flags |= DSyncModelFlags.IGNORE
 
     diff = backend_a.diff_from(backend_a_with_extra_models)
-    diff.print_detailed()
+    print(diff.str())  # for debugging of any failure
     assert not diff.has_diffs()
 
 
@@ -322,7 +438,7 @@ def test_dsync_diff_with_ignore_flag_on_target_models(backend_a, backend_a_minus
     backend_a.get(backend_a.site, "sfo").model_flags |= DSyncModelFlags.IGNORE
 
     diff = backend_a.diff_from(backend_a_minus_some_models)
-    diff.print_detailed()
+    print(diff.str())  # for debugging of any failure
     assert not diff.has_diffs()
 
 
@@ -355,5 +471,5 @@ def test_dsync_sync_skip_children_on_delete(backend_a):
     assert extra_models.get(extra_models.interface, extra_interface.get_unique_id()) is None
     # The sync should be complete, regardless
     diff = extra_models.diff_from(backend_a)
-    diff.print_detailed()
+    print(diff.str())  # for debugging of any failure
     assert not diff.has_diffs()

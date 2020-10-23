@@ -47,26 +47,26 @@ def main():
     print("Initializing and loading Backend A...")
     backend_a = BackendA(name="Backend-A")
     backend_a.load()
-    backend_a.print_detailed()
+    print(backend_a.str())
 
     print("Initializing and loading Backend B...")
     backend_b = BackendB(name="Backend-B")
     backend_b.load()
-    backend_b.print_detailed()
+    print(backend_b.str())
 
     print("Initializing and loading Backend C...")
     backend_c = BackendC()
     backend_c.load()
-    backend_c.print_detailed()
+    print(backend_c.str())
 
     print("Getting diffs from Backend A to Backend B...")
     diff_a_b = backend_a.diff_to(backend_b, diff_class=MyDiff)
-    diff_a_b.print_detailed()
+    print(diff_a_b.str())
 
     print("Syncing changes from Backend A to Backend B...")
     backend_a.sync_to(backend_b)
     print("Getting updated diffs from Backend A to Backend B...")
-    backend_a.diff_to(backend_b).print_detailed()
+    print(backend_a.diff_to(backend_b).str())
 
 
 if __name__ == "__main__":

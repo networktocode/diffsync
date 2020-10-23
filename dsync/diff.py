@@ -16,7 +16,7 @@ limitations under the License.
 """
 
 from functools import total_ordering
-from typing import Any, Iterator, Iterable, Mapping, Optional
+from typing import Any, Iterator, Iterable, Mapping, Optional, Text
 
 from .exceptions import ObjectAlreadyExists
 from .utils import intersection, OrderedDefaultDict
@@ -64,7 +64,7 @@ class Diff:
         """
         for group in self.groups():
             for child in self.children[group].values():
-                if child.has_diffs():
+                if child.has_diffs(include_children=True):
                     return True
 
         return False
@@ -87,7 +87,7 @@ class Diff:
             yield from order_method(self.children[group])
 
     @classmethod
-    def order_children_default(cls, children: dict) -> Iterator["DiffElement"]:
+    def order_children_default(cls, children: Mapping) -> Iterator["DiffElement"]:
         """Default method to an Iterator for children.
 
         Since children is already an OrderedDefaultDict, this method is not doing anything special.
@@ -95,18 +95,30 @@ class Diff:
         for child in children.values():
             yield child
 
-    def print_detailed(self, indent: int = 0):
-        """Print all diffs to screen for all child elements.
-
-        Args:
-            indent (int, optional): Indentation to use when printing to screen. Defaults to 0.
-        """
+    def str(self, indent: int = 0):
+        """Build a detailed string representation of this Diff and its child DiffElements."""
         margin = " " * indent
+        output = []
         for group in self.groups():
-            print(f"{margin}{group}")
+            group_heading_added = False
             for child in self.children[group].values():
-                if child.has_diffs():
-                    child.print_detailed(indent + 2)
+                if child.has_diffs(include_children=True):
+                    if not group_heading_added:
+                        output.append(f"{margin}{group}")
+                        group_heading_added = True
+                    output.append(child.str(indent + 2))
+        result = "\n".join(output)
+        if not result:
+            result = "(no diffs)"
+        return result
+
+    def dict(self) -> Mapping[Text, Mapping[Text, Mapping]]:
+        """Build a dictionary representation of this Diff."""
+        result = OrderedDefaultDict(dict)
+        for child in self.get_children():
+            if child.has_diffs(include_children=True):
+                result[child.type][child.name] = child.dict()
+        return dict(result)
 
 
 @total_ordering
@@ -114,17 +126,17 @@ class DiffElement:  # pylint: disable=too-many-instance-attributes
     """DiffElement object, designed to represent a single item/object that may or may not have any diffs."""
 
     def __init__(
-        self, obj_type: str, name: str, keys: dict, source_name: str = "source", dest_name: str = "dest"
+        self, obj_type: Text, name: Text, keys: Mapping, source_name: Text = "source", dest_name: Text = "dest"
     ):  # pylint: disable=too-many-arguments
         """Instantiate a DiffElement.
 
         Args:
-            obj_type (str): Name of the object type being described, as in DSyncModel.get_type().
-            name (str): Human-readable name of the object being described, as in DSyncModel.get_shortname().
+            obj_type: Name of the object type being described, as in DSyncModel.get_type().
+            name: Human-readable name of the object being described, as in DSyncModel.get_shortname().
                 This name must be unique within the context of the Diff that is the direct parent of this DiffElement.
-            keys (dict): Primary keys and values uniquely describing this object, as in DSyncModel.get_identifiers().
-            source_name (str): Name of the source DSync object
-            dest_name (str): Name of the destination DSync object
+            keys: Primary keys and values uniquely describing this object, as in DSyncModel.get_identifiers().
+            source_name: Name of the source DSync object
+            dest_name: Name of the destination DSync object
         """
         if not isinstance(obj_type, str):
             raise ValueError(f"obj_type must be a string (not {type(obj_type)})")
@@ -138,8 +150,8 @@ class DiffElement:  # pylint: disable=too-many-instance-attributes
         self.source_name = source_name
         self.dest_name = dest_name
         # Note: *_attrs == None if no target object exists; it'll be an empty dict if it exists but has no _attributes
-        self.source_attrs: Optional[dict] = None
-        self.dest_attrs: Optional[dict] = None
+        self.source_attrs: Optional[Mapping] = None
+        self.dest_attrs: Optional[Mapping] = None
         self.child_diff = Diff()
 
     def __lt__(self, other):
@@ -170,7 +182,7 @@ class DiffElement:  # pylint: disable=too-many-instance-attributes
         return f'{self.type} "{self.name}" : {self.keys} : {self.source_name} → {self.dest_name} : {self.get_attrs_diffs()}'
 
     @property
-    def action(self) -> Optional[str]:
+    def action(self) -> Optional[Text]:
         """Action, if any, that should be taken to remediate the diffs described by this element.
 
         Returns:
@@ -190,7 +202,7 @@ class DiffElement:  # pylint: disable=too-many-instance-attributes
         return None
 
     # TODO: separate into set_source_attrs() and set_dest_attrs() methods, or just use direct property access instead?
-    def add_attrs(self, source: Optional[dict] = None, dest: Optional[dict] = None):
+    def add_attrs(self, source: Optional[Mapping] = None, dest: Optional[Mapping] = None):
         """Set additional attributes of a source and/or destination item that may result in diffs."""
         # TODO: should source_attrs and dest_attrs be "write-once" properties, or is it OK to overwrite them once set?
         if source is not None:
@@ -199,7 +211,7 @@ class DiffElement:  # pylint: disable=too-many-instance-attributes
         if dest is not None:
             self.dest_attrs = dest
 
-    def get_attrs_keys(self) -> Iterable[str]:
+    def get_attrs_keys(self) -> Iterable[Text]:
         """Get the list of shared attrs between source and dest, or the attrs of source or dest if only one is present.
 
         - If source_attrs is not set, return the keys of dest_attrs
@@ -214,25 +226,31 @@ class DiffElement:  # pylint: disable=too-many-instance-attributes
             return self.source_attrs.keys()
         return []
 
-    # The below would be more accurate but typing.Literal is only in Python 3.8 and later
-    # def get_attrs_diffs(self) -> Mapping[str, Mapping[Literal["src", "dst"], Any]]:
-    def get_attrs_diffs(self) -> Mapping[str, Mapping[str, Any]]:
+    def get_attrs_diffs(self) -> Mapping[Text, Mapping[Text, Any]]:
         """Get the dict of actual attribute diffs between source_attrs and dest_attrs.
 
         Returns:
-            dict: of the form `{key: {src: <value>, dst: <value>}, key2: ...}`
+            dict: of the form `{src: {key1: <value>, key2: ...}, dst: {key1: <value>, key2: ...}}`,
+            where the `src` or `dst` dicts may be empty.
         """
         if self.source_attrs is not None and self.dest_attrs is not None:
             return {
-                key: dict(src=self.source_attrs[key], dst=self.dest_attrs[key])
-                for key in self.get_attrs_keys()
-                if self.source_attrs[key] != self.dest_attrs[key]
+                "src": {
+                    key: self.source_attrs[key]
+                    for key in self.get_attrs_keys()
+                    if self.source_attrs[key] != self.dest_attrs[key]
+                },
+                "dst": {
+                    key: self.dest_attrs[key]
+                    for key in self.get_attrs_keys()
+                    if self.source_attrs[key] != self.dest_attrs[key]
+                },
             }
         if self.source_attrs is None and self.dest_attrs is not None:
-            return {key: dict(src=None, dst=self.dest_attrs[key]) for key in self.get_attrs_keys()}
+            return {"src": {}, "dst": {key: self.dest_attrs[key] for key in self.get_attrs_keys()}}
         if self.source_attrs is not None and self.dest_attrs is None:
-            return {key: dict(src=self.source_attrs[key], dst=None) for key in self.get_attrs_keys()}
-        return {}
+            return {"src": {key: self.source_attrs[key] for key in self.get_attrs_keys()}, "dst": {}}
+        return {"src": {}, "dst": {}}
 
     def add_child(self, element: "DiffElement"):
         """Attach a child object of type DiffElement.
@@ -269,22 +287,38 @@ class DiffElement:  # pylint: disable=too-many-instance-attributes
 
         return False
 
-    def print_detailed(self, indent: int = 0):
-        """Print status on screen for current object and all children.
-
-        Args:
-          indent: Default value = 0
-        """
+    def str(self, indent: int = 0):
+        """Build a detailed string representation of this DiffElement and its children."""
         margin = " " * indent
-
-        if self.source_attrs is None:
-            print(f"{margin}{self.type}: {self.name} MISSING in {self.source_name}")
-        elif self.dest_attrs is None:
-            print(f"{margin}{self.type}: {self.name} MISSING in {self.dest_name}")
-        else:
-            print(f"{margin}{self.type}: {self.name}")
+        result = f"{margin}{self.type}: {self.name}"
+        if self.source_attrs is not None and self.dest_attrs is not None:
             # Only print attrs that have meaning in both source and dest
-            for attr, item in self.get_attrs_diffs().items():
-                print(f"{margin}  {attr}   {self.source_name}({item.get('src')})   {self.dest_name}({item.get('dst')})")
+            attrs_diffs = self.get_attrs_diffs()
+            for attr in attrs_diffs["src"]:
+                result += (
+                    f"\n{margin}  {attr}"
+                    f"    {self.source_name}({attrs_diffs['src'][attr]})"
+                    f"    {self.dest_name}({attrs_diffs['dst'][attr]})"
+                )
+        elif self.dest_attrs is not None:
+            result += f" MISSING in {self.source_name}"
+        elif self.source_attrs is not None:
+            result += f" MISSING in {self.dest_name}"
 
-        self.child_diff.print_detailed(indent + 2)
+        if self.child_diff.has_diffs():
+            result += "\n" + self.child_diff.str(indent + 2)
+        elif self.source_attrs is None and self.dest_attrs is None:
+            result += " (no diffs)"
+        return result
+
+    def dict(self) -> Mapping[Text, Mapping[Text, Any]]:
+        """Build a dictionary representation of this DiffElement and its children."""
+        attrs_diffs = self.get_attrs_diffs()
+        result = {}
+        if attrs_diffs.get("src"):
+            result["_src"] = attrs_diffs["src"]
+        if attrs_diffs.get("dst"):
+            result["_dst"] = attrs_diffs["dst"]
+        if self.child_diff.has_diffs():
+            result.update(self.child_diff.dict())
+        return result
