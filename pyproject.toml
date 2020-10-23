@@ -1,8 +1,15 @@
 [tool.poetry]
 name = "dsync"
 version = "0.1.0"
-description = "Library to easily sync/diff/update 2 different data source"
+description = "Library to easily sync/diff/update 2 different data sources"
 authors = ["Network to Code, LLC <info@networktocode.com>"]
+license = "Apache-2.0"
+readme = "README.md"
+include = [
+    "CHANGELOG.md",
+    "LICENSE",
+    "README.md",
+]
 
 [tool.poetry.dependencies]
 python = "^3.7"
