@@ -4,7 +4,7 @@ about: Propose a new feature or enhancement
 ---
 
 ### Environment
-* DSync version:  <!-- Example: 0.1.0 -->
+* DSync version:  <!-- Example: 1.0.0 -->
 
 <!--
     Describe in detail the new functionality you are proposing.
