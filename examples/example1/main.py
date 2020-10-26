@@ -1,4 +1,5 @@
-"""Main executable for DSync "example1".
+#!/usr/bin/env python
+"""Main executable for DiffSync "example1".
 
 Copyright (c) 2020 Network To Code, LLC <info@networktocode.com>
 
@@ -18,8 +19,8 @@ limitations under the License.
 
 import argparse
 
-from dsync import Diff
-from dsync.logging import enable_console_logging
+from diffsync import Diff
+from diffsync.logging import enable_console_logging
 
 from backend_a import BackendA
 from backend_b import BackendB
@@ -38,7 +39,7 @@ class MyDiff(Diff):
 
 
 def main():
-    """Demonstrate DSync behavior using the example backends provided."""
+    """Demonstrate DiffSync behavior using the example backends provided."""
     parser = argparse.ArgumentParser("example1")
     parser.add_argument("--verbosity", "-v", default=0, action="count")
     args = parser.parse_args()

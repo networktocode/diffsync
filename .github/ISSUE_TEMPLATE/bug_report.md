@@ -1,10 +1,10 @@
 ---
 name: 🐛 Bug Report
-about: Report a reproducible bug in the current release of DSync
+about: Report a reproducible bug in the current release of DiffSync
 ---
 
 ### Environment
-* DSync version:  <!-- Example: 1.0.0 -->
+* DiffSync version:  <!-- Example: 1.0.0 -->
 * Python version  <!-- Example: 3.7.7 -->
 
 <!-- What happened instead? -->

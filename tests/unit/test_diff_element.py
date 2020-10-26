@@ -15,7 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from dsync.diff import DiffElement
+from diffsync.diff import DiffElement
 
 
 def test_diff_element_empty():

@@ -18,32 +18,32 @@ from typing import ClassVar, List, Mapping, Optional, Tuple
 
 import pytest
 
-from dsync import DSync, DSyncModel
-from dsync.diff import Diff
-from dsync.exceptions import ObjectNotCreated, ObjectNotUpdated, ObjectNotDeleted
+from diffsync import DiffSync, DiffSyncModel
+from diffsync.diff import Diff
+from diffsync.exceptions import ObjectNotCreated, ObjectNotUpdated, ObjectNotDeleted
 
 
 @pytest.fixture
-def generic_dsync_model():
-    """Provide a generic DSyncModel instance."""
-    return DSyncModel()
+def generic_diffsync_model():
+    """Provide a generic DiffSyncModel instance."""
+    return DiffSyncModel()
 
 
-class ErrorProneModel(DSyncModel):
+class ErrorProneModel(DiffSyncModel):
     """Test class that sometimes throws exceptions when creating/updating/deleting instances."""
 
     _counter: ClassVar[int] = 0
 
     @classmethod
-    def create(cls, dsync: DSync, ids: Mapping, attrs: Mapping):
-        """As DSyncModel.create(), but periodically throw exceptions."""
+    def create(cls, diffsync: DiffSync, ids: Mapping, attrs: Mapping):
+        """As DiffSyncModel.create(), but periodically throw exceptions."""
         cls._counter += 1
         if not cls._counter % 3:
             raise ObjectNotCreated("Random creation error!")
-        return super().create(dsync, ids, attrs)
+        return super().create(diffsync, ids, attrs)
 
     def update(self, attrs: Mapping):
-        """As DSyncModel.update(), but periodically throw exceptions."""
+        """As DiffSyncModel.update(), but periodically throw exceptions."""
         # pylint: disable=protected-access
         self.__class__._counter += 1
         if not self.__class__._counter % 3:
@@ -51,7 +51,7 @@ class ErrorProneModel(DSyncModel):
         return super().update(attrs)
 
     def delete(self):
-        """As DSyncModel.delete(), but periodically throw exceptions."""
+        """As DiffSyncModel.delete(), but periodically throw exceptions."""
         # pylint: disable=protected-access
         self.__class__._counter += 1
         if not self.__class__._counter % 3:
@@ -59,8 +59,8 @@ class ErrorProneModel(DSyncModel):
         return super().delete()
 
 
-class Site(DSyncModel):
-    """Concrete DSyncModel subclass representing a site or location that contains devices."""
+class Site(DiffSyncModel):
+    """Concrete DiffSyncModel subclass representing a site or location that contains devices."""
 
     _modelname = "site"
     _identifiers = ("name",)
@@ -83,8 +83,8 @@ def make_site():
     return site
 
 
-class Device(DSyncModel):
-    """Concrete DSyncModel subclass representing a device."""
+class Device(DiffSyncModel):
+    """Concrete DiffSyncModel subclass representing a device."""
 
     _modelname = "device"
     _identifiers = ("name",)
@@ -108,8 +108,8 @@ def make_device():
     return device
 
 
-class Interface(DSyncModel):
-    """Concrete DSyncModel subclass representing an interface."""
+class Interface(DiffSyncModel):
+    """Concrete DiffSyncModel subclass representing an interface."""
 
     _modelname = "interface"
     _identifiers = ("device_name", "name")
@@ -135,13 +135,13 @@ def make_interface():
 
 
 @pytest.fixture
-def generic_dsync():
-    """Provide a generic DSync instance."""
-    return DSync()
+def generic_diffsync():
+    """Provide a generic DiffSync instance."""
+    return DiffSync()
 
 
-class GenericBackend(DSync):
-    """An example semi-abstract subclass of DSync."""
+class GenericBackend(DiffSync):
+    """An example semi-abstract subclass of DiffSync."""
 
     site = Site  # to be overridden by subclasses
     device = Device
@@ -184,8 +184,8 @@ class DeviceA(Device):
     tag: str = ""
 
 
-class PersonA(DSyncModel):
-    """Concrete DSyncModel subclass representing a person; only used by BackendA."""
+class PersonA(DiffSyncModel):
+    """Concrete DiffSyncModel subclass representing a person; only used by BackendA."""
 
     _modelname = "person"
     _identifiers = ("name",)
@@ -194,7 +194,7 @@ class PersonA(DSyncModel):
 
 
 class BackendA(GenericBackend):
-    """An example concrete subclass of DSync."""
+    """An example concrete subclass of DiffSync."""
 
     site = SiteA
     device = DeviceA
@@ -225,15 +225,15 @@ class BackendA(GenericBackend):
 
 @pytest.fixture
 def backend_a():
-    """Provide an instance of BackendA subclass of DSync."""
-    dsync = BackendA()
-    dsync.load()
-    return dsync
+    """Provide an instance of BackendA subclass of DiffSync."""
+    diffsync = BackendA()
+    diffsync.load()
+    return diffsync
 
 
 @pytest.fixture
 def backend_a_with_extra_models():
-    """Provide an instance of BackendA subclass of DSync with some extra sites and devices."""
+    """Provide an instance of BackendA subclass of DiffSync with some extra sites and devices."""
     extra_models = BackendA()
     extra_models.load()
     extra_site = extra_models.site(name="lax")
@@ -246,7 +246,7 @@ def backend_a_with_extra_models():
 
 @pytest.fixture
 def backend_a_minus_some_models():
-    """Provide an instance of BackendA subclass of DSync with fewer models than the default."""
+    """Provide an instance of BackendA subclass of DiffSync with fewer models than the default."""
     missing_models = BackendA()
     missing_models.load()
     missing_models.remove(missing_models.get(missing_models.site, "rdu"))
@@ -278,10 +278,10 @@ class ErrorProneBackendA(BackendA):
 
 @pytest.fixture
 def error_prone_backend_a():
-    """Provide an instance of ErrorProneBackendA subclass of DSync."""
-    dsync = ErrorProneBackendA()
-    dsync.load()
-    return dsync
+    """Provide an instance of ErrorProneBackendA subclass of DiffSync."""
+    diffsync = ErrorProneBackendA()
+    diffsync.load()
+    return diffsync
 
 
 class SiteB(Site):
@@ -300,8 +300,8 @@ class DeviceB(Device):
     vlans: List = list()
 
 
-class PlaceB(DSyncModel):
-    """Concrete DSyncModel subclass representing a place; only used by BackendB."""
+class PlaceB(DiffSyncModel):
+    """Concrete DiffSyncModel subclass representing a place; only used by BackendB."""
 
     _modelname = "place"
     _identifiers = ("name",)
@@ -310,7 +310,7 @@ class PlaceB(DSyncModel):
 
 
 class BackendB(GenericBackend):
-    """Another DSync concrete subclass with different data from BackendA."""
+    """Another DiffSync concrete subclass with different data from BackendA."""
 
     site = SiteB
     device = DeviceB
@@ -343,10 +343,10 @@ class BackendB(GenericBackend):
 
 @pytest.fixture
 def backend_b():
-    """Provide an instance of BackendB subclass of DSync."""
-    dsync = BackendB(name="backend-b")
-    dsync.load()
-    return dsync
+    """Provide an instance of BackendB subclass of DiffSync."""
+    diffsync = BackendB(name="backend-b")
+    diffsync.load()
+    return diffsync
 
 
 class TrackedDiff(Diff):

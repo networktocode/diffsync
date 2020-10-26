@@ -1,4 +1,4 @@
-"""Exception classes used in DSync.
+"""Exception classes used in DiffSync.
 
 Copyright (c) 2020 Network To Code, LLC <info@networktocode.com>
 
@@ -37,12 +37,12 @@ class ObjectStoreException(Exception):
 
 
 class ObjectAlreadyExists(ObjectStoreException):
-    """Exception raised when trying to store a DSyncModel or DiffElement that is already being stored."""
+    """Exception raised when trying to store a DiffSyncModel or DiffElement that is already being stored."""
 
 
 class ObjectNotFound(ObjectStoreException):
-    """Exception raised when trying to access a DSyncModel that isn't in storage."""
+    """Exception raised when trying to access a DiffSyncModel that isn't in storage."""
 
 
 class ObjectStoreWrongType(ObjectStoreException):
-    """Exception raised when trying to store a DSyncModel of the wrong type."""
+    """Exception raised when trying to store a DiffSyncModel of the wrong type."""

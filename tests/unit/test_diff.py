@@ -17,8 +17,8 @@ limitations under the License.
 
 import pytest
 
-from dsync.diff import Diff, DiffElement
-from dsync.exceptions import ObjectAlreadyExists
+from diffsync.diff import Diff, DiffElement
+from diffsync.exceptions import ObjectAlreadyExists
 
 
 def test_diff_empty():

@@ -1,4 +1,4 @@
-"""Utility functions for DSync library.
+"""Utility functions for DiffSync library.
 
 Copyright (c) 2020 Network To Code, LLC <info@networktocode.com>
 

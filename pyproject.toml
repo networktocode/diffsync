@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "dsync"
+name = "diffsync"
 version = "1.0.0"
 description = "Library to easily sync/diff/update 2 different data sources"
 authors = ["Network to Code, LLC <info@networktocode.com>"]
@@ -32,9 +32,6 @@ ipython = "^7.18.1"
 mypy = "^0.782"
 pytest-cov = "^2.10.1"
 pytest-structlog = "^0.3"
-
-[tool.poetry.scripts]
-dsync = 'dsync.cli:main'
 
 [tool.black]
 line-length = 120

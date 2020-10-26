@@ -1,4 +1,4 @@
-"""Unit tests for the DSyncModel class.
+"""Unit tests for the DiffSyncModel class.
 
 Copyright (c) 2020 Network To Code, LLC <info@networktocode.com>
 
@@ -19,41 +19,41 @@ from typing import List
 
 import pytest
 
-from dsync import DSyncModel, DSyncModelFlags
-from dsync.exceptions import ObjectStoreWrongType, ObjectAlreadyExists, ObjectNotFound
+from diffsync import DiffSyncModel, DiffSyncModelFlags
+from diffsync.exceptions import ObjectStoreWrongType, ObjectAlreadyExists, ObjectNotFound
 
 from .conftest import Device, Interface
 
 
-def test_generic_dsync_model_methods(generic_dsync_model, make_site):
-    """Check the default behavior of various APIs of a DSyncModel."""
-    assert str(generic_dsync_model) == ""
-    assert repr(generic_dsync_model) == 'dsyncmodel ""'
+def test_generic_diffsync_model_methods(generic_diffsync_model, make_site):
+    """Check the default behavior of various APIs of a DiffSyncModel."""
+    assert str(generic_diffsync_model) == ""
+    assert repr(generic_diffsync_model) == 'diffsyncmodel ""'
 
-    assert generic_dsync_model.get_type() == "dsyncmodel"
-    assert generic_dsync_model.get_identifiers() == {}
-    assert generic_dsync_model.get_attrs() == {}
-    assert generic_dsync_model.get_unique_id() == ""
-    assert generic_dsync_model.get_shortname() == ""
+    assert generic_diffsync_model.get_type() == "diffsyncmodel"
+    assert generic_diffsync_model.get_identifiers() == {}
+    assert generic_diffsync_model.get_attrs() == {}
+    assert generic_diffsync_model.get_unique_id() == ""
+    assert generic_diffsync_model.get_shortname() == ""
 
     with pytest.raises(ObjectStoreWrongType):
-        generic_dsync_model.add_child(make_site())
+        generic_diffsync_model.add_child(make_site())
 
 
-def test_dsync_model_dict_with_no_data(generic_dsync_model):
-    assert generic_dsync_model.dict() == {"model_flags": DSyncModelFlags.NONE}
+def test_diffsync_model_dict_with_no_data(generic_diffsync_model):
+    assert generic_diffsync_model.dict() == {"model_flags": DiffSyncModelFlags.NONE}
 
 
-def test_dsync_model_json_with_no_data(generic_dsync_model):
-    assert generic_dsync_model.json() == "{}"
+def test_diffsync_model_json_with_no_data(generic_diffsync_model):
+    assert generic_diffsync_model.json() == "{}"
 
 
-def test_dsync_model_str_with_no_data(generic_dsync_model):
-    assert generic_dsync_model.str() == "dsyncmodel: : {}"
+def test_diffsync_model_str_with_no_data(generic_diffsync_model):
+    assert generic_diffsync_model.str() == "diffsyncmodel: : {}"
 
 
-def test_dsync_model_subclass_getters(make_site, make_device, make_interface):
-    """Check that the DSyncModel APIs work correctly for various subclasses."""
+def test_diffsync_model_subclass_getters(make_site, make_device, make_interface):
+    """Check that the DiffSyncModel APIs work correctly for various subclasses."""
     site1 = make_site()
     device1 = make_device()
     device1_eth0 = make_interface()
@@ -91,32 +91,32 @@ def test_dsync_model_subclass_getters(make_site, make_device, make_interface):
     assert device1_eth0.get_shortname() == "eth0"
 
 
-def test_dsync_model_dict_with_data(make_interface):
+def test_diffsync_model_dict_with_data(make_interface):
     intf = make_interface()
     # dict() includes all fields, even those set to default values
     assert intf.dict() == {
         "description": None,
         "device_name": "device1",
         "interface_type": "ethernet",
-        "model_flags": DSyncModelFlags.NONE,
+        "model_flags": DiffSyncModelFlags.NONE,
         "name": "eth0",
     }
 
 
-def test_dsync_model_json_with_data(make_interface):
+def test_diffsync_model_json_with_data(make_interface):
     intf = make_interface()
     # json() omits default values for brevity
     assert intf.json() == '{"device_name": "device1", "name": "eth0"}'
 
 
-def test_dsync_model_str_with_data(make_interface):
+def test_diffsync_model_str_with_data(make_interface):
     intf = make_interface()
     # str() only includes _attributes
     assert intf.str() == "interface: device1__eth0: {'interface_type': 'ethernet', 'description': None}"
 
 
-def test_dsync_model_subclass_add_remove(make_site, make_device, make_interface):
-    """Check that the DSyncModel add_child/remove_child APIs work correctly for various subclasses."""
+def test_diffsync_model_subclass_add_remove(make_site, make_device, make_interface):
+    """Check that the DiffSyncModel add_child/remove_child APIs work correctly for various subclasses."""
     site1 = make_site()
     device1 = make_device()
     device1_eth0 = make_interface()
@@ -152,41 +152,41 @@ def test_dsync_model_subclass_add_remove(make_site, make_device, make_interface)
         device1.remove_child(device1_eth0)
 
 
-def test_dsync_model_dict_with_children(generic_dsync, make_site, make_device, make_interface):
-    site1 = make_site(dsync=generic_dsync)
-    device1 = make_device(dsync=generic_dsync)
-    device1_eth0 = make_interface(dsync=generic_dsync)
+def test_diffsync_model_dict_with_children(generic_diffsync, make_site, make_device, make_interface):
+    site1 = make_site(diffsync=generic_diffsync)
+    device1 = make_device(diffsync=generic_diffsync)
+    device1_eth0 = make_interface(diffsync=generic_diffsync)
     site1.add_child(device1)
     device1.add_child(device1_eth0)
-    # test error handling - dsync knows about site and device but not interface
-    generic_dsync.add(site1)
-    generic_dsync.add(device1)
+    # test error handling - diffsync knows about site and device but not interface
+    generic_diffsync.add(site1)
+    generic_diffsync.add(device1)
 
-    assert site1.dict() == {"devices": ["device1"], "model_flags": DSyncModelFlags.NONE, "name": "site1"}
+    assert site1.dict() == {"devices": ["device1"], "model_flags": DiffSyncModelFlags.NONE, "name": "site1"}
 
 
-def test_dsync_model_json_with_children(generic_dsync, make_site, make_device, make_interface):
-    site1 = make_site(dsync=generic_dsync)
-    device1 = make_device(dsync=generic_dsync)
-    device1_eth0 = make_interface(dsync=generic_dsync)
+def test_diffsync_model_json_with_children(generic_diffsync, make_site, make_device, make_interface):
+    site1 = make_site(diffsync=generic_diffsync)
+    device1 = make_device(diffsync=generic_diffsync)
+    device1_eth0 = make_interface(diffsync=generic_diffsync)
     site1.add_child(device1)
     device1.add_child(device1_eth0)
-    # test error handling - dsync knows about site and device but not interface
-    generic_dsync.add(site1)
-    generic_dsync.add(device1)
+    # test error handling - diffsync knows about site and device but not interface
+    generic_diffsync.add(site1)
+    generic_diffsync.add(device1)
 
     assert site1.json() == '{"name": "site1", "devices": ["device1"]}'
 
 
-def test_dsync_model_str_with_children(generic_dsync, make_site, make_device, make_interface):
-    site1 = make_site(dsync=generic_dsync)
-    device1 = make_device(dsync=generic_dsync)
-    device1_eth0 = make_interface(dsync=generic_dsync)
+def test_diffsync_model_str_with_children(generic_diffsync, make_site, make_device, make_interface):
+    site1 = make_site(diffsync=generic_diffsync)
+    device1 = make_device(diffsync=generic_diffsync)
+    device1_eth0 = make_interface(diffsync=generic_diffsync)
     site1.add_child(device1)
     device1.add_child(device1_eth0)
-    # test error handling - dsync knows about site and device but not interface
-    generic_dsync.add(site1)
-    generic_dsync.add(device1)
+    # test error handling - diffsync knows about site and device but not interface
+    generic_diffsync.add(site1)
+    generic_diffsync.add(device1)
 
     assert (
         site1.str()
@@ -208,19 +208,19 @@ site: site1: {}
     )
 
 
-def test_dsync_model_subclass_crud(generic_dsync):
-    """Test basic CRUD operations on generic DSyncModel subclasses."""
-    device1 = Device.create(generic_dsync, {"name": "device1"}, {"role": "spine"})
+def test_diffsync_model_subclass_crud(generic_diffsync):
+    """Test basic CRUD operations on generic DiffSyncModel subclasses."""
+    device1 = Device.create(generic_diffsync, {"name": "device1"}, {"role": "spine"})
     assert isinstance(device1, Device)
-    assert device1.dsync == generic_dsync
+    assert device1.diffsync == generic_diffsync
     assert device1.name == "device1"
     assert device1.role == "spine"
 
     device1_eth0 = Interface.create(
-        generic_dsync, {"name": "eth0", "device_name": "device1"}, {"description": "some description"},
+        generic_diffsync, {"name": "eth0", "device_name": "device1"}, {"description": "some description"},
     )
     assert isinstance(device1_eth0, Interface)
-    assert device1_eth0.dsync == generic_dsync
+    assert device1_eth0.diffsync == generic_diffsync
     assert device1_eth0.name == "eth0"
     assert device1_eth0.device_name == "device1"
     assert device1_eth0.description == "some description"
@@ -246,14 +246,14 @@ def test_dsync_model_subclass_crud(generic_dsync):
     assert isinstance(device1_eth0, Interface)
 
 
-def test_dsync_model_subclass_validation():
-    """Verify that invalid subclasses of DSyncModel are detected at declaration time."""
+def test_diffsync_model_subclass_validation():
+    """Verify that invalid subclasses of DiffSyncModel are detected at declaration time."""
     # Pylint would complain because we're not actually using any of the classes declared below
     # pylint: disable=unused-variable
 
     with pytest.raises(AttributeError) as excinfo:
 
-        class BadIdentifier(DSyncModel):
+        class BadIdentifier(DiffSyncModel):
             """Model with an _identifiers referencing a nonexistent field."""
 
             _identifiers = ("name",)
@@ -263,7 +263,7 @@ def test_dsync_model_subclass_validation():
 
     with pytest.raises(AttributeError) as excinfo:
 
-        class BadShortname(DSyncModel):
+        class BadShortname(DiffSyncModel):
             """Model with a _shortname referencing a nonexistent field."""
 
             _identifiers = ("name",)
@@ -276,7 +276,7 @@ def test_dsync_model_subclass_validation():
 
     with pytest.raises(AttributeError) as excinfo:
 
-        class BadAttributes(DSyncModel):
+        class BadAttributes(DiffSyncModel):
             """Model with _attributes referencing a nonexistent field."""
 
             _identifiers = ("name",)
@@ -292,7 +292,7 @@ def test_dsync_model_subclass_validation():
 
     with pytest.raises(AttributeError) as excinfo:
 
-        class BadChildren(DSyncModel):
+        class BadChildren(DiffSyncModel):
             """Model with _children referencing a nonexistent field."""
 
             _identifiers = ("name",)
@@ -309,7 +309,7 @@ def test_dsync_model_subclass_validation():
 
     with pytest.raises(AttributeError) as excinfo:
 
-        class IdAttrOverlap(DSyncModel):
+        class IdAttrOverlap(DiffSyncModel):
             """Model including a field in both _identifiers and _attributes."""
 
             _identifiers = ("name",)
@@ -322,7 +322,7 @@ def test_dsync_model_subclass_validation():
 
     with pytest.raises(AttributeError) as excinfo:
 
-        class IdChildOverlap(DSyncModel):
+        class IdChildOverlap(DiffSyncModel):
             """Model including a field in both _identifiers and _children."""
 
             _identifiers = ("names",)
@@ -335,7 +335,7 @@ def test_dsync_model_subclass_validation():
 
     with pytest.raises(AttributeError) as excinfo:
 
-        class AttrChildOverlap(DSyncModel):
+        class AttrChildOverlap(DiffSyncModel):
             """Model including a field in both _attributes and _children."""
 
             _attributes = ("devices",)
@@ -347,11 +347,11 @@ def test_dsync_model_subclass_validation():
     assert "devices" in str(excinfo.value)
 
 
-def test_dsync_model_subclass_inheritance():
+def test_diffsync_model_subclass_inheritance():
     """Verify that the class validation works properly even with a hierarchy of subclasses."""
     # Pylint would complain because we're not actually using any of the classes declared below
     # pylint: disable=unused-variable
-    class Alpha(DSyncModel):
+    class Alpha(DiffSyncModel):
         """A model class representing a single Greek letter."""
 
         _modelname = "alpha"

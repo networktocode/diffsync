@@ -1,4 +1,4 @@
-"""Diff and DiffElement classes for DSync.
+"""Diff and DiffElement classes for DiffSync.
 
 Copyright (c) 2020 Network To Code, LLC <info@networktocode.com>
 
@@ -46,7 +46,7 @@ class Diff:
         Raises:
             ObjectAlreadyExists: if an element of the same type and same name is already stored.
         """
-        # Note that element.name is usually a DSyncModel.shortname() -- i.e., NOT guaranteed globally unique!!
+        # Note that element.name is usually a DiffSyncModel.shortname() -- i.e., NOT guaranteed globally unique!!
         if element.name in self.children[element.type]:
             raise ObjectAlreadyExists(f"Already storing a {element.type} named {element.name}")
 
@@ -137,12 +137,12 @@ class DiffElement:  # pylint: disable=too-many-instance-attributes
         """Instantiate a DiffElement.
 
         Args:
-            obj_type: Name of the object type being described, as in DSyncModel.get_type().
-            name: Human-readable name of the object being described, as in DSyncModel.get_shortname().
+            obj_type: Name of the object type being described, as in DiffSyncModel.get_type().
+            name: Human-readable name of the object being described, as in DiffSyncModel.get_shortname().
                 This name must be unique within the context of the Diff that is the direct parent of this DiffElement.
-            keys: Primary keys and values uniquely describing this object, as in DSyncModel.get_identifiers().
-            source_name: Name of the source DSync object
-            dest_name: Name of the destination DSync object
+            keys: Primary keys and values uniquely describing this object, as in DiffSyncModel.get_identifiers().
+            source_name: Name of the source DiffSync object
+            dest_name: Name of the destination DiffSync object
             diff_class: Diff or subclass thereof to use to calculate the diffs to use for synchronization
         """
         if not isinstance(obj_type, str):
@@ -186,7 +186,10 @@ class DiffElement:  # pylint: disable=too-many-instance-attributes
 
     def __str__(self):
         """Basic string representation of a DiffElement."""
-        return f'{self.type} "{self.name}" : {self.keys} : {self.source_name} → {self.dest_name} : {self.get_attrs_diffs()}'
+        return (
+            f'{self.type} "{self.name}" : {self.keys} : '
+            f"{self.source_name} → {self.dest_name} : {self.get_attrs_diffs()}"
+        )
 
     @property
     def action(self) -> Optional[Text]:

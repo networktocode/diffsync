@@ -1,4 +1,4 @@
-"""Helpful APIs for setting up DSync logging.
+"""Helpful APIs for setting up DiffSync logging.
 
 Copyright (c) 2020 Network To Code, LLC <info@networktocode.com>
 
