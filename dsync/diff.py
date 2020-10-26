@@ -16,7 +16,7 @@ limitations under the License.
 """
 
 from functools import total_ordering
-from typing import Any, Iterator, Iterable, Mapping, Optional, Text
+from typing import Any, Iterator, Iterable, Mapping, Optional, Text, Type
 
 from .exceptions import ObjectAlreadyExists
 from .utils import intersection, OrderedDefaultDict
@@ -126,7 +126,13 @@ class DiffElement:  # pylint: disable=too-many-instance-attributes
     """DiffElement object, designed to represent a single item/object that may or may not have any diffs."""
 
     def __init__(
-        self, obj_type: Text, name: Text, keys: Mapping, source_name: Text = "source", dest_name: Text = "dest"
+        self,
+        obj_type: Text,
+        name: Text,
+        keys: Mapping,
+        source_name: Text = "source",
+        dest_name: Text = "dest",
+        diff_class: Type[Diff] = Diff,
     ):  # pylint: disable=too-many-arguments
         """Instantiate a DiffElement.
 
@@ -152,7 +158,7 @@ class DiffElement:  # pylint: disable=too-many-instance-attributes
         # Note: *_attrs == None if no target object exists; it'll be an empty dict if it exists but has no _attributes
         self.source_attrs: Optional[Mapping] = None
         self.dest_attrs: Optional[Mapping] = None
-        self.child_diff = Diff()
+        self.child_diff = diff_class()
 
     def __lt__(self, other):
         """Logical ordering of DiffElements.

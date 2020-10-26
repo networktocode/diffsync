@@ -271,7 +271,12 @@ def test_dsync_diff_to_and_diff_from_are_symmetric(backend_a, backend_b):
 
 def test_dsync_diff_from_with_custom_diff_class(backend_a, backend_b):
     diff_ba = backend_a.diff_from(backend_b, diff_class=TrackedDiff)
+    diff_children = diff_ba.get_children()
+
     assert isinstance(diff_ba, TrackedDiff)
+    for child in diff_children:
+        if child.child_diff:
+            assert isinstance(child.child_diff, TrackedDiff)
     assert diff_ba.is_complete is True
 
 
