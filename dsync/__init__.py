@@ -852,7 +852,12 @@ class DSyncDiffer:
             return None
 
         diff_element = DiffElement(
-            obj_type=model, name=shortname, keys=keys, source_name=self.src_dsync.name, dest_name=self.dst_dsync.name,
+            obj_type=model,
+            name=shortname,
+            keys=keys,
+            source_name=self.src_dsync.name,
+            dest_name=self.dst_dsync.name,
+            diff_class=self.diff_class,
         )
 
         if src_obj:
