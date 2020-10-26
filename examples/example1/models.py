@@ -15,10 +15,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from typing import List, Optional
-from dsync import DSyncModel
+from diffsync import DiffSyncModel
 
 
-class Site(DSyncModel):
+class Site(DiffSyncModel):
     """Example model of a geographic Site."""
 
     _modelname = "site"
@@ -31,7 +31,7 @@ class Site(DSyncModel):
     devices: List = list()
 
 
-class Device(DSyncModel):
+class Device(DiffSyncModel):
     """Example model of a network Device."""
 
     _modelname = "device"
@@ -45,7 +45,7 @@ class Device(DSyncModel):
     interfaces: List = list()
 
 
-class Interface(DSyncModel):
+class Interface(DiffSyncModel):
     """Example model of a network Interface."""
 
     _modelname = "interface"

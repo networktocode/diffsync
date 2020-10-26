@@ -1,4 +1,4 @@
-"""Integration tests for DSync.
+"""Integration tests for DiffSync.
 
 Copyright (c) 2020 Network To Code, LLC <info@networktocode.com>
 

@@ -1,4 +1,4 @@
-"""Example of a DSync adapter implementation.
+"""Example of a DiffSync adapter implementation.
 
 Copyright (c) 2020 Network To Code, LLC <info@networktocode.com>
 
@@ -16,7 +16,7 @@ limitations under the License.
 """
 
 # pylint: disable=wrong-import-order
-from dsync import DSync
+from diffsync import DiffSync
 from models import Site, Device, Interface
 
 DATA = {
@@ -31,8 +31,8 @@ DATA = {
 }
 
 
-class BackendC(DSync):
-    """Example of a DSync adapter implementation."""
+class BackendC(DiffSync):
+    """Example of a DiffSync adapter implementation."""
 
     site = Site
     device = Device
@@ -43,7 +43,7 @@ class BackendC(DSync):
     nb = None
 
     def load(self):
-        """Initialize the BackendB Object by loading some site, device and interfaces from DATA."""
+        """Initialize the BackendC Object by loading some site, device and interfaces from DATA."""
         for site_name, site_data in DATA.items():
             site = self.site(name=site_name)
             self.add(site)

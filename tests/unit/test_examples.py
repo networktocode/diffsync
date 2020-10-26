@@ -1,4 +1,4 @@
-"""Unit tests for DiffSync.
+"""Verification that the provided example code works correctly.
 
 Copyright (c) 2020 Network To Code, LLC <info@networktocode.com>
 
@@ -14,3 +14,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+
+from os.path import join, dirname
+import subprocess
+
+EXAMPLES = join(dirname(dirname(dirname(__file__))), "examples")
+
+
+def test_example_1():
+    """Test that the "example1" script runs successfully."""
+    example1_dir = join(EXAMPLES, "example1")
+    example1_main = join(example1_dir, "main.py")
+    # Run it and make sure it doesn't raise an exception or otherwise exit with a non-zero code.
+    subprocess.run(example1_main, cwd=example1_dir, check=True)

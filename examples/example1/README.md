@@ -1,9 +1,9 @@
 
 
-This is a simple example to show how dsync can be used to compare and synchronize multiple data sources.
+This is a simple example to show how diffsync can be used to compare and synchronize multiple data sources.
 
 For this example, we have a shared model for Device and Interface defined in `models.py`
-And we have 3 instances of DSync based on the same model but with different values (BackendA, BackendB & BackendC).
+And we have 3 instances of DiffSync based on the same model but with different values (BackendA, BackendB & BackendC).
 
 
 First create and populate all 3 objects
@@ -27,9 +27,9 @@ c.load()
 print(c.str())
 ```
 
-Configure verbosity of DSync's structured logging to console; the default is full verbosity (all logs including debugging)
+Configure verbosity of DiffSync's structured logging to console; the default is full verbosity (all logs including debugging)
 ```python
-from dsync.logging import enable_console_logging
+from diffsync.logging import enable_console_logging
 enable_console_logging(verbosity=0)  # Show WARNING and ERROR logs only
 # enable_console_logging(verbosity=1)  # Also include INFO logs
 # enable_console_logging(verbosity=2)  # Also include DEBUG logs

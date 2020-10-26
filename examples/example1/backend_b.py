@@ -1,4 +1,4 @@
-"""Example of a DSync adapter implementation.
+"""Example of a DiffSync adapter implementation.
 
 Copyright (c) 2020 Network To Code, LLC <info@networktocode.com>
 
@@ -16,7 +16,7 @@ limitations under the License.
 """
 
 # pylint: disable=wrong-import-order
-from dsync import DSync
+from diffsync import DiffSync
 from models import Site, Device, Interface
 
 DATA = {
@@ -35,8 +35,8 @@ DATA = {
 }
 
 
-class BackendB(DSync):
-    """Example of a DSync adapter implementation."""
+class BackendB(DiffSync):
+    """Example of a DiffSync adapter implementation."""
 
     site = Site
     device = Device

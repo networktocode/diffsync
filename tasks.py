@@ -21,7 +21,7 @@ from invoke import task  # type: ignore
 # Can be set to a separate Python version to be used for launching or building container
 PYTHON_VER = os.getenv("PYTHON_VER", "3.7")
 # Name of the docker image/container
-NAME = os.getenv("IMAGE_NAME", "dsync-1.0.0")
+NAME = os.getenv("IMAGE_NAME", "diffsync-1.0.0")
 # Gather current working directory for Docker commands
 PWD = os.getcwd()
 
@@ -123,7 +123,7 @@ def pytest(context, name=NAME, python_ver=PYTHON_VER):
     # Install python module
     docker = f"docker run -it -v {PWD}:/local {name}-{python_ver}:latest"
     context.run(
-        f"{docker} /bin/bash -c 'poetry install && pytest --cov=dsync --cov-report html --cov-report term -vv'",
+        f"{docker} /bin/bash -c 'poetry install && pytest --cov=diffsync --cov-report html --cov-report term -vv'",
         pty=True,
     )
 
