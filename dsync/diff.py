@@ -143,7 +143,7 @@ class DiffElement:  # pylint: disable=too-many-instance-attributes
             keys: Primary keys and values uniquely describing this object, as in DSyncModel.get_identifiers().
             source_name: Name of the source DSync object
             dest_name: Name of the destination DSync object
-            diff_class: Diff or subclass thereof to use to calculate the diffs to use for synchronization 
+            diff_class: Diff or subclass thereof to use to calculate the diffs to use for synchronization
         """
         if not isinstance(obj_type, str):
             raise ValueError(f"obj_type must be a string (not {type(obj_type)})")
