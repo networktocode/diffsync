@@ -240,27 +240,27 @@ class DiffElement:  # pylint: disable=too-many-instance-attributes
         """Get the dict of actual attribute diffs between source_attrs and dest_attrs.
 
         Returns:
-            dict: of the form `{src: {key1: <value>, key2: ...}, dst: {key1: <value>, key2: ...}}`,
-            where the `src` or `dst` dicts may be empty.
+            dict: of the form `{"-": {key1: <value>, key2: ...}, "+": {key1: <value>, key2: ...}}`,
+            where the `"-"` or `"+"` dicts may be empty.
         """
         if self.source_attrs is not None and self.dest_attrs is not None:
             return {
-                "src": {
-                    key: self.source_attrs[key]
+                "-": {
+                    key: self.dest_attrs[key]
                     for key in self.get_attrs_keys()
                     if self.source_attrs[key] != self.dest_attrs[key]
                 },
-                "dst": {
-                    key: self.dest_attrs[key]
+                "+": {
+                    key: self.source_attrs[key]
                     for key in self.get_attrs_keys()
                     if self.source_attrs[key] != self.dest_attrs[key]
                 },
             }
         if self.source_attrs is None and self.dest_attrs is not None:
-            return {"src": {}, "dst": {key: self.dest_attrs[key] for key in self.get_attrs_keys()}}
+            return {"-": {key: self.dest_attrs[key] for key in self.get_attrs_keys()}, "+": {}}
         if self.source_attrs is not None and self.dest_attrs is None:
-            return {"src": {key: self.source_attrs[key] for key in self.get_attrs_keys()}, "dst": {}}
-        return {"src": {}, "dst": {}}
+            return {"-": {}, "+": {key: self.source_attrs[key] for key in self.get_attrs_keys()}}
+        return {"-": {}, "+": {}}
 
     def add_child(self, element: "DiffElement"):
         """Attach a child object of type DiffElement.
@@ -304,11 +304,11 @@ class DiffElement:  # pylint: disable=too-many-instance-attributes
         if self.source_attrs is not None and self.dest_attrs is not None:
             # Only print attrs that have meaning in both source and dest
             attrs_diffs = self.get_attrs_diffs()
-            for attr in attrs_diffs["src"]:
+            for attr in attrs_diffs["+"]:
                 result += (
                     f"\n{margin}  {attr}"
-                    f"    {self.source_name}({attrs_diffs['src'][attr]})"
-                    f"    {self.dest_name}({attrs_diffs['dst'][attr]})"
+                    f"    {self.source_name}({attrs_diffs['+'][attr]})"
+                    f"    {self.dest_name}({attrs_diffs['-'][attr]})"
                 )
         elif self.dest_attrs is not None:
             result += f" MISSING in {self.source_name}"
@@ -325,10 +325,10 @@ class DiffElement:  # pylint: disable=too-many-instance-attributes
         """Build a dictionary representation of this DiffElement and its children."""
         attrs_diffs = self.get_attrs_diffs()
         result = {}
-        if attrs_diffs.get("src"):
-            result["_src"] = attrs_diffs["src"]
-        if attrs_diffs.get("dst"):
-            result["_dst"] = attrs_diffs["dst"]
+        if attrs_diffs.get("-"):
+            result["-"] = attrs_diffs["-"]
+        if attrs_diffs.get("+"):
+            result["+"] = attrs_diffs["+"]
         if self.child_diff.has_diffs():
             result.update(self.child_diff.dict())
         return result

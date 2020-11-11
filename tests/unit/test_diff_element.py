@@ -93,9 +93,9 @@ interface: eth0
 def test_diff_element_dict_with_diffs():
     element = DiffElement("interface", "eth0", {"device_name": "device1", "name": "eth0"})
     element.add_attrs(source={"interface_type": "ethernet", "description": "my interface"})
-    assert element.dict() == {"_src": {"description": "my interface", "interface_type": "ethernet"}}
+    assert element.dict() == {"+": {"description": "my interface", "interface_type": "ethernet"}}
     element.add_attrs(dest={"description": "your interface"})
-    assert element.dict() == {"_dst": {"description": "your interface"}, "_src": {"description": "my interface"}}
+    assert element.dict() == {"-": {"description": "your interface"}, "+": {"description": "my interface"}}
 
 
 def test_diff_element_children():
@@ -119,17 +119,19 @@ def test_diff_element_children():
 
 
 def test_diff_element_str_with_child_diffs():
-    child_element = DiffElement("interface", "eth0", {"device_name": "device1", "name": "eth0"})
     parent_element = DiffElement("device", "device1", {"name": "device1"})
-    parent_element.add_child(child_element)
+    parent_element.add_attrs(source={"role": "switch"}, dest={"role": "router"})
+    child_element = DiffElement("interface", "eth0", {"device_name": "device1", "name": "eth0"})
     source_attrs = {"interface_type": "ethernet", "description": "my interface"}
     dest_attrs = {"description": "your interface"}
     child_element.add_attrs(source=source_attrs, dest=dest_attrs)
+    parent_element.add_child(child_element)
 
     assert (
         parent_element.str()
         == """\
 device: device1
+  role    source(switch)    dest(router)
   interface
     interface: eth0
       description    source(my interface)    dest(your interface)\
@@ -138,13 +140,16 @@ device: device1
 
 
 def test_diff_element_dict_with_child_diffs():
-    child_element = DiffElement("interface", "eth0", {"device_name": "device1", "name": "eth0"})
     parent_element = DiffElement("device", "device1", {"name": "device1"})
-    parent_element.add_child(child_element)
+    parent_element.add_attrs(source={"role": "switch"}, dest={"role": "router"})
+    child_element = DiffElement("interface", "eth0", {"device_name": "device1", "name": "eth0"})
     source_attrs = {"interface_type": "ethernet", "description": "my interface"}
     dest_attrs = {"description": "your interface"}
     child_element.add_attrs(source=source_attrs, dest=dest_attrs)
+    parent_element.add_child(child_element)
 
     assert parent_element.dict() == {
-        "interface": {"eth0": {"_dst": {"description": "your interface"}, "_src": {"description": "my interface"}}},
+        "-": {"role": "router"},
+        "+": {"role": "switch"},
+        "interface": {"eth0": {"-": {"description": "your interface"}, "+": {"description": "my interface"}}},
     }

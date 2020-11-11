@@ -554,13 +554,13 @@ class DiffSync:
                 log.debug("Attempting object creation")
                 if obj:
                     raise ObjectNotCreated(f"Failed to create {object_class.get_type()} {element.keys} - it exists!")
-                obj = object_class.create(diffsync=self, ids=element.keys, attrs=diffs["src"])
+                obj = object_class.create(diffsync=self, ids=element.keys, attrs=diffs["+"])
                 log.info("Created successfully", status="success")
             elif element.action == "update":
                 log.debug("Attempting object update")
                 if not obj:
                     raise ObjectNotUpdated(f"Failed to update {object_class.get_type()} {element.keys} - not found!")
-                obj = obj.update(attrs=diffs["src"])
+                obj = obj.update(attrs=diffs["+"])
                 log.info("Updated successfully", status="success")
             elif element.action == "delete":
                 log.debug("Attempting object deletion")

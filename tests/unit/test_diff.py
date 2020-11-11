@@ -106,7 +106,7 @@ def test_diff_dict_with_diffs():
     diff.add(intf_element)
 
     assert diff.dict() == {
-        "interface": {"eth0": {"_dst": {"description": "your interface"}, "_src": {"description": "my interface"}}},
+        "interface": {"eth0": {"-": {"description": "your interface"}, "+": {"description": "my interface"}}},
     }
 
 
