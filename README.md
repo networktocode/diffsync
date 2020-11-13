@@ -11,14 +11,14 @@ B = DiffSyncSystemB()
 A.load()
 B.load()
 
-# it will show the difference between both systems
+# Show the difference between both systems, that is, what would change if we applied changes from System B to System A
 diff_a_b = A.diff_from(B)
 print(diff.str())
 
-# it will update System A to align with the current status of system B
+# Update System A to align with the current status of system B
 A.sync_from(B)
 
-# it will update System B to align with the current status of system A
+# Update System B to align with the current status of system A
 A.sync_to(B)
 ```
 

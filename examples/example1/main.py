@@ -18,6 +18,7 @@ limitations under the License.
 # pylint: disable=wrong-import-order
 
 import argparse
+import pprint
 
 from diffsync import Diff
 from diffsync.logging import enable_console_logging
@@ -63,6 +64,9 @@ def main():
     print("Getting diffs from Backend A to Backend B...")
     diff_a_b = backend_a.diff_to(backend_b, diff_class=MyDiff)
     print(diff_a_b.str())
+
+    print("Diffs can also be represented as a dictionary...")
+    pprint.pprint(diff_a_b.dict(), width=120)
 
     print("Syncing changes from Backend A to Backend B...")
     backend_a.sync_to(backend_b)
