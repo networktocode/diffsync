@@ -15,6 +15,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+from unittest import mock
+
 import pytest
 
 from diffsync import DiffSync, DiffSyncModel, DiffSyncFlags, DiffSyncModelFlags
@@ -47,8 +49,11 @@ def test_diffsync_diff_self_with_no_data_has_no_diffs(generic_diffsync):
 
 
 def test_diffsync_sync_self_with_no_data_is_noop(generic_diffsync):
+    generic_diffsync.sync_complete = mock.Mock()
     generic_diffsync.sync_from(generic_diffsync)
     generic_diffsync.sync_to(generic_diffsync)
+    # sync_complete() should only be called if something actually changed
+    assert not generic_diffsync.sync_complete.called
 
 
 def test_diffsync_get_with_no_data_is_none(generic_diffsync):
@@ -281,8 +286,15 @@ def test_diffsync_diff_from_with_custom_diff_class(backend_a, backend_b):
 
 
 def test_diffsync_sync_from(backend_a, backend_b):
+    backend_a.sync_complete = mock.Mock()
+    backend_b.sync_complete = mock.Mock()
     # Perform full sync
     backend_a.sync_from(backend_b)
+
+    # backend_a was updated, backend_b was not
+    assert backend_a.sync_complete.called
+    assert not backend_b.sync_complete.called
+
     # Make sure the sync descended through the diff elements to their children
     assert backend_a.get(Device, "sfo-spine1").role == "leaf"  # was initially "spine"
 

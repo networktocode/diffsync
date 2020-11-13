@@ -479,10 +479,14 @@ class DiffSync:
         log = self._log.bind(src=source, dst=self, flags=flags).unbind("diffsync")
         diff = self.diff_from(source, diff_class=diff_class, flags=flags)
 
-        log.info("Beginning sync")
-        for child in diff.get_children():
-            self._sync_from_diff_element(child, flags=flags, logger=log)
-        log.info("Sync complete")
+        if diff.has_diffs():
+            log.info("Beginning sync")
+            for child in diff.get_children():
+                self._sync_from_diff_element(child, flags=flags, logger=log)
+            log.info("Sync complete")
+            self.sync_complete(source, diff, flags, logger=log)
+        else:
+            log.info("No changes to synchronize")
 
     def sync_to(self, target: "DiffSync", diff_class: Type[Diff] = Diff, flags: DiffSyncFlags = DiffSyncFlags.NONE):
         """Synchronize data from the current DiffSync object into the given target DiffSync object.
@@ -493,6 +497,25 @@ class DiffSync:
             flags (DiffSyncFlags): Flags influencing the behavior of this sync.
         """
         target.sync_from(self, diff_class=diff_class, flags=flags)
+
+    def sync_complete(
+        self,
+        source: "DiffSync",
+        diff: Diff,
+        flags: DiffSyncFlags = DiffSyncFlags.NONE,
+        logger: structlog.BoundLogger = None,
+    ):
+        """Callback triggered after a `sync_from` operation has completed and updated the model data of this instance.
+
+        The default implementation does nothing, but a subclass could use this, for example, to perform bulk updates
+        to a backend (such as a file) that doesn't readily support incremental updates to individual records.
+
+        Args:
+          source: The DiffSync whose data was used to update this instance.
+          diff: The Diff calculated prior to the sync operation.
+          flags: Any flags that influenced the sync.
+          logger: Logging context for the sync.
+        """
 
     def _sync_from_diff_element(
         self,
