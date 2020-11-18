@@ -19,7 +19,7 @@ from typing import ClassVar, List, Mapping, Optional, Tuple
 import pytest
 
 from diffsync import DiffSync, DiffSyncModel
-from diffsync.diff import Diff
+from diffsync.diff import Diff, DiffElement
 from diffsync.exceptions import ObjectNotCreated, ObjectNotUpdated, ObjectNotDeleted
 
 
@@ -357,3 +357,70 @@ class TrackedDiff(Diff):
     def complete(self):
         """Function called when the Diff has been fully constructed and populated with data."""
         self.is_complete = True
+
+
+@pytest.fixture
+def diff_with_children():
+    """Provide a Diff which has multiple children, some of which have children of their own."""
+    diff = Diff()
+
+    # person_element_1 only exists in the source
+    person_element_1 = DiffElement("person", "Jimbo", {"name": "Jimbo"})
+    person_element_1.add_attrs(source={})
+    diff.add(person_element_1)
+
+    # person_element_2 only exists in the dest
+    person_element_2 = DiffElement("person", "Sully", {"name": "Sully"})
+    person_element_2.add_attrs(dest={})
+    diff.add(person_element_2)
+
+    # device_element has no diffs of its own, but has a child intf_element
+    device_element = DiffElement("device", "device1", {"name": "device1"})
+    diff.add(device_element)
+
+    # intf_element exists in both source and dest as a child of device_element, and has differing attrs
+    intf_element = DiffElement("interface", "eth0", {"device_name": "device1", "name": "eth0"})
+    source_attrs = {"interface_type": "ethernet", "description": "my interface"}
+    dest_attrs = {"description": "your interface"}
+    intf_element.add_attrs(source=source_attrs, dest=dest_attrs)
+    device_element.add_child(intf_element)
+
+    # address_element exists in both source and dest but has no diffs
+    address_element = DiffElement("address", "RTP", {"name": "RTP"})
+    address_element.add_attrs(source={"state": "NC"}, dest={"state": "NC"})
+    diff.add(address_element)
+
+    return diff
+
+
+@pytest.fixture()
+def diff_element_with_children():
+    """Construct a DiffElement that has some diffs of its own as well as a child diff with additional diffs."""
+    # parent_element has differing "role" attribute, while "location" does not differ
+    parent_element = DiffElement("device", "device1", {"name": "device1"})
+    parent_element.add_attrs(source={"role": "switch", "location": "RTP"}, dest={"role": "router", "location": "RTP"})
+
+    # child_element_1 has differing "description" attribute, while "interface_type" is only present on one side
+    child_element_1 = DiffElement("interface", "eth0", {"device_name": "device1", "name": "eth0"})
+    source_attrs = {"interface_type": "ethernet", "description": "my interface"}
+    dest_attrs = {"description": "your interface"}
+    child_element_1.add_attrs(source=source_attrs, dest=dest_attrs)
+
+    # child_element_2 only exists on source, and has no attributes
+    child_element_2 = DiffElement("interface", "lo0", {"device_name": "device1", "name": "lo0"})
+    child_element_2.add_attrs(source={})
+
+    # child_element_3 only exists on dest, and has some attributes
+    child_element_3 = DiffElement("interface", "lo1", {"device_name": "device1", "name": "lo1"})
+    child_element_3.add_attrs(dest={"description": "Loopback 1"})
+
+    # child_element_4 is identical between source and dest
+    child_element_4 = DiffElement("interface", "lo100", {"device_name": "device1", "name": "lo100"})
+    child_element_4.add_attrs(source={"description": "Loopback 100"}, dest={"description": "Loopback 100"})
+
+    parent_element.add_child(child_element_1)
+    parent_element.add_child(child_element_2)
+    parent_element.add_child(child_element_3)
+    parent_element.add_child(child_element_4)
+
+    return parent_element
