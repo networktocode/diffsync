@@ -391,3 +391,36 @@ def diff_with_children():
     diff.add(address_element)
 
     return diff
+
+
+@pytest.fixture()
+def diff_element_with_children():
+    """Construct a DiffElement that has some diffs of its own as well as a child diff with additional diffs."""
+    # parent_element has differing "role" attribute, while "location" does not differ
+    parent_element = DiffElement("device", "device1", {"name": "device1"})
+    parent_element.add_attrs(source={"role": "switch", "location": "RTP"}, dest={"role": "router", "location": "RTP"})
+
+    # child_element_1 has differing "description" attribute, while "interface_type" is only present on one side
+    child_element_1 = DiffElement("interface", "eth0", {"device_name": "device1", "name": "eth0"})
+    source_attrs = {"interface_type": "ethernet", "description": "my interface"}
+    dest_attrs = {"description": "your interface"}
+    child_element_1.add_attrs(source=source_attrs, dest=dest_attrs)
+
+    # child_element_2 only exists on source, and has no attributes
+    child_element_2 = DiffElement("interface", "lo0", {"device_name": "device1", "name": "lo0"})
+    child_element_2.add_attrs(source={})
+
+    # child_element_3 only exists on dest, and has some attributes
+    child_element_3 = DiffElement("interface", "lo1", {"device_name": "device1", "name": "lo1"})
+    child_element_3.add_attrs(dest={"description": "Loopback 1"})
+
+    # child_element_4 is identical between source and dest
+    child_element_4 = DiffElement("interface", "lo100", {"device_name": "device1", "name": "lo100"})
+    child_element_4.add_attrs(source={"description": "Loopback 100"}, dest={"description": "Loopback 100"})
+
+    parent_element.add_child(child_element_1)
+    parent_element.add_child(child_element_2)
+    parent_element.add_child(child_element_3)
+    parent_element.add_child(child_element_4)
+
+    return parent_element

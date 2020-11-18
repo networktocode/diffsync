@@ -254,7 +254,7 @@ class DiffElement:  # pylint: disable=too-many-instance-attributes
 
         Returns:
             dict: of the form `{"-": {key1: <value>, key2: ...}, "+": {key1: <value>, key2: ...}}`,
-            where the `"-"` or `"+"` dicts may be empty.
+            where the `"-"` or `"+"` dicts may be absent.
         """
         if self.source_attrs is not None and self.dest_attrs is not None:
             return {
@@ -270,10 +270,10 @@ class DiffElement:  # pylint: disable=too-many-instance-attributes
                 },
             }
         if self.source_attrs is None and self.dest_attrs is not None:
-            return {"-": {key: self.dest_attrs[key] for key in self.get_attrs_keys()}, "+": {}}
+            return {"-": {key: self.dest_attrs[key] for key in self.get_attrs_keys()}}
         if self.source_attrs is not None and self.dest_attrs is None:
-            return {"-": {}, "+": {key: self.source_attrs[key] for key in self.get_attrs_keys()}}
-        return {"-": {}, "+": {}}
+            return {"+": {key: self.source_attrs[key] for key in self.get_attrs_keys()}}
+        return {}
 
     def add_child(self, element: "DiffElement"):
         """Attach a child object of type DiffElement.
@@ -352,9 +352,9 @@ class DiffElement:  # pylint: disable=too-many-instance-attributes
         """Build a dictionary representation of this DiffElement and its children."""
         attrs_diffs = self.get_attrs_diffs()
         result = {}
-        if attrs_diffs.get("-"):
+        if "-" in attrs_diffs:
             result["-"] = attrs_diffs["-"]
-        if attrs_diffs.get("+"):
+        if "+" in attrs_diffs:
             result["+"] = attrs_diffs["+"]
         if self.child_diff.has_diffs():
             result.update(self.child_diff.dict())

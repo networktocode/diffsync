@@ -84,39 +84,32 @@ def test_diff_summary_with_diffs(diff_with_children):
     assert diff_with_children.summary() == {"create": 1, "update": 1, "delete": 1}
 
 
-def test_diff_str_with_diffs():
-    diff = Diff()
-    device_element = DiffElement("device", "device1", {"name": "device1"})
-    diff.add(device_element)
-    intf_element = DiffElement("interface", "eth0", {"device_name": "device1", "name": "eth0"})
-    source_attrs = {"interface_type": "ethernet", "description": "my interface"}
-    dest_attrs = {"description": "your interface"}
-    intf_element.add_attrs(source=source_attrs, dest=dest_attrs)
-    diff.add(intf_element)
-
-    # Since device_element has no diffs, we don't have any "device" entry in the diff string:
+def test_diff_str_with_diffs(diff_with_children):
+    # Since the address element has no diffs, we don't have any "address" entry in the diff string:
     assert (
-        diff.str()
+        diff_with_children.str()
         == """\
-interface
-  interface: eth0
-    description    source(my interface)    dest(your interface)\
+person
+  person: Jimbo MISSING in dest
+  person: Sully MISSING in source
+device
+  device: device1
+    interface
+      interface: eth0
+        description    source(my interface)    dest(your interface)\
 """
     )
 
 
-def test_diff_dict_with_diffs():
-    diff = Diff()
-    device_element = DiffElement("device", "device1", {"name": "device1"})
-    diff.add(device_element)
-    intf_element = DiffElement("interface", "eth0", {"device_name": "device1", "name": "eth0"})
-    source_attrs = {"interface_type": "ethernet", "description": "my interface"}
-    dest_attrs = {"description": "your interface"}
-    intf_element.add_attrs(source=source_attrs, dest=dest_attrs)
-    diff.add(intf_element)
-
-    assert diff.dict() == {
-        "interface": {"eth0": {"-": {"description": "your interface"}, "+": {"description": "my interface"}}},
+def test_diff_dict_with_diffs(diff_with_children):
+    # Since the address element has no diffs, we don't have any "address" entry in the diff dict:
+    assert diff_with_children.dict() == {
+        "device": {
+            "device1": {
+                "interface": {"eth0": {"+": {"description": "my interface"}, "-": {"description": "your interface"}}}
+            }
+        },
+        "person": {"Jimbo": {"+": {}}, "Sully": {"-": {}}},
     }
 
 
