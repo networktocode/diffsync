@@ -95,6 +95,19 @@ class Diff:
         for child in children.values():
             yield child
 
+    def summary(self) -> Mapping[Text, int]:
+        """Build a dict summary of this Diff and its child DiffElements."""
+        summary = {
+            "create": 0,
+            "update": 0,
+            "delete": 0,
+        }
+        for child in self.get_children():
+            child_summary = child.summary()
+            for key in summary:
+                summary[key] += child_summary[key]
+        return summary
+
     def str(self, indent: int = 0):
         """Build a detailed string representation of this Diff and its child DiffElements."""
         margin = " " * indent
@@ -296,6 +309,20 @@ class DiffElement:  # pylint: disable=too-many-instance-attributes
                 return True
 
         return False
+
+    def summary(self) -> Mapping[Text, int]:
+        """Build a summary of this DiffElement and its children."""
+        summary = {
+            "create": 0,
+            "update": 0,
+            "delete": 0,
+        }
+        if self.action:
+            summary[self.action] += 1
+        child_summary = self.child_diff.summary()
+        for key in summary:
+            summary[key] += child_summary[key]
+        return summary
 
     def str(self, indent: int = 0):
         """Build a detailed string representation of this DiffElement and its children."""

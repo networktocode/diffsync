@@ -42,6 +42,11 @@ def test_diff_element_empty():
     assert element2.dest_name == "D1"
 
 
+def test_diff_element_summary_with_no_diffs():
+    element = DiffElement("interface", "eth0", {"device_name": "device1", "name": "eth0"})
+    assert element.summary() == {"create": 0, "update": 0, "delete": 0}
+
+
 def test_diff_element_str_with_no_diffs():
     element = DiffElement("interface", "eth0", {"device_name": "device1", "name": "eth0"})
     assert element.str() == "interface: eth0 (no diffs)"
@@ -74,6 +79,14 @@ def test_diff_element_attrs():
     assert element.has_diffs(include_children=True)
     assert element.has_diffs(include_children=False)
     assert element.get_attrs_keys() == ["description"]  # intersection of source_attrs.keys() and dest_attrs.keys()
+
+
+def test_diff_element_summary_with_diffs():
+    element = DiffElement("interface", "eth0", {"device_name": "device1", "name": "eth0"})
+    element.add_attrs(source={"interface_type": "ethernet", "description": "my interface"})
+    assert element.summary() == {"create": 1, "update": 0, "delete": 0}
+    element.add_attrs(dest={"description": "your interface"})
+    assert element.summary() == {"create": 0, "update": 1, "delete": 0}
 
 
 def test_diff_element_str_with_diffs():
@@ -116,6 +129,18 @@ def test_diff_element_children():
     assert parent_element.has_diffs()
     assert parent_element.has_diffs(include_children=True)
     assert not parent_element.has_diffs(include_children=False)
+
+
+def test_diff_element_summary_with_child_diffs():
+    parent_element = DiffElement("device", "device1", {"name": "device1"})
+    parent_element.add_attrs(source={"role": "switch"}, dest={"role": "router"})
+    child_element = DiffElement("interface", "eth0", {"device_name": "device1", "name": "eth0"})
+    source_attrs = {"interface_type": "ethernet", "description": "my interface"}
+    dest_attrs = {"description": "your interface"}
+    child_element.add_attrs(source=source_attrs, dest=dest_attrs)
+    parent_element.add_child(child_element)
+
+    assert parent_element.summary() == {"create": 0, "update": 2, "delete": 0}
 
 
 def test_diff_element_str_with_child_diffs():
