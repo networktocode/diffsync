@@ -688,17 +688,20 @@ class DiffSync:
         Args:
             uids: List of unique id / key identifying object in the database.
             obj: DiffSyncModel class or instance, or modelname string, that defines the type of the objects to retrieve
+
+        Raises:
+            ObjectNotFound: if any of the requested UIDs are not found in the store
         """
         if isinstance(obj, str):
             modelname = obj
         else:
             modelname = obj.get_type()
 
-        # TODO: should this raise an exception if any or all of the uids are not found?
         results = []
         for uid in uids:
-            if uid in self._data[modelname]:
-                results.append(self._data[modelname][uid])
+            if uid not in self._data[modelname]:
+                raise ObjectNotFound(f"{modelname} {uid} not present")
+            results.append(self._data[modelname][uid])
         return results
 
     def add(self, obj: DiffSyncModel):
@@ -735,7 +738,7 @@ class DiffSync:
         uid = obj.get_unique_id()
 
         if uid not in self._data[modelname]:
-            raise ObjectNotFound(f"Object {uid} not present")
+            raise ObjectNotFound(f"{modelname} {uid} not present")
 
         if obj.diffsync is self:
             obj.diffsync = None

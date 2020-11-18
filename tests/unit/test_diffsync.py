@@ -66,9 +66,13 @@ def test_diffsync_get_all_with_no_data_is_empty_list(generic_diffsync):
     assert list(generic_diffsync.get_all(DiffSyncModel)) == []
 
 
-def test_diffsync_get_by_uids_with_no_data_is_empty_list(generic_diffsync):
-    assert generic_diffsync.get_by_uids(["any", "another"], "anything") == []
-    assert generic_diffsync.get_by_uids(["any", "another"], DiffSyncModel) == []
+def test_diffsync_get_by_uids_with_no_data(generic_diffsync):
+    assert generic_diffsync.get_by_uids([], "anything") == []
+    assert generic_diffsync.get_by_uids([], DiffSyncModel) == []
+    with pytest.raises(ObjectNotFound):
+        generic_diffsync.get_by_uids(["any", "another"], "anything")
+    with pytest.raises(ObjectNotFound):
+        generic_diffsync.get_by_uids(["any", "another"], DiffSyncModel)
 
 
 def test_diffsync_add(generic_diffsync, generic_diffsync_model):
@@ -104,9 +108,11 @@ def test_diffsync_get_by_uids_with_generic_model(generic_diffsync, generic_diffs
     assert generic_diffsync.get_by_uids([""], DiffSyncModel) == [generic_diffsync_model]
     assert generic_diffsync.get_by_uids([""], DiffSyncModel.get_type()) == [generic_diffsync_model]
     # Wrong unique-id - no match
-    assert generic_diffsync.get_by_uids(["myname"], DiffSyncModel) == []
-    # Valid unique-id mixed in with unknown ones - return the successful matches?
-    assert generic_diffsync.get_by_uids(["aname", "", "anothername"], DiffSyncModel) == [generic_diffsync_model]
+    with pytest.raises(ObjectNotFound):
+        generic_diffsync.get_by_uids(["myname"], DiffSyncModel)
+    # Valid unique-id mixed in with unknown ones
+    with pytest.raises(ObjectNotFound):
+        generic_diffsync.get_by_uids(["aname", "", "anothername"], DiffSyncModel)
 
 
 def test_diffsync_remove_with_generic_model(generic_diffsync, generic_diffsync_model):
@@ -117,7 +123,8 @@ def test_diffsync_remove_with_generic_model(generic_diffsync, generic_diffsync_m
 
     assert generic_diffsync.get(DiffSyncModel, "") is None
     assert list(generic_diffsync.get_all(DiffSyncModel)) == []
-    assert generic_diffsync.get_by_uids([""], DiffSyncModel) == []
+    with pytest.raises(ObjectNotFound):
+        generic_diffsync.get_by_uids([""], DiffSyncModel)
 
 
 def test_diffsync_subclass_validation():
@@ -317,8 +324,10 @@ def test_diffsync_sync_from(backend_a, backend_b):
 
     assert backend_a.get_by_uids(["nyc", "sfo"], Site) == [site_nyc_a, site_sfo_a]
     assert backend_a.get_by_uids(["sfo", "nyc"], "site") == [site_sfo_a, site_nyc_a]
-    assert backend_a.get_by_uids(["nyc", "sfo"], Device) == []
-    assert backend_a.get_by_uids(["nyc", "sfo"], "device") == []
+    with pytest.raises(ObjectNotFound):
+        backend_a.get_by_uids(["nyc", "sfo"], Device)
+    with pytest.raises(ObjectNotFound):
+        backend_a.get_by_uids(["nyc", "sfo"], "device")
 
 
 def test_diffsync_subclass_default_name_type(backend_a):
