@@ -44,7 +44,7 @@ def test_diff_element_empty():
 
 def test_diff_element_summary_with_no_diffs():
     element = DiffElement("interface", "eth0", {"device_name": "device1", "name": "eth0"})
-    assert element.summary() == {"create": 0, "update": 0, "delete": 0}
+    assert element.summary() == {"create": 0, "update": 0, "delete": 0, "no-change": 1}
 
 
 def test_diff_element_str_with_no_diffs():
@@ -84,9 +84,9 @@ def test_diff_element_attrs():
 def test_diff_element_summary_with_diffs():
     element = DiffElement("interface", "eth0", {"device_name": "device1", "name": "eth0"})
     element.add_attrs(source={"interface_type": "ethernet", "description": "my interface"})
-    assert element.summary() == {"create": 1, "update": 0, "delete": 0}
+    assert element.summary() == {"create": 1, "update": 0, "delete": 0, "no-change": 0}
     element.add_attrs(dest={"description": "your interface"})
-    assert element.summary() == {"create": 0, "update": 1, "delete": 0}
+    assert element.summary() == {"create": 0, "update": 1, "delete": 0, "no-change": 0}
 
 
 def test_diff_element_str_with_diffs():
@@ -140,7 +140,11 @@ def test_diff_element_children():
 
 
 def test_diff_element_summary_with_child_diffs(diff_element_with_children):
-    assert diff_element_with_children.summary() == {"create": 1, "update": 2, "delete": 1}
+    # create interface "lo0"
+    # delete interface "lo1"
+    # update device "device1" and interface "eth0"
+    # no change to interface "lo100"
+    assert diff_element_with_children.summary() == {"create": 1, "update": 2, "delete": 1, "no-change": 1}
 
 
 def test_diff_element_str_with_child_diffs(diff_element_with_children):

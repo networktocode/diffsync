@@ -34,7 +34,7 @@ def test_diff_empty():
 def test_diff_summary_with_no_diffs():
     diff = Diff()
 
-    assert diff.summary() == {"create": 0, "update": 0, "delete": 0}
+    assert diff.summary() == {"create": 0, "update": 0, "delete": 0, "no-change": 0}
 
 
 def test_diff_str_with_no_diffs():
@@ -81,7 +81,11 @@ def test_diff_children():
 
 
 def test_diff_summary_with_diffs(diff_with_children):
-    assert diff_with_children.summary() == {"create": 1, "update": 1, "delete": 1}
+    # Create person "Jimbo"
+    # Delete person "Sully"
+    # Update interface "device1_eth0"
+    # No change to address "RTP" and device "device1"
+    assert diff_with_children.summary() == {"create": 1, "update": 1, "delete": 1, "no-change": 2}
 
 
 def test_diff_str_with_diffs(diff_with_children):

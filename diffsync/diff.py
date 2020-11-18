@@ -101,6 +101,7 @@ class Diff:
             "create": 0,
             "update": 0,
             "delete": 0,
+            "no-change": 0,
         }
         for child in self.get_children():
             child_summary = child.summary()
@@ -316,9 +317,12 @@ class DiffElement:  # pylint: disable=too-many-instance-attributes
             "create": 0,
             "update": 0,
             "delete": 0,
+            "no-change": 0,
         }
         if self.action:
             summary[self.action] += 1
+        else:
+            summary["no-change"] += 1
         child_summary = self.child_diff.summary()
         for key in summary:
             summary[key] += child_summary[key]
