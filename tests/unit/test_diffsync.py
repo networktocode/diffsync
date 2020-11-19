@@ -56,9 +56,11 @@ def test_diffsync_sync_self_with_no_data_is_noop(generic_diffsync):
     assert not generic_diffsync.sync_complete.called
 
 
-def test_diffsync_get_with_no_data_is_none(generic_diffsync):
-    assert generic_diffsync.get("anything", "myname") is None
-    assert generic_diffsync.get(DiffSyncModel, "") is None
+def test_diffsync_get_with_no_data_fails(generic_diffsync):
+    with pytest.raises(ObjectNotFound):
+        generic_diffsync.get("anything", "myname")
+    with pytest.raises(ObjectNotFound):
+        generic_diffsync.get(DiffSyncModel, "")
 
 
 def test_diffsync_get_all_with_no_data_is_empty_list(generic_diffsync):
@@ -66,9 +68,13 @@ def test_diffsync_get_all_with_no_data_is_empty_list(generic_diffsync):
     assert list(generic_diffsync.get_all(DiffSyncModel)) == []
 
 
-def test_diffsync_get_by_uids_with_no_data_is_empty_list(generic_diffsync):
-    assert generic_diffsync.get_by_uids(["any", "another"], "anything") == []
-    assert generic_diffsync.get_by_uids(["any", "another"], DiffSyncModel) == []
+def test_diffsync_get_by_uids_with_no_data(generic_diffsync):
+    assert generic_diffsync.get_by_uids([], "anything") == []
+    assert generic_diffsync.get_by_uids([], DiffSyncModel) == []
+    with pytest.raises(ObjectNotFound):
+        generic_diffsync.get_by_uids(["any", "another"], "anything")
+    with pytest.raises(ObjectNotFound):
+        generic_diffsync.get_by_uids(["any", "another"], DiffSyncModel)
 
 
 def test_diffsync_add(generic_diffsync, generic_diffsync_model):
@@ -83,12 +89,15 @@ def test_diffsync_get_with_generic_model(generic_diffsync, generic_diffsync_mode
     # The generic_diffsync_model has an empty identifier/unique-id
     assert generic_diffsync.get(DiffSyncModel, "") == generic_diffsync_model
     assert generic_diffsync.get(DiffSyncModel.get_type(), "") == generic_diffsync_model
-    # DiffSync doesn't know how to construct a uid str for a "diffsyncmodel"
-    assert generic_diffsync.get(DiffSyncModel.get_type(), {}) is None
+    # DiffSync doesn't know how to construct a uid str for a "diffsyncmodel" (it needs the class or instance, not a str)
+    with pytest.raises(ValueError):
+        generic_diffsync.get(DiffSyncModel.get_type(), {})
     # Wrong object-type - no match
-    assert generic_diffsync.get("", "") is None
+    with pytest.raises(ObjectNotFound):
+        generic_diffsync.get("", "")
     # Wrong unique-id - no match
-    assert generic_diffsync.get(DiffSyncModel, "myname") is None
+    with pytest.raises(ObjectNotFound):
+        generic_diffsync.get(DiffSyncModel, "myname")
 
 
 def test_diffsync_get_all_with_generic_model(generic_diffsync, generic_diffsync_model):
@@ -104,9 +113,11 @@ def test_diffsync_get_by_uids_with_generic_model(generic_diffsync, generic_diffs
     assert generic_diffsync.get_by_uids([""], DiffSyncModel) == [generic_diffsync_model]
     assert generic_diffsync.get_by_uids([""], DiffSyncModel.get_type()) == [generic_diffsync_model]
     # Wrong unique-id - no match
-    assert generic_diffsync.get_by_uids(["myname"], DiffSyncModel) == []
-    # Valid unique-id mixed in with unknown ones - return the successful matches?
-    assert generic_diffsync.get_by_uids(["aname", "", "anothername"], DiffSyncModel) == [generic_diffsync_model]
+    with pytest.raises(ObjectNotFound):
+        generic_diffsync.get_by_uids(["myname"], DiffSyncModel)
+    # Valid unique-id mixed in with unknown ones
+    with pytest.raises(ObjectNotFound):
+        generic_diffsync.get_by_uids(["aname", "", "anothername"], DiffSyncModel)
 
 
 def test_diffsync_remove_with_generic_model(generic_diffsync, generic_diffsync_model):
@@ -115,24 +126,54 @@ def test_diffsync_remove_with_generic_model(generic_diffsync, generic_diffsync_m
     with pytest.raises(ObjectNotFound):
         generic_diffsync.remove(generic_diffsync_model)
 
-    assert generic_diffsync.get(DiffSyncModel, "") is None
+    with pytest.raises(ObjectNotFound):
+        generic_diffsync.get(DiffSyncModel, "")
     assert list(generic_diffsync.get_all(DiffSyncModel)) == []
-    assert generic_diffsync.get_by_uids([""], DiffSyncModel) == []
+    with pytest.raises(ObjectNotFound):
+        generic_diffsync.get_by_uids([""], DiffSyncModel)
 
 
-def test_diffsync_subclass_validation():
-    """Test the declaration-time checks on a DiffSync subclass."""
+def test_diffsync_subclass_validation_name_mismatch():
     # pylint: disable=unused-variable
     with pytest.raises(AttributeError) as excinfo:
 
         class BadElementName(DiffSync):
-            """Model with a DiffSyncModel attribute whose name does not match the modelname."""
+            """DiffSync with a DiffSyncModel attribute whose name does not match the modelname."""
 
             dev_class = Device  # should be device = Device
 
     assert "Device" in str(excinfo.value)
     assert "device" in str(excinfo.value)
     assert "dev_class" in str(excinfo.value)
+
+
+def test_diffsync_subclass_validation_missing_top_level():
+    # pylint: disable=unused-variable
+    with pytest.raises(AttributeError) as excinfo:
+
+        class MissingTopLevel(DiffSync):
+            """DiffSync whose top_level references an attribute that does not exist on the class."""
+
+            top_level = ["missing"]
+
+    assert "top_level" in str(excinfo.value)
+    assert "missing" in str(excinfo.value)
+    assert "is not a class attribute" in str(excinfo.value)
+
+
+def test_diffsync_subclass_validation_top_level_not_diffsyncmodel():
+    # pylint: disable=unused-variable
+    with pytest.raises(AttributeError) as excinfo:
+
+        class TopLevelNotDiffSyncModel(DiffSync):
+            """DiffSync whose top_level references an attribute that is not a DiffSyncModel subclass."""
+
+            age = 0
+            top_level = ["age"]
+
+    assert "top_level" in str(excinfo.value)
+    assert "age" in str(excinfo.value)
+    assert "is not a DiffSyncModel" in str(excinfo.value)
 
 
 def test_diffsync_dict_with_data(backend_a):
@@ -238,7 +279,9 @@ site
           interface: rdu-spine2__eth0: {'interface_type': 'ethernet', 'description': 'Interface 0'}
           interface: rdu-spine2__eth1: {'interface_type': 'ethernet', 'description': 'Interface 1'}
     people
-      person: Glenn Matthews: {}"""
+      person: Glenn Matthews: {}
+unused: []\
+"""
     )
 
 
@@ -308,8 +351,10 @@ def test_diffsync_sync_from(backend_a, backend_b):
     site_atl_a = backend_a.get("site", "atl")
     assert isinstance(site_atl_a, Site)
     assert site_atl_a.name == "atl"
-    assert backend_a.get(Site, "rdu") is None
-    assert backend_a.get("nothing", "") is None
+    with pytest.raises(ObjectNotFound):
+        backend_a.get(Site, "rdu")
+    with pytest.raises(ObjectNotFound):
+        backend_a.get("nothing", "")
 
     assert list(backend_a.get_all(Site)) == [site_nyc_a, site_sfo_a, site_atl_a]
     assert list(backend_a.get_all("site")) == [site_nyc_a, site_sfo_a, site_atl_a]
@@ -317,8 +362,10 @@ def test_diffsync_sync_from(backend_a, backend_b):
 
     assert backend_a.get_by_uids(["nyc", "sfo"], Site) == [site_nyc_a, site_sfo_a]
     assert backend_a.get_by_uids(["sfo", "nyc"], "site") == [site_sfo_a, site_nyc_a]
-    assert backend_a.get_by_uids(["nyc", "sfo"], Device) == []
-    assert backend_a.get_by_uids(["nyc", "sfo"], "device") == []
+    with pytest.raises(ObjectNotFound):
+        backend_a.get_by_uids(["nyc", "sfo"], Device)
+    with pytest.raises(ObjectNotFound):
+        backend_a.get_by_uids(["nyc", "sfo"], "device")
 
 
 def test_diffsync_subclass_default_name_type(backend_a):
@@ -352,6 +399,18 @@ def test_diffsync_add_get_remove_with_subclass_and_data(backend_a):
     backend_a.remove(site_atl_a)
     with pytest.raises(ObjectNotFound):
         backend_a.remove(site_atl_a)
+
+
+def test_diffsync_remove_missing_child(log, backend_a):
+    rdu_spine1 = backend_a.get(Device, "rdu-spine1")
+    rdu_spine1_eth0 = backend_a.get(Interface, "rdu-spine1__eth0")
+    # Usage error - remove rdu_spine1_eth0 from backend_a, but rdu_spine1 still has a reference to it
+    backend_a.remove(rdu_spine1_eth0)
+    # Should log an error but continue removing other child objects
+    backend_a.remove(rdu_spine1, remove_children=True)
+    assert log.has("Unable to remove child rdu-spine1__eth0 of device rdu-spine1 - not found!", diffsync=backend_a)
+    with pytest.raises(ObjectNotFound):
+        backend_a.get(Interface, "rdu-spine1__eth1")
 
 
 def test_diffsync_sync_from_exceptions_are_not_caught_by_default(error_prone_backend_a, backend_b):
@@ -430,8 +489,10 @@ def test_diffsync_diff_with_skip_unmatched_both_flag(
 def test_diffsync_sync_with_skip_unmatched_src_flag(backend_a, backend_a_with_extra_models):
     backend_a.sync_from(backend_a_with_extra_models, flags=DiffSyncFlags.SKIP_UNMATCHED_SRC)
     # New objects should not have been created
-    assert backend_a.get(backend_a.site, "lax") is None
-    assert backend_a.get(backend_a.device, "nyc-spine3") is None
+    with pytest.raises(ObjectNotFound):
+        backend_a.get(backend_a.site, "lax")
+    with pytest.raises(ObjectNotFound):
+        backend_a.get(backend_a.device, "nyc-spine3")
     assert "nyc-spine3" not in backend_a.get(backend_a.site, "nyc").devices
 
 
@@ -491,7 +552,8 @@ def test_diffsync_sync_skip_children_on_delete(backend_a):
     # NoDeleteInterface.delete() should not be called since we're deleting its parent only
     extra_models.sync_from(backend_a)
     # The extra interface should have been removed from the DiffSync without calling its delete() method
-    assert extra_models.get(extra_models.interface, extra_interface.get_unique_id()) is None
+    with pytest.raises(ObjectNotFound):
+        extra_models.get(extra_models.interface, extra_interface.get_unique_id())
     # The sync should be complete, regardless
     diff = extra_models.diff_from(backend_a)
     print(diff.str())  # for debugging of any failure

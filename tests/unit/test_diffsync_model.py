@@ -195,7 +195,7 @@ site: site1: {}
   devices
     device: device1: {'role': 'default'}
       interfaces
-        device1__eth0 (details unavailable)\
+        device1__eth0 (ERROR: details unavailable)\
 """
     )
 
