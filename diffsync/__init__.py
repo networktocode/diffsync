@@ -20,7 +20,7 @@ import enum
 from inspect import isclass
 from typing import ClassVar, Dict, Iterable, List, Mapping, MutableMapping, Optional, Text, Tuple, Type, Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, PrivateAttr
 import structlog  # type: ignore
 
 from .diff import Diff, DiffElement
@@ -84,6 +84,16 @@ class DiffSyncFlags(enum.Flag):
     """
 
 
+class DiffSyncModelStatusValues(enum.Enum):
+    """Flag values that can be set as a DiffSyncModel's `_status` when performing a sync."""
+
+    NONE = ""
+    SUCCESS = "success"
+    FAILURE = "failure"
+    ERROR = "error"
+    UNKNOWN = "unknown"
+
+
 class DiffSyncModel(BaseModel):
     """Base class for all DiffSync object models.
 
@@ -143,6 +153,12 @@ class DiffSyncModel(BaseModel):
 
     diffsync: Optional["DiffSync"] = None
     """Optional: the DiffSync instance that owns this model instance."""
+
+    _status: DiffSyncModelStatusValues = PrivateAttr(DiffSyncModelStatusValues.NONE)
+    """Status of the last attempt at creating/updating/deleting this model."""
+
+    _status_message: str = PrivateAttr("")
+    """Message, if any, associated with the create/update/delete status value."""
 
     class Config:  # pylint: disable=too-few-public-methods
         """Pydantic class configuration."""
@@ -221,9 +237,17 @@ class DiffSyncModel(BaseModel):
                         output += f"\n{margin}    {child_id} (ERROR: details unavailable)"
         return output
 
+    def set_status(self, status: DiffSyncModelStatusValues, message: Text = ""):
+        """Update the status (and optionally status message) of this model in response to a create/update/delete call."""
+        self._status = status
+        self._status_message = message
+
     @classmethod
     def create(cls, diffsync: "DiffSync", ids: Mapping, attrs: Mapping) -> Optional["DiffSyncModel"]:
         """Instantiate this class, along with any platform-specific data creation.
+
+        Subclasses must call `super().create()`; they may wish to then override the default status information
+        by calling `set_status()` to provide more context (such as details of any interactions with underlying systems).
 
         Args:
             diffsync: The master data store for other DiffSyncModel instances that we might need to reference
@@ -237,10 +261,15 @@ class DiffSyncModel(BaseModel):
         Raises:
             ObjectNotCreated: if an error occurred.
         """
-        return cls(**ids, diffsync=diffsync, **attrs)
+        model = cls(**ids, diffsync=diffsync, **attrs)
+        model.set_status(DiffSyncModelStatusValues.SUCCESS, "Created successfully")
+        return model
 
     def update(self, attrs: Mapping) -> Optional["DiffSyncModel"]:
         """Update the attributes of this instance, along with any platform-specific data updates.
+
+        Subclasses must call `super().update()`; they may wish to then override the default status information
+        by calling `set_status()` to provide more context (such as details of any interactions with underlying systems).
 
         Args:
             attrs: Dictionary of attributes to update on the object
@@ -255,10 +284,15 @@ class DiffSyncModel(BaseModel):
         for attr, value in attrs.items():
             # TODO: enforce that only attrs in self._attributes can be updated in this way?
             setattr(self, attr, value)
+
+        self.set_status(DiffSyncModelStatusValues.SUCCESS, "Updated successfully")
         return self
 
     def delete(self) -> Optional["DiffSyncModel"]:
         """Delete any platform-specific data corresponding to this instance.
+
+        Subclasses must call `super().delete()`; they may wish to then override the default status information
+        by calling `set_status()` to provide more context (such as details of any interactions with underlying systems).
 
         Returns:
             DiffSyncModel: this instance, if all data was successfully deleted.
@@ -267,6 +301,7 @@ class DiffSyncModel(BaseModel):
         Raises:
             ObjectNotDeleted: if an error occurred.
         """
+        self.set_status(DiffSyncModelStatusValues.SUCCESS, "Deleted successfully")
         return self
 
     @classmethod
@@ -335,6 +370,10 @@ class DiffSyncModel(BaseModel):
         if self._shortname:
             return "__".join([str(getattr(self, key)) for key in self._shortname])
         return self.get_unique_id()
+
+    def get_status(self) -> Tuple[DiffSyncModelStatusValues, Text]:
+        """Get the status of the last create/update/delete operation on this object, and any associated message."""
+        return (self._status, self._status_message)
 
     def add_child(self, child: "DiffSyncModel"):
         """Add a child reference to an object.
@@ -543,13 +582,12 @@ class DiffSync:
             logger: Parent logging context
             parent_model: Parent object to update (`add_child`/`remove_child`) if the sync creates/deletes an object.
         """
-        # pylint: disable=too-many-branches
-        # GFM: I made a few attempts at refactoring this to reduce the branching, but found that it was less readable.
-        # So let's live with the slightly too high number of branches (14/12) for now.
         log = logger or self._log
         object_class = getattr(self, element.type)
+        obj: Optional[DiffSyncModel]
         try:
-            obj: Optional[DiffSyncModel] = self.get(object_class, element.keys)
+            obj = self.get(object_class, element.keys)
+            obj.set_status(DiffSyncModelStatusValues.UNKNOWN)
         except ObjectNotFound:
             obj = None
         # Get the attributes that actually differ between source and dest
@@ -561,35 +599,12 @@ class DiffSync:
             diffs=diffs,
         )
 
-        try:
-            if element.action == "create":
-                log.debug("Attempting object creation")
-                if obj:
-                    raise ObjectNotCreated(f"Failed to create {object_class.get_type()} {element.keys} - it exists!")
-                obj = object_class.create(diffsync=self, ids=element.keys, attrs=diffs["+"])
-                log.info("Created successfully", status="success")
-            elif element.action == "update":
-                log.debug("Attempting object update")
-                if not obj:
-                    raise ObjectNotUpdated(f"Failed to update {object_class.get_type()} {element.keys} - not found!")
-                obj = obj.update(attrs=diffs["+"])
-                log.info("Updated successfully", status="success")
-            elif element.action == "delete":
-                log.debug("Attempting object deletion")
-                if not obj:
-                    raise ObjectNotDeleted(f"Failed to delete {object_class.get_type()} {element.keys} - not found!")
-                obj = obj.delete()
-                log.info("Deleted successfully", status="success")
-            else:
-                if flags & DiffSyncFlags.LOG_UNCHANGED_RECORDS:
-                    log.debug("No action needed", status="success")
-        except ObjectCrudException as exception:
-            log.error(str(exception), status="error")
-            if not flags & DiffSyncFlags.CONTINUE_ON_FAILURE:
-                raise
-        else:
-            if obj is None:
-                log.warning("Non-fatal failure encountered", status="failure")
+        result = self._perform_sync_action(element, log, obj, diffs.get("+", {}), flags)
+
+        if element.action is not None:
+            self._log_sync_action(element, log, obj, result)
+
+        obj = result
 
         if obj is None:
             log.warning("Not syncing children")
@@ -610,6 +625,73 @@ class DiffSync:
 
         for child in element.get_children():
             self._sync_from_diff_element(child, flags=flags, parent_model=obj, logger=logger)
+
+    def _perform_sync_action(  # pylint: disable=too-many-arguments
+        self,
+        element: DiffElement,
+        logger: structlog.BoundLogger,
+        obj: Optional[DiffSyncModel],
+        attrs: Mapping,
+        flags: DiffSyncFlags,
+    ) -> Optional[DiffSyncModel]:
+        """Helper to _sync_from_diff_element to handle performing the actual model object create/update/delete."""
+        object_class = getattr(self, element.type)
+        try:
+            if element.action == "create":
+                logger.debug("Attempting object creation")
+                if obj:
+                    raise ObjectNotCreated(f"Failed to create {object_class.get_type()} {element.keys} - it exists!")
+                return object_class.create(diffsync=self, ids=element.keys, attrs=attrs)
+            if element.action == "update":
+                logger.debug("Attempting object update")
+                if not obj:
+                    raise ObjectNotUpdated(f"Failed to update {object_class.get_type()} {element.keys} - not found!")
+                return obj.update(attrs=attrs)
+            if element.action == "delete":
+                logger.debug("Attempting object deletion")
+                if not obj:
+                    raise ObjectNotDeleted(f"Failed to delete {object_class.get_type()} {element.keys} - not found!")
+                return obj.delete()
+            if obj:
+                obj.set_status(DiffSyncModelStatusValues.SUCCESS, "No action needed")
+            if flags & DiffSyncFlags.LOG_UNCHANGED_RECORDS:
+                self._log_sync_action(element, logger, obj, obj)
+            return obj
+        except ObjectCrudException as exception:
+            # Something went wrong catastrophically
+            if flags & DiffSyncFlags.CONTINUE_ON_FAILURE:
+                if obj:
+                    obj.set_status(DiffSyncModelStatusValues.ERROR, str(exception))
+                return obj
+            raise
+
+    @staticmethod
+    def _log_sync_action(
+        element: DiffElement,
+        logger: structlog.BoundLogger,
+        obj: Optional[DiffSyncModel],
+        result: Optional[DiffSyncModel],
+    ):
+        """Helper to _sync_from_diff_element to handle logging the result of a specific model create/update/delete."""
+        if result is not None:
+            status, message = result.get_status()
+        else:
+            # Something went wrong and was handled gracefully, but a failure nonetheless
+            status, message = (DiffSyncModelStatusValues.FAILURE, "Non-fatal failure encountered")
+            if obj:
+                # Did the model itself provide more detailed status?
+                candidate_status, candidate_message = obj.get_status()
+                if candidate_status in (DiffSyncModelStatusValues.FAILURE, DiffSyncModelStatusValues.ERROR):
+                    status, message = candidate_status, candidate_message
+
+        if element.action is None:
+            logger.debug(message, status=status.value)
+        elif status == DiffSyncModelStatusValues.SUCCESS:
+            logger.info(message, status=status.value)
+        elif status == DiffSyncModelStatusValues.FAILURE:
+            logger.warning(message, status=status.value)
+        else:
+            logger.error(message, status=status.value)
 
     # ------------------------------------------------------------------------------
     # Diff calculation and construction

@@ -16,7 +16,7 @@ include = [
 
 [tool.poetry.dependencies]
 python = "^3.7"
-pydantic = "^1.6.1"
+pydantic = "^1.7.2"
 structlog = "^20.1.0"
 colorama = {version = "^0.4.3", optional = true}
 
