@@ -428,6 +428,13 @@ class DiffSync:
                     f'Incorrect field name - {value.__name__} has type name "{value.get_type()}", not "{name}"'
                 )
 
+        for name in cls.top_level:
+            if not hasattr(cls, name):
+                raise AttributeError(f'top_level references attribute "{name}" but it is not a class attribute!')
+            value = getattr(cls, name)
+            if not isclass(value) or not issubclass(value, DiffSyncModel):
+                raise AttributeError(f'top_level references attribute "{name}" but it is not a DiffSyncModel subclass!')
+
     def __str__(self):
         """String representation of a DiffSync."""
         if self.type != self.name:
@@ -455,6 +462,8 @@ class DiffSync:
         margin = " " * indent
         output = ""
         for modelname in self.top_level:
+            if output:
+                output += "\n"
             output += f"{margin}{modelname}"
             models = self.get_all(modelname)
             if not models:

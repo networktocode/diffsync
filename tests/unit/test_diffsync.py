@@ -132,19 +132,45 @@ def test_diffsync_remove_with_generic_model(generic_diffsync, generic_diffsync_m
         generic_diffsync.get_by_uids([""], DiffSyncModel)
 
 
-def test_diffsync_subclass_validation():
-    """Test the declaration-time checks on a DiffSync subclass."""
+def test_diffsync_subclass_validation_name_mismatch():
     # pylint: disable=unused-variable
     with pytest.raises(AttributeError) as excinfo:
 
         class BadElementName(DiffSync):
-            """Model with a DiffSyncModel attribute whose name does not match the modelname."""
+            """DiffSync with a DiffSyncModel attribute whose name does not match the modelname."""
 
             dev_class = Device  # should be device = Device
 
     assert "Device" in str(excinfo.value)
     assert "device" in str(excinfo.value)
     assert "dev_class" in str(excinfo.value)
+
+
+def test_diffsync_subclass_validation_missing_top_level():
+    with pytest.raises(AttributeError) as excinfo:
+
+        class MissingTopLevel(DiffSync):
+            """DiffSync whose top_level references an attribute that does not exist on the class."""
+
+            top_level = ["missing"]
+
+    assert "top_level" in str(excinfo.value)
+    assert "missing" in str(excinfo.value)
+    assert "is not a class attribute" in str(excinfo.value)
+
+
+def test_diffsync_subclass_validation_top_level_not_diffsyncmodel():
+    with pytest.raises(AttributeError) as excinfo:
+
+        class TopLevelNotDiffSyncModel(DiffSync):
+            """DiffSync whose top_level references an attribute that is not a DiffSyncModel subclass."""
+
+            age = 0
+            top_level = ["age"]
+
+    assert "top_level" in str(excinfo.value)
+    assert "age" in str(excinfo.value)
+    assert "is not a DiffSyncModel" in str(excinfo.value)
 
 
 def test_diffsync_dict_with_data(backend_a):
@@ -250,7 +276,9 @@ site
           interface: rdu-spine2__eth0: {'interface_type': 'ethernet', 'description': 'Interface 0'}
           interface: rdu-spine2__eth1: {'interface_type': 'ethernet', 'description': 'Interface 1'}
     people
-      person: Glenn Matthews: {}"""
+      person: Glenn Matthews: {}
+unused: []\
+"""
     )
 
 

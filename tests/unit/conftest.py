@@ -140,14 +140,24 @@ def generic_diffsync():
     return DiffSync()
 
 
+class UnusedModel(DiffSyncModel):
+    """Concrete DiffSyncModel subclass that can be referenced as a class attribute but never has any data."""
+
+    _modelname = "unused"
+    _identifiers = ("name",)
+
+    name: str
+
+
 class GenericBackend(DiffSync):
     """An example semi-abstract subclass of DiffSync."""
 
     site = Site  # to be overridden by subclasses
     device = Device
     interface = Interface
+    unused = UnusedModel
 
-    top_level = ["site"]
+    top_level = ["site", "unused"]
 
     DATA: dict = {}
 
