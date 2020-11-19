@@ -549,7 +549,7 @@ class DiffSync:
         log = logger or self._log
         object_class = getattr(self, element.type)
         try:
-            obj = self.get(object_class, element.keys)
+            obj: Optional[DiffSyncModel] = self.get(object_class, element.keys)
         except ObjectNotFound:
             obj = None
         # Get the attributes that actually differ between source and dest
@@ -654,6 +654,7 @@ class DiffSync:
             identifier: Unique ID of the object to retrieve, or dict of unique identifier keys/values
 
         Raises:
+            ValueError: if obj is a str and identifier is a dict (can't convert dict into a uid str without a model class)
             ObjectNotFound: if the requested object is not present
         """
         if isinstance(obj, str):
@@ -671,11 +672,10 @@ class DiffSync:
         elif object_class:
             uid = object_class.create_unique_id(**identifier)
         else:
-            self._log.warning(
-                f"Tried to look up a {modelname} by identifier {identifier}, "
-                "but don't know how to convert that to a uid string",
+            raise ValueError(
+                f"Invalid args: ({obj}, {identifier}): "
+                f"either {obj} should be a class/instance or {identifier} should be a str"
             )
-            return None
 
         if uid not in self._data[modelname]:
             raise ObjectNotFound(f"{modelname} {uid} not present in {self.name}")

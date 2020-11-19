@@ -89,8 +89,9 @@ def test_diffsync_get_with_generic_model(generic_diffsync, generic_diffsync_mode
     # The generic_diffsync_model has an empty identifier/unique-id
     assert generic_diffsync.get(DiffSyncModel, "") == generic_diffsync_model
     assert generic_diffsync.get(DiffSyncModel.get_type(), "") == generic_diffsync_model
-    # DiffSync doesn't know how to construct a uid str for a "diffsyncmodel"
-    assert generic_diffsync.get(DiffSyncModel.get_type(), {}) is None
+    # DiffSync doesn't know how to construct a uid str for a "diffsyncmodel" (it needs the class or instance, not a str)
+    with pytest.raises(ValueError):
+        generic_diffsync.get(DiffSyncModel.get_type(), {})
     # Wrong object-type - no match
     with pytest.raises(ObjectNotFound):
         generic_diffsync.get("", "")
@@ -147,6 +148,7 @@ def test_diffsync_subclass_validation_name_mismatch():
 
 
 def test_diffsync_subclass_validation_missing_top_level():
+    # pylint: disable=unused-variable
     with pytest.raises(AttributeError) as excinfo:
 
         class MissingTopLevel(DiffSync):
@@ -160,6 +162,7 @@ def test_diffsync_subclass_validation_missing_top_level():
 
 
 def test_diffsync_subclass_validation_top_level_not_diffsyncmodel():
+    # pylint: disable=unused-variable
     with pytest.raises(AttributeError) as excinfo:
 
         class TopLevelNotDiffSyncModel(DiffSync):
