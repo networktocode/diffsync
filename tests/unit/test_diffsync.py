@@ -56,9 +56,11 @@ def test_diffsync_sync_self_with_no_data_is_noop(generic_diffsync):
     assert not generic_diffsync.sync_complete.called
 
 
-def test_diffsync_get_with_no_data_is_none(generic_diffsync):
-    assert generic_diffsync.get("anything", "myname") is None
-    assert generic_diffsync.get(DiffSyncModel, "") is None
+def test_diffsync_get_with_no_data_fails(generic_diffsync):
+    with pytest.raises(ObjectNotFound):
+        generic_diffsync.get("anything", "myname")
+    with pytest.raises(ObjectNotFound):
+        generic_diffsync.get(DiffSyncModel, "")
 
 
 def test_diffsync_get_all_with_no_data_is_empty_list(generic_diffsync):
@@ -90,9 +92,11 @@ def test_diffsync_get_with_generic_model(generic_diffsync, generic_diffsync_mode
     # DiffSync doesn't know how to construct a uid str for a "diffsyncmodel"
     assert generic_diffsync.get(DiffSyncModel.get_type(), {}) is None
     # Wrong object-type - no match
-    assert generic_diffsync.get("", "") is None
+    with pytest.raises(ObjectNotFound):
+        generic_diffsync.get("", "")
     # Wrong unique-id - no match
-    assert generic_diffsync.get(DiffSyncModel, "myname") is None
+    with pytest.raises(ObjectNotFound):
+        generic_diffsync.get(DiffSyncModel, "myname")
 
 
 def test_diffsync_get_all_with_generic_model(generic_diffsync, generic_diffsync_model):
@@ -121,7 +125,8 @@ def test_diffsync_remove_with_generic_model(generic_diffsync, generic_diffsync_m
     with pytest.raises(ObjectNotFound):
         generic_diffsync.remove(generic_diffsync_model)
 
-    assert generic_diffsync.get(DiffSyncModel, "") is None
+    with pytest.raises(ObjectNotFound):
+        generic_diffsync.get(DiffSyncModel, "")
     assert list(generic_diffsync.get_all(DiffSyncModel)) == []
     with pytest.raises(ObjectNotFound):
         generic_diffsync.get_by_uids([""], DiffSyncModel)
@@ -315,8 +320,10 @@ def test_diffsync_sync_from(backend_a, backend_b):
     site_atl_a = backend_a.get("site", "atl")
     assert isinstance(site_atl_a, Site)
     assert site_atl_a.name == "atl"
-    assert backend_a.get(Site, "rdu") is None
-    assert backend_a.get("nothing", "") is None
+    with pytest.raises(ObjectNotFound):
+        backend_a.get(Site, "rdu")
+    with pytest.raises(ObjectNotFound):
+        backend_a.get("nothing", "")
 
     assert list(backend_a.get_all(Site)) == [site_nyc_a, site_sfo_a, site_atl_a]
     assert list(backend_a.get_all("site")) == [site_nyc_a, site_sfo_a, site_atl_a]
@@ -361,6 +368,18 @@ def test_diffsync_add_get_remove_with_subclass_and_data(backend_a):
     backend_a.remove(site_atl_a)
     with pytest.raises(ObjectNotFound):
         backend_a.remove(site_atl_a)
+
+
+def test_diffsync_remove_missing_child(log, backend_a):
+    rdu_spine1 = backend_a.get(Device, "rdu-spine1")
+    rdu_spine1_eth0 = backend_a.get(Interface, "rdu-spine1__eth0")
+    # Usage error - remove rdu_spine1_eth0 from backend_a, but rdu_spine1 still has a reference to it
+    backend_a.remove(rdu_spine1_eth0)
+    # Should log an error but continue removing other child objects
+    backend_a.remove(rdu_spine1, remove_children=True)
+    assert log.has("Unable to remove child rdu-spine1__eth0 of device rdu-spine1 - not found!", diffsync=backend_a)
+    with pytest.raises(ObjectNotFound):
+        backend_a.get(Interface, "rdu-spine1__eth1")
 
 
 def test_diffsync_sync_from_exceptions_are_not_caught_by_default(error_prone_backend_a, backend_b):
@@ -439,8 +458,10 @@ def test_diffsync_diff_with_skip_unmatched_both_flag(
 def test_diffsync_sync_with_skip_unmatched_src_flag(backend_a, backend_a_with_extra_models):
     backend_a.sync_from(backend_a_with_extra_models, flags=DiffSyncFlags.SKIP_UNMATCHED_SRC)
     # New objects should not have been created
-    assert backend_a.get(backend_a.site, "lax") is None
-    assert backend_a.get(backend_a.device, "nyc-spine3") is None
+    with pytest.raises(ObjectNotFound):
+        backend_a.get(backend_a.site, "lax")
+    with pytest.raises(ObjectNotFound):
+        backend_a.get(backend_a.device, "nyc-spine3")
     assert "nyc-spine3" not in backend_a.get(backend_a.site, "nyc").devices
 
 
@@ -500,7 +521,8 @@ def test_diffsync_sync_skip_children_on_delete(backend_a):
     # NoDeleteInterface.delete() should not be called since we're deleting its parent only
     extra_models.sync_from(backend_a)
     # The extra interface should have been removed from the DiffSync without calling its delete() method
-    assert extra_models.get(extra_models.interface, extra_interface.get_unique_id()) is None
+    with pytest.raises(ObjectNotFound):
+        extra_models.get(extra_models.interface, extra_interface.get_unique_id())
     # The sync should be complete, regardless
     diff = extra_models.diff_from(backend_a)
     print(diff.str())  # for debugging of any failure

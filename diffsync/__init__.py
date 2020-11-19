@@ -214,11 +214,11 @@ class DiffSyncModel(BaseModel):
                 output += f": {child_ids}"
             else:
                 for child_id in child_ids:
-                    child = self.diffsync.get(modelname, child_id)
-                    if not child:
-                        output += f"\n{margin}    {child_id} (details unavailable)"
-                    else:
+                    try:
+                        child = self.diffsync.get(modelname, child_id)
                         output += "\n" + child.str(include_children=include_children, indent=indent + 4)
+                    except ObjectNotFound:
+                        output += f"\n{margin}    {child_id} (ERROR: details unavailable)"
         return output
 
     @classmethod
@@ -539,7 +539,10 @@ class DiffSync:
         # So let's live with the slightly too high number of branches (14/12) for now.
         log = logger or self._log
         object_class = getattr(self, element.type)
-        obj = self.get(object_class, element.keys)
+        try:
+            obj = self.get(object_class, element.keys)
+        except ObjectNotFound:
+            obj = None
         # Get the attributes that actually differ between source and dest
         diffs = element.get_attrs_diffs()
         log = log.bind(
@@ -634,12 +637,15 @@ class DiffSync:
 
     def get(
         self, obj: Union[Text, DiffSyncModel, Type[DiffSyncModel]], identifier: Union[Text, Mapping]
-    ) -> Optional[DiffSyncModel]:
+    ) -> DiffSyncModel:
         """Get one object from the data store based on its unique id.
 
         Args:
             obj: DiffSyncModel class or instance, or modelname string, that defines the type of the object to retrieve
             identifier: Unique ID of the object to retrieve, or dict of unique identifier keys/values
+
+        Raises:
+            ObjectNotFound: if the requested object is not present
         """
         if isinstance(obj, str):
             modelname = obj
@@ -662,7 +668,9 @@ class DiffSync:
             )
             return None
 
-        return self._data[modelname].get(uid)
+        if uid not in self._data[modelname]:
+            raise ObjectNotFound(f"{modelname} {uid} not present in {self.name}")
+        return self._data[modelname][uid]
 
     def get_all(self, obj: Union[Text, DiffSyncModel, Type[DiffSyncModel]]):
         """Get all objects of a given type.
@@ -700,7 +708,7 @@ class DiffSync:
         results = []
         for uid in uids:
             if uid not in self._data[modelname]:
-                raise ObjectNotFound(f"{modelname} {uid} not present")
+                raise ObjectNotFound(f"{modelname} {uid} not present in {self.name}")
             results.append(self._data[modelname][uid])
         return results
 
@@ -738,7 +746,7 @@ class DiffSync:
         uid = obj.get_unique_id()
 
         if uid not in self._data[modelname]:
-            raise ObjectNotFound(f"{modelname} {uid} not present")
+            raise ObjectNotFound(f"{modelname} {uid} not present in {self.name}")
 
         if obj.diffsync is self:
             obj.diffsync = None
@@ -748,9 +756,12 @@ class DiffSync:
         if remove_children:
             for child_type, child_fieldname in obj.get_children_mapping().items():
                 for child_id in getattr(obj, child_fieldname):
-                    child_obj = self.get(child_type, child_id)
-                    if child_obj:
+                    try:
+                        child_obj = self.get(child_type, child_id)
                         self.remove(child_obj, remove_children=remove_children)
+                    except ObjectNotFound:
+                        # Since this is "cleanup" code, log an error and continue, instead of letting the exception raise
+                        self._log.error(f"Unable to remove child {child_id} of {modelname} {uid} - not found!")
 
 
 # DiffSyncModel references DiffSync and DiffSync references DiffSyncModel. Break the typing loop:
