@@ -38,24 +38,30 @@ class ErrorProneModelMixin:
     def create(cls, diffsync: DiffSync, ids: Mapping, attrs: Mapping):
         """As DiffSyncModel.create(), but periodically throw exceptions."""
         cls._counter += 1
-        if not cls._counter % 3:
+        if not cls._counter % 5:
             raise ObjectNotCreated("Random creation error!")
+        if not cls._counter % 4:
+            return None  # non-fatal error
         return super().create(diffsync, ids, attrs)  # type: ignore
 
     def update(self, attrs: Mapping):
         """As DiffSyncModel.update(), but periodically throw exceptions."""
         # pylint: disable=protected-access
         self.__class__._counter += 1
-        if not self.__class__._counter % 3:
+        if not self.__class__._counter % 5:
             raise ObjectNotUpdated("Random update error!")
+        if not self.__class__._counter % 4:
+            return None  # non-fatal error
         return super().update(attrs)  # type: ignore
 
     def delete(self):
         """As DiffSyncModel.delete(), but periodically throw exceptions."""
         # pylint: disable=protected-access
         self.__class__._counter += 1
-        if not self.__class__._counter % 3:
+        if not self.__class__._counter % 5:
             raise ObjectNotDeleted("Random deletion error!")
+        if not self.__class__._counter % 4:
+            return None  # non-fatal error
         return super().delete()  # type: ignore
 
 

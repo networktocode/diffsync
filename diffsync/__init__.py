@@ -1,4 +1,4 @@
-"""DiffSync core classes and logic.
+"""DiffSync front-end classes and logic.
 
 Copyright (c) 2020 Network To Code, LLC <info@networktocode.com>
 
@@ -15,83 +15,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from collections import defaultdict
-from collections.abc import Iterable as ABCIterable, Mapping as ABCMapping
-import enum
 from inspect import isclass
-from typing import ClassVar, Dict, Iterable, List, Mapping, MutableMapping, Optional, Text, Tuple, Type, Union
+from typing import ClassVar, Dict, List, Mapping, MutableMapping, Optional, Text, Tuple, Type, Union
 
 from pydantic import BaseModel, PrivateAttr
 import structlog  # type: ignore
 
-from .diff import Diff, DiffElement
-from .utils import intersection
-from .exceptions import (
-    ObjectNotCreated,
-    ObjectNotUpdated,
-    ObjectNotDeleted,
-    ObjectCrudException,
-    ObjectAlreadyExists,
-    ObjectStoreWrongType,
-    ObjectNotFound,
-)
-
-
-class DiffSyncModelFlags(enum.Flag):
-    """Flags that can be set on a DiffSyncModel class or instance to affect its usage."""
-
-    NONE = 0
-
-    IGNORE = 0b1
-    """Do not render diffs containing this model; do not make any changes to this model when synchronizing.
-
-    Can be used to indicate a model instance that exists but should not be changed by DiffSync.
-    """
-
-    SKIP_CHILDREN_ON_DELETE = 0b10
-    """When deleting this model, do not recursively delete its children.
-
-    Can be used for the case where deletion of a model results in the automatic deletion of all its children.
-    """
-
-
-class DiffSyncFlags(enum.Flag):
-    """Flags that can be passed to a sync_* or diff_* call to affect its behavior."""
-
-    NONE = 0
-
-    CONTINUE_ON_FAILURE = 0b1
-    """Continue synchronizing even if failures are encountered when syncing individual models."""
-
-    SKIP_UNMATCHED_SRC = 0b10
-    """Ignore objects that only exist in the source/"from" DiffSync when determining diffs and syncing.
-
-    If this flag is set, no new objects will be created in the target/"to" DiffSync.
-    """
-
-    SKIP_UNMATCHED_DST = 0b100
-    """Ignore objects that only exist in the target/"to" DiffSync when determining diffs and syncing.
-
-    If this flag is set, no objects will be deleted from the target/"to" DiffSync.
-    """
-
-    SKIP_UNMATCHED_BOTH = SKIP_UNMATCHED_SRC | SKIP_UNMATCHED_DST
-
-    LOG_UNCHANGED_RECORDS = 0b1000
-    """If this flag is set, a log message will be generated during synchronization for each model, even unchanged ones.
-
-    By default, when this flag is unset, only models that have actual changes to synchronize will be logged.
-    This flag is off by default to reduce the default verbosity of DiffSync, but can be enabled when debugging.
-    """
-
-
-class DiffSyncModelStatusValues(enum.Enum):
-    """Flag values that can be set as a DiffSyncModel's `_status` when performing a sync."""
-
-    NONE = ""
-    SUCCESS = "success"
-    FAILURE = "failure"
-    ERROR = "error"
-    UNKNOWN = "unknown"
+from .diff import Diff
+from .enum import DiffSyncModelFlags, DiffSyncFlags, DiffSyncStatus
+from .exceptions import ObjectAlreadyExists, ObjectStoreWrongType, ObjectNotFound
+from .workers import DiffSyncDiffer, DiffSyncSyncer
 
 
 class DiffSyncModel(BaseModel):
@@ -154,7 +87,7 @@ class DiffSyncModel(BaseModel):
     diffsync: Optional["DiffSync"] = None
     """Optional: the DiffSync instance that owns this model instance."""
 
-    _status: DiffSyncModelStatusValues = PrivateAttr(DiffSyncModelStatusValues.NONE)
+    _status: DiffSyncStatus = PrivateAttr(DiffSyncStatus.SUCCESS)
     """Status of the last attempt at creating/updating/deleting this model."""
 
     _status_message: str = PrivateAttr("")
@@ -237,7 +170,7 @@ class DiffSyncModel(BaseModel):
                         output += f"\n{margin}    {child_id} (ERROR: details unavailable)"
         return output
 
-    def set_status(self, status: DiffSyncModelStatusValues, message: Text = ""):
+    def set_status(self, status: DiffSyncStatus, message: Text = ""):
         """Update the status (and optionally status message) of this model in response to a create/update/delete call."""
         self._status = status
         self._status_message = message
@@ -262,7 +195,7 @@ class DiffSyncModel(BaseModel):
             ObjectNotCreated: if an error occurred.
         """
         model = cls(**ids, diffsync=diffsync, **attrs)
-        model.set_status(DiffSyncModelStatusValues.SUCCESS, "Created successfully")
+        model.set_status(DiffSyncStatus.SUCCESS, "Created successfully")
         return model
 
     def update(self, attrs: Mapping) -> Optional["DiffSyncModel"]:
@@ -285,7 +218,7 @@ class DiffSyncModel(BaseModel):
             # TODO: enforce that only attrs in self._attributes can be updated in this way?
             setattr(self, attr, value)
 
-        self.set_status(DiffSyncModelStatusValues.SUCCESS, "Updated successfully")
+        self.set_status(DiffSyncStatus.SUCCESS, "Updated successfully")
         return self
 
     def delete(self) -> Optional["DiffSyncModel"]:
@@ -301,7 +234,7 @@ class DiffSyncModel(BaseModel):
         Raises:
             ObjectNotDeleted: if an error occurred.
         """
-        self.set_status(DiffSyncModelStatusValues.SUCCESS, "Deleted successfully")
+        self.set_status(DiffSyncStatus.SUCCESS, "Deleted successfully")
         return self
 
     @classmethod
@@ -371,7 +304,7 @@ class DiffSyncModel(BaseModel):
             return "__".join([str(getattr(self, key)) for key in self._shortname])
         return self.get_unique_id()
 
-    def get_status(self) -> Tuple[DiffSyncModelStatusValues, Text]:
+    def get_status(self) -> Tuple[DiffSyncStatus, Text]:
         """Get the status of the last create/update/delete operation on this object, and any associated message."""
         return (self._status, self._status_message)
 
@@ -389,7 +322,8 @@ class DiffSyncModel(BaseModel):
 
         if child_type not in self._children:
             raise ObjectStoreWrongType(
-                f"Unable to store {child_type} as a child; valid types are {sorted(self._children.keys())}"
+                f"Unable to store {child_type} as a child of {self.get_type()}; "
+                f"valid types are {sorted(self._children.keys())}"
             )
 
         attr_name = self._children[child_type]
@@ -411,7 +345,8 @@ class DiffSyncModel(BaseModel):
 
         if child_type not in self._children:
             raise ObjectStoreWrongType(
-                f"Unable to store {child_type} as a child; valid types are {sorted(self._children.keys())}"
+                f"Unable to find and delete {child_type} as a child of {self.get_type()}; "
+                f"valid types are {sorted(self._children.keys())}"
             )
 
         attr_name = self._children[child_type]
@@ -524,17 +459,11 @@ class DiffSync:
             diff_class (class): Diff or subclass thereof to use to calculate the diffs to use for synchronization
             flags (DiffSyncFlags): Flags influencing the behavior of this sync.
         """
-        log = self._log.bind(src=source, dst=self, flags=flags).unbind("diffsync")
         diff = self.diff_from(source, diff_class=diff_class, flags=flags)
-
-        if diff.has_diffs():
-            log.info("Beginning sync")
-            for child in diff.get_children():
-                self._sync_from_diff_element(child, flags=flags, logger=log)
-            log.info("Sync complete")
-            self.sync_complete(source, diff, flags, logger=log)
-        else:
-            log.info("No changes to synchronize")
+        syncer = DiffSyncSyncer(diff=diff, src_diffsync=source, dst_diffsync=self, flags=flags)
+        result = syncer.perform_sync()
+        if result:
+            self.sync_complete(source, diff, flags, syncer.base_logger)
 
     def sync_to(self, target: "DiffSync", diff_class: Type[Diff] = Diff, flags: DiffSyncFlags = DiffSyncFlags.NONE):
         """Synchronize data from the current DiffSync object into the given target DiffSync object.
@@ -564,134 +493,6 @@ class DiffSync:
           flags: Any flags that influenced the sync.
           logger: Logging context for the sync.
         """
-
-    def _sync_from_diff_element(
-        self,
-        element: DiffElement,
-        flags: DiffSyncFlags = DiffSyncFlags.NONE,
-        logger: structlog.BoundLogger = None,
-        parent_model: DiffSyncModel = None,
-    ):
-        """Synchronize a given DiffElement (and its children, if any) into this DiffSync.
-
-        Helper method for `sync_from`/`sync_to`; this generally shouldn't be called on its own.
-
-        Args:
-            element: DiffElement to synchronize diffs from
-            flags (DiffSyncFlags): Flags influencing the behavior of this sync.
-            logger: Parent logging context
-            parent_model: Parent object to update (`add_child`/`remove_child`) if the sync creates/deletes an object.
-        """
-        log = logger or self._log
-        object_class = getattr(self, element.type)
-        obj: Optional[DiffSyncModel]
-        try:
-            obj = self.get(object_class, element.keys)
-            obj.set_status(DiffSyncModelStatusValues.UNKNOWN)
-        except ObjectNotFound:
-            obj = None
-        # Get the attributes that actually differ between source and dest
-        diffs = element.get_attrs_diffs()
-        log = log.bind(
-            action=element.action,
-            model=object_class.get_type(),
-            unique_id=object_class.create_unique_id(**element.keys),
-            diffs=diffs,
-        )
-
-        result = self._perform_sync_action(element, log, obj, diffs.get("+", {}), flags)
-
-        if element.action is not None:
-            self._log_sync_action(element, log, obj, result)
-
-        obj = result
-
-        if obj is None:
-            log.warning("Not syncing children")
-            return
-
-        if element.action == "create":
-            if parent_model:
-                parent_model.add_child(obj)
-            self.add(obj)
-        elif element.action == "delete":
-            if parent_model:
-                parent_model.remove_child(obj)
-            if obj.model_flags & DiffSyncModelFlags.SKIP_CHILDREN_ON_DELETE:
-                # We don't need to process the child objects, but we do need to discard them
-                self.remove(obj, remove_children=True)
-                return
-            self.remove(obj)
-
-        for child in element.get_children():
-            self._sync_from_diff_element(child, flags=flags, parent_model=obj, logger=logger)
-
-    def _perform_sync_action(  # pylint: disable=too-many-arguments
-        self,
-        element: DiffElement,
-        logger: structlog.BoundLogger,
-        obj: Optional[DiffSyncModel],
-        attrs: Mapping,
-        flags: DiffSyncFlags,
-    ) -> Optional[DiffSyncModel]:
-        """Helper to _sync_from_diff_element to handle performing the actual model object create/update/delete."""
-        object_class = getattr(self, element.type)
-        try:
-            if element.action == "create":
-                logger.debug("Attempting object creation")
-                if obj:
-                    raise ObjectNotCreated(f"Failed to create {object_class.get_type()} {element.keys} - it exists!")
-                return object_class.create(diffsync=self, ids=element.keys, attrs=attrs)
-            if element.action == "update":
-                logger.debug("Attempting object update")
-                if not obj:
-                    raise ObjectNotUpdated(f"Failed to update {object_class.get_type()} {element.keys} - not found!")
-                return obj.update(attrs=attrs)
-            if element.action == "delete":
-                logger.debug("Attempting object deletion")
-                if not obj:
-                    raise ObjectNotDeleted(f"Failed to delete {object_class.get_type()} {element.keys} - not found!")
-                return obj.delete()
-            if obj:
-                obj.set_status(DiffSyncModelStatusValues.SUCCESS, "No action needed")
-            if flags & DiffSyncFlags.LOG_UNCHANGED_RECORDS:
-                self._log_sync_action(element, logger, obj, obj)
-            return obj
-        except ObjectCrudException as exception:
-            # Something went wrong catastrophically
-            if flags & DiffSyncFlags.CONTINUE_ON_FAILURE:
-                if obj:
-                    obj.set_status(DiffSyncModelStatusValues.ERROR, str(exception))
-                return obj
-            raise
-
-    @staticmethod
-    def _log_sync_action(
-        element: DiffElement,
-        logger: structlog.BoundLogger,
-        obj: Optional[DiffSyncModel],
-        result: Optional[DiffSyncModel],
-    ):
-        """Helper to _sync_from_diff_element to handle logging the result of a specific model create/update/delete."""
-        if result is not None:
-            status, message = result.get_status()
-        else:
-            # Something went wrong and was handled gracefully, but a failure nonetheless
-            status, message = (DiffSyncModelStatusValues.FAILURE, "Non-fatal failure encountered")
-            if obj:
-                # Did the model itself provide more detailed status?
-                candidate_status, candidate_message = obj.get_status()
-                if candidate_status in (DiffSyncModelStatusValues.FAILURE, DiffSyncModelStatusValues.ERROR):
-                    status, message = candidate_status, candidate_message
-
-        if element.action is None:
-            logger.debug(message, status=status.value)
-        elif status == DiffSyncModelStatusValues.SUCCESS:
-            logger.info(message, status=status.value)
-        elif status == DiffSyncModelStatusValues.FAILURE:
-            logger.warning(message, status=status.value)
-        else:
-            logger.error(message, status=status.value)
 
     # ------------------------------------------------------------------------------
     # Diff calculation and construction
@@ -857,192 +658,3 @@ class DiffSync:
 
 # DiffSyncModel references DiffSync and DiffSync references DiffSyncModel. Break the typing loop:
 DiffSyncModel.update_forward_refs()
-
-
-class DiffSyncDiffer:
-    """Helper class implementing diff calculation logic for DiffSync.
-
-    Independent from Diff and DiffElement as those classes are purely data objects, while this stores some state.
-    """
-
-    def __init__(
-        self, src_diffsync: DiffSync, dst_diffsync: DiffSync, flags: DiffSyncFlags, diff_class: Type[Diff] = Diff
-    ):
-        """Create a DiffSyncDiffer for calculating diffs between the provided DiffSync instances."""
-        self.src_diffsync = src_diffsync
-        self.dst_diffsync = dst_diffsync
-        self.flags = flags
-
-        self.logger = structlog.get_logger().new(src=src_diffsync, dst=dst_diffsync, flags=flags)
-        self.diff_class = diff_class
-        self.diff: Optional[Diff] = None
-
-    def calculate_diffs(self) -> Diff:
-        """Calculate diffs between the src and dst DiffSync objects and return the resulting Diff."""
-        if self.diff is not None:
-            return self.diff
-
-        self.logger.info("Beginning diff calculation")
-        self.diff = self.diff_class()
-        for obj_type in intersection(self.dst_diffsync.top_level, self.src_diffsync.top_level):
-            diff_elements = self.diff_object_list(
-                src=self.src_diffsync.get_all(obj_type), dst=self.dst_diffsync.get_all(obj_type),
-            )
-
-            for diff_element in diff_elements:
-                self.diff.add(diff_element)
-
-        self.logger.info("Diff calculation complete")
-        self.diff.complete()
-        return self.diff
-
-    def diff_object_list(self, src: Iterable[DiffSyncModel], dst: Iterable[DiffSyncModel]) -> List[DiffElement]:
-        """Calculate diffs between two lists of like objects.
-
-        Helper method to `calculate_diffs`, usually doesn't need to be called directly.
-
-        These helper methods work in a recursive cycle:
-        diff_object_list -> diff_object_pair -> diff_child_objects -> diff_object_list -> etc.
-        """
-        diff_elements = []
-
-        if isinstance(src, ABCIterable) and isinstance(dst, ABCIterable):
-            # Convert a list of DiffSyncModels into a dict using the unique_ids as keys
-            dict_src = {item.get_unique_id(): item for item in src} if not isinstance(src, ABCMapping) else src
-            dict_dst = {item.get_unique_id(): item for item in dst} if not isinstance(dst, ABCMapping) else dst
-
-            combined_dict = {}
-            for uid in dict_src:
-                combined_dict[uid] = (dict_src.get(uid), dict_dst.get(uid))
-            for uid in dict_dst:
-                combined_dict[uid] = (dict_src.get(uid), dict_dst.get(uid))
-        else:
-            # In the future we might support set, etc...
-            raise TypeError(f"Type combination {type(src)}/{type(dst)} is not supported... for now")
-
-        self.validate_objects_for_diff(combined_dict.values())
-
-        for uid in combined_dict:
-            src_obj, dst_obj = combined_dict[uid]
-            diff_element = self.diff_object_pair(src_obj, dst_obj)
-
-            if diff_element:
-                diff_elements.append(diff_element)
-
-        return diff_elements
-
-    @staticmethod
-    def validate_objects_for_diff(object_pairs: Iterable[Tuple[Optional[DiffSyncModel], Optional[DiffSyncModel]]]):
-        """Check whether all DiffSyncModels in the given dictionary are valid for comparison to one another.
-
-        Helper method for `diff_object_list`.
-
-        Raises:
-            TypeError: If any pair of objects in the dict have differing get_type() values.
-            ValueError: If any pair of objects in the dict have differing get_shortname() or get_identifiers() values.
-        """
-        for src_obj, dst_obj in object_pairs:
-            # TODO: should we check/enforce whether all source models have the same DiffSync, whether all dest likewise?
-            # TODO: should we check/enforce whether ALL DiffSyncModels in this dict have the same get_type() output?
-            if src_obj and dst_obj:
-                if src_obj.get_type() != dst_obj.get_type():
-                    raise TypeError(f"Type mismatch: {src_obj.get_type()} vs {dst_obj.get_type()}")
-                if src_obj.get_shortname() != dst_obj.get_shortname():
-                    raise ValueError(f"Shortname mismatch: {src_obj.get_shortname()} vs {dst_obj.get_shortname()}")
-                if src_obj.get_identifiers() != dst_obj.get_identifiers():
-                    raise ValueError(f"Keys mismatch: {src_obj.get_identifiers()} vs {dst_obj.get_identifiers()}")
-
-    def diff_object_pair(
-        self, src_obj: Optional[DiffSyncModel], dst_obj: Optional[DiffSyncModel]
-    ) -> Optional["DiffElement"]:
-        """Diff the two provided DiffSyncModel objects and return a DiffElement or None.
-
-        Helper method to `calculate_diffs`, usually doesn't need to be called directly.
-
-        These helper methods work in a recursive cycle:
-        diff_object_list -> diff_object_pair -> diff_child_objects -> diff_object_list -> etc.
-        """
-        if src_obj:
-            model = src_obj.get_type()
-            unique_id = src_obj.get_unique_id()
-            shortname = src_obj.get_shortname()
-            keys = src_obj.get_identifiers()
-        elif dst_obj:
-            model = dst_obj.get_type()
-            unique_id = dst_obj.get_unique_id()
-            shortname = dst_obj.get_shortname()
-            keys = dst_obj.get_identifiers()
-        else:
-            raise RuntimeError("diff_object_pair() called with neither src_obj nor dst_obj??")
-
-        log = self.logger.bind(model=model, unique_id=unique_id)
-        if self.flags & DiffSyncFlags.SKIP_UNMATCHED_SRC and not dst_obj:
-            log.debug("Skipping unmatched source object")
-            return None
-        if self.flags & DiffSyncFlags.SKIP_UNMATCHED_DST and not src_obj:
-            log.debug("Skipping unmatched dest object")
-            return None
-        if src_obj and src_obj.model_flags & DiffSyncModelFlags.IGNORE:
-            log.debug("Skipping due to IGNORE flag on source object")
-            return None
-        if dst_obj and dst_obj.model_flags & DiffSyncModelFlags.IGNORE:
-            log.debug("Skipping due to IGNORE flag on dest object")
-            return None
-
-        diff_element = DiffElement(
-            obj_type=model,
-            name=shortname,
-            keys=keys,
-            source_name=self.src_diffsync.name,
-            dest_name=self.dst_diffsync.name,
-            diff_class=self.diff_class,
-        )
-
-        if src_obj:
-            diff_element.add_attrs(source=src_obj.get_attrs(), dest=None)
-        if dst_obj:
-            diff_element.add_attrs(source=None, dest=dst_obj.get_attrs())
-
-        # Recursively diff the children of src_obj and dst_obj and attach the resulting diffs to the diff_element
-        self.diff_child_objects(diff_element, src_obj, dst_obj)
-
-        return diff_element
-
-    def diff_child_objects(
-        self, diff_element: DiffElement, src_obj: Optional[DiffSyncModel], dst_obj: Optional[DiffSyncModel],
-    ):
-        """For all children of the given DiffSyncModel pair, diff recursively, adding diffs to the given diff_element.
-
-        Helper method to `calculate_diffs`, usually doesn't need to be called directly.
-
-        These helper methods work in a recursive cycle:
-        diff_object_list -> diff_object_pair -> diff_child_objects -> diff_object_list -> etc.
-        """
-        children_mapping: Mapping[str, str]
-        if src_obj and dst_obj:
-            # Get the subset of child types common to both src_obj and dst_obj
-            src_mapping = src_obj.get_children_mapping()
-            dst_mapping = dst_obj.get_children_mapping()
-            children_mapping = {}
-            for child_type, child_fieldname in src_mapping.items():
-                if child_type in dst_mapping:
-                    children_mapping[child_type] = child_fieldname
-        elif src_obj:
-            children_mapping = src_obj.get_children_mapping()
-        elif dst_obj:
-            children_mapping = dst_obj.get_children_mapping()
-        else:
-            raise RuntimeError("Called with neither src_obj nor dest_obj??")
-
-        for child_type, child_fieldname in children_mapping.items():
-            # for example, child_type == "device" and child_fieldname == "devices"
-
-            # for example, getattr(src_obj, "devices") --> list of device uids
-            #          --> src_diffsync.get_by_uids(<list of device uids>, "device") --> list of device instances
-            src_objs = self.src_diffsync.get_by_uids(getattr(src_obj, child_fieldname), child_type) if src_obj else []
-            dst_objs = self.dst_diffsync.get_by_uids(getattr(dst_obj, child_fieldname), child_type) if dst_obj else []
-
-            for child_diff_element in self.diff_object_list(src=src_objs, dst=dst_objs):
-                diff_element.add_child(child_diff_element)
-
-        return diff_element
