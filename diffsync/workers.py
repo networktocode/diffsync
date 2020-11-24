@@ -240,21 +240,25 @@ class DiffSyncSyncer:
         self.action: Optional[str] = None
 
     def perform_sync(self) -> bool:
-        """Perform data synchronization based on the provided diff."""
-        if not self.diff.has_diffs():
-            self.base_logger.info("No changes to synchronize")
-            return False
+        """Perform data synchronization based on the provided diff.
 
+        Returns:
+            bool: True if any changes were actually performed, else False.
+        """
+        changed = False
         self.base_logger.info("Beginning sync")
         for element in self.diff.get_children():
-            self.sync_diff_element(element)
+            changed |= self.sync_diff_element(element)
         self.base_logger.info("Sync complete")
-        return True
+        return changed
 
-    def sync_diff_element(self, element: DiffElement, parent_model: "DiffSyncModel" = None):
+    def sync_diff_element(self, element: DiffElement, parent_model: "DiffSyncModel" = None) -> bool:
         """Recursively synchronize the given DiffElement and its children, if any, into the dst_diffsync.
 
         Helper method to `perform_sync`.
+
+        Returns:
+            bool: True if this element or any of its children resulted in actual changes, else False.
         """
         self.model_class = getattr(self.dst_diffsync, element.type)
         diffs = element.get_attrs_diffs()
@@ -276,12 +280,12 @@ class DiffSyncSyncer:
         except ObjectNotFound:
             model = None
 
-        modified_model = self.sync_model(model, ids, attrs)
+        changed, modified_model = self.sync_model(model, ids, attrs)
         model = modified_model or model
 
         if not modified_model or not model:
             self.logger.warning("No object resulted from sync, will not process child objects.")
-            return
+            return changed
 
         if self.action == "create":
             if parent_model:
@@ -293,22 +297,29 @@ class DiffSyncSyncer:
             if model.model_flags & DiffSyncModelFlags.SKIP_CHILDREN_ON_DELETE:
                 # We don't need to process the child objects, but we do need to discard them from the dst_diffsync
                 self.dst_diffsync.remove(model, remove_children=True)
-                return
+                return changed
             self.dst_diffsync.remove(model)
 
         for child in element.get_children():
-            self.sync_diff_element(child, parent_model=model)
+            changed |= self.sync_diff_element(child, parent_model=model)
 
-    def sync_model(self, model: Optional["DiffSyncModel"], ids: Mapping, attrs: Mapping) -> Optional["DiffSyncModel"]:
+        return changed
+
+    def sync_model(
+        self, model: Optional["DiffSyncModel"], ids: Mapping, attrs: Mapping
+    ) -> Tuple[bool, Optional["DiffSyncModel"]]:
         """Create/update/delete the current DiffSyncModel with current ids/attrs, and update self.status and self.message.
 
         Helper method to `sync_diff_element`.
+
+        Returns:
+            tuple: (changed, model) where model may be None if an error occurred
         """
         if self.action is None:
             status = DiffSyncStatus.SUCCESS
             message = "No changes to apply; no action needed"
             self.log_sync_status(self.action, status, message)
-            return model
+            return (False, model)
 
         try:
             self.logger.debug(f"Attempting model {self.action}")
@@ -338,12 +349,12 @@ class DiffSyncSyncer:
             message = str(exception)
             self.log_sync_status(self.action, status, message)
             if self.flags & DiffSyncFlags.CONTINUE_ON_FAILURE:
-                return None
+                return (True, None)
             raise
 
         self.log_sync_status(self.action, status, message)
 
-        return model
+        return (True, model)
 
     def log_sync_status(self, action: Optional[str], status: DiffSyncStatus, message: str):
         """Log the current sync status at the appropriate verbosity with appropriate context.

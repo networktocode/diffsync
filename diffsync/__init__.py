@@ -484,6 +484,9 @@ class DiffSync:
     ):
         """Callback triggered after a `sync_from` operation has completed and updated the model data of this instance.
 
+        Note that this callback is **only** triggered if the sync actually resulted in data changes. If there are no
+        detected changes, this callback will **not** be called.
+
         The default implementation does nothing, but a subclass could use this, for example, to perform bulk updates
         to a backend (such as a file) that doesn't readily support incremental updates to individual records.
 

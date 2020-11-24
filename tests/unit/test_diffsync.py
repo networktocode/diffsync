@@ -368,6 +368,23 @@ def test_diffsync_sync_from(backend_a, backend_b):
         backend_a.get_by_uids(["nyc", "sfo"], "device")
 
 
+def check_successful_sync_log_sanity(log, src, dst, flags):
+    """Given a successful sync, make sure the captured structlogs are correct at a high level."""
+    # All logs generated during the sync should include the src, dst, and flags data
+    for event in log.events:
+        assert "src" in event and event["src"] == src
+        assert "dst" in event and event["dst"] == dst
+        assert "flags" in event and event["flags"] == flags
+
+    # No warnings or errors should have been logged in a fully successful sync
+    assert all(event["level"] == "debug" or event["level"] == "info" for event in log.events)
+
+    # Logs for beginning and end of diff and sync should have been generated
+    assert log.has("Beginning diff calculation", level="info")
+    assert log.has("Diff calculation complete", level="info")
+    assert log.has("Beginning sync", level="info")
+
+
 def check_sync_logs_against_diff(diffsync, diff, log, errors_permitted=False):
     """Given a Diff, make sure the captured structlogs correctly correspond to its contents/actions."""
     for element in diff.get_children():
@@ -441,6 +458,30 @@ def check_sync_logs_against_diff(diffsync, diff, log, errors_permitted=False):
             check_sync_logs_against_diff(diffsync, element.child_diff, log, errors_permitted)
 
 
+def test_diffsync_no_log_unchanged_by_default(log, backend_a):
+    backend_a.sync_from(backend_a)
+
+    # Make sure logs were accurately generated
+    check_successful_sync_log_sanity(log, backend_a, backend_a, DiffSyncFlags.NONE)
+
+    # Since there were no changes, and we didn't set LOG_UNCHANGED_RECORDS, there should be no "unchanged" logs
+    assert not any(event for event in log.events if "action" in event)
+    assert not any(event for event in log.events if "status" in event)
+
+
+def test_diffsync_log_unchanged_even_if_no_changes_overall(log, backend_a):
+    diff = backend_a.diff_from(backend_a)
+    assert not diff.has_diffs()
+    # Discard logs generated during diff calculation
+    log.events = []
+
+    backend_a.sync_from(backend_a, flags=DiffSyncFlags.LOG_UNCHANGED_RECORDS)
+
+    # Make sure logs were accurately generated
+    check_successful_sync_log_sanity(log, backend_a, backend_a, DiffSyncFlags.LOG_UNCHANGED_RECORDS)
+    check_sync_logs_against_diff(backend_a, diff, log)
+
+
 def test_diffsync_sync_from_successful_logging(log, backend_a, backend_b):
     diff = backend_a.diff_from(backend_b)
     # Discard logs generated during diff calculation
@@ -448,22 +489,8 @@ def test_diffsync_sync_from_successful_logging(log, backend_a, backend_b):
 
     backend_a.sync_from(backend_b, flags=DiffSyncFlags.LOG_UNCHANGED_RECORDS)
 
-    # All logs generated during the sync should include the src, dst, and flags data
-    for event in log.events:
-        assert "src" in event and event["src"] == backend_b
-        assert "dst" in event and event["dst"] == backend_a
-        assert "flags" in event and event["flags"] == DiffSyncFlags.LOG_UNCHANGED_RECORDS
-
-    # No warnings or errors should have been logged in a fully successful sync
-    assert all(event["level"] == "debug" or event["level"] == "info" for event in log.events)
-
-    # Logs for beginning and end of diff and sync should have been generated
-    assert log.has("Beginning diff calculation", level="info")
-    assert log.has("Diff calculation complete", level="info")
-    assert log.has("Beginning sync", level="info")
-    assert log.has("Sync complete", level="info")
-
     # Make sure logs were accurately generated
+    check_successful_sync_log_sanity(log, backend_b, backend_a, DiffSyncFlags.LOG_UNCHANGED_RECORDS)
     check_sync_logs_against_diff(backend_a, diff, log)
 
 
