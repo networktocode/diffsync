@@ -123,7 +123,8 @@ def pytest(context, name=NAME, python_ver=PYTHON_VER):
     # Install python module
     docker = f"docker run -it -v {PWD}:/local {name}-{python_ver}:latest"
     context.run(
-        f"{docker} /bin/bash -c 'poetry install && pytest --cov=diffsync --cov-report html --cov-report term -vv'",
+        f"{docker} /bin/bash -c 'poetry install && pytest "
+        "--cov=diffsync --cov-config pyproject.toml --cov-report html --cov-report term -vv'",
         pty=True,
     )
 

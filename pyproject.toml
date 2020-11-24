@@ -35,6 +35,7 @@ ipython = "^7.18.1"
 mypy = "^0.782"
 pytest-cov = "^2.10.1"
 pytest-structlog = "^0.3"
+coverage = {extras = ["toml"], version = "^5.3"}
 
 [tool.black]
 line-length = 120
@@ -50,6 +51,9 @@ exclude = '''
         | dist
         )/
     '''
+
+[tool.coverage.run]
+branch = true
 
 [tool.pylint.general]
 extension-pkg-whitelist = [
