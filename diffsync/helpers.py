@@ -1,4 +1,4 @@
-"""DiffSync worker classes for diff and sync operations.
+"""DiffSync helper classes for calculating and performing diff and sync operations.
 
 Copyright (c) 2020 Network To Code, LLC <info@networktocode.com>
 

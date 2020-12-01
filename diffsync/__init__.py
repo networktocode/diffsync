@@ -24,7 +24,7 @@ import structlog  # type: ignore
 from .diff import Diff
 from .enum import DiffSyncModelFlags, DiffSyncFlags, DiffSyncStatus
 from .exceptions import ObjectAlreadyExists, ObjectStoreWrongType, ObjectNotFound
-from .workers import DiffSyncDiffer, DiffSyncSyncer
+from .helpers import DiffSyncDiffer, DiffSyncSyncer
 
 
 class DiffSyncModel(BaseModel):
