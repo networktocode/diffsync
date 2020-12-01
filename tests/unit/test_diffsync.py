@@ -368,6 +368,132 @@ def test_diffsync_sync_from(backend_a, backend_b):
         backend_a.get_by_uids(["nyc", "sfo"], "device")
 
 
+def check_successful_sync_log_sanity(log, src, dst, flags):
+    """Given a successful sync, make sure the captured structlogs are correct at a high level."""
+    # All logs generated during the sync should include the src, dst, and flags data
+    for event in log.events:
+        assert "src" in event and event["src"] == src
+        assert "dst" in event and event["dst"] == dst
+        assert "flags" in event and event["flags"] == flags
+
+    # No warnings or errors should have been logged in a fully successful sync
+    assert all(event["level"] == "debug" or event["level"] == "info" for event in log.events)
+
+    # Logs for beginning and end of diff and sync should have been generated
+    assert log.has("Beginning diff calculation", level="info")
+    assert log.has("Diff calculation complete", level="info")
+    assert log.has("Beginning sync", level="info")
+
+
+def check_sync_logs_against_diff(diffsync, diff, log, errors_permitted=False):
+    """Given a Diff, make sure the captured structlogs correctly correspond to its contents/actions."""
+    for element in diff.get_children():
+        print(element)
+        # This is kinda gross, but needed since a DiffElement stores a shortname and keys, not a unique_id
+        uid = getattr(diffsync, element.type).create_unique_id(**element.keys)
+
+        elem_events = [
+            event for event in log.events if event.get("model") == element.type and event.get("unique_id") == uid
+        ]
+        assert elem_events, f"No events for {element.type} {uid} in:\n{log.events}"
+        num_events = len(elem_events)
+
+        if element.action is None:
+            assert num_events == 1, f"Wrong number of events for {element}: {elem_events}"
+            assert {
+                ("action", None),
+                ("event", "No changes to apply; no action needed"),
+                ("level", "debug"),
+            } <= elem_events[0].items()
+        else:
+            # In case of an error, there will be a third log, warning that child elements will not be synced
+            if errors_permitted:
+                assert num_events in (2, 3), f"Wrong number of events for {element}: {elem_events}"
+            else:
+                assert num_events == 2, f"Wrong number of events for {element}: {elem_events}"
+            begin_event, complete_event = elem_events[:2]
+
+            assert {
+                ("action", element.action),
+                ("event", f"Attempting model {element.action}"),
+                ("level", "debug"),
+            } <= begin_event.items()
+            # attrs_diffs dict is unhashable so we can't include it in the above set comparison
+            assert "diffs" in begin_event and begin_event["diffs"] == element.get_attrs_diffs()
+            assert "status" not in begin_event
+
+            if not errors_permitted:
+                assert complete_event["level"] == "info" and complete_event["status"] == "success", complete_event
+
+            if complete_event["status"] == "success":
+                assert {
+                    ("action", element.action),
+                    ("event", f"{element.action.title()}d successfully"),
+                    ("level", "info"),
+                    ("status", "success"),
+                } <= complete_event.items()
+            elif complete_event["status"] == "failure":
+                assert {
+                    ("action", element.action),
+                    ("level", "warning"),
+                    ("status", "failure"),
+                } <= complete_event.items()
+            else:
+                assert {("action", element.action), ("level", "error"), ("status", "error")} <= complete_event.items()
+
+            # attrs_diffs dict is unhashable so we can't include it in the above set comparison
+            assert "diffs" in complete_event and complete_event["diffs"] == element.get_attrs_diffs()
+
+            if num_events == 3:
+                child_skip_warning = elem_events[-1]
+                assert {
+                    ("action", element.action),
+                    ("event", "No object resulted from sync, will not process child objects."),
+                    ("level", "warning"),
+                } <= child_skip_warning.items()
+                assert "status" not in child_skip_warning
+
+        # Recurse into child diff if applicable
+        if num_events < 3:  # i.e., no error happened
+            check_sync_logs_against_diff(diffsync, element.child_diff, log, errors_permitted)
+
+
+def test_diffsync_no_log_unchanged_by_default(log, backend_a):
+    backend_a.sync_from(backend_a)
+
+    # Make sure logs were accurately generated
+    check_successful_sync_log_sanity(log, backend_a, backend_a, DiffSyncFlags.NONE)
+
+    # Since there were no changes, and we didn't set LOG_UNCHANGED_RECORDS, there should be no "unchanged" logs
+    assert not any(event for event in log.events if "action" in event)
+    assert not any(event for event in log.events if "status" in event)
+
+
+def test_diffsync_log_unchanged_even_if_no_changes_overall(log, backend_a):
+    diff = backend_a.diff_from(backend_a)
+    assert not diff.has_diffs()
+    # Discard logs generated during diff calculation
+    log.events = []
+
+    backend_a.sync_from(backend_a, flags=DiffSyncFlags.LOG_UNCHANGED_RECORDS)
+
+    # Make sure logs were accurately generated
+    check_successful_sync_log_sanity(log, backend_a, backend_a, DiffSyncFlags.LOG_UNCHANGED_RECORDS)
+    check_sync_logs_against_diff(backend_a, diff, log)
+
+
+def test_diffsync_sync_from_successful_logging(log, backend_a, backend_b):
+    diff = backend_a.diff_from(backend_b)
+    # Discard logs generated during diff calculation
+    log.events = []
+
+    backend_a.sync_from(backend_b, flags=DiffSyncFlags.LOG_UNCHANGED_RECORDS)
+
+    # Make sure logs were accurately generated
+    check_successful_sync_log_sanity(log, backend_b, backend_a, DiffSyncFlags.LOG_UNCHANGED_RECORDS)
+    check_sync_logs_against_diff(backend_a, diff, log)
+
+
 def test_diffsync_subclass_default_name_type(backend_a):
     assert backend_a.name == "BackendA"
     assert backend_a.type == "BackendA"
@@ -419,7 +545,12 @@ def test_diffsync_sync_from_exceptions_are_not_caught_by_default(error_prone_bac
 
 
 def test_diffsync_sync_from_with_continue_on_failure_flag(log, error_prone_backend_a, backend_b):
-    error_prone_backend_a.sync_from(backend_b, flags=DiffSyncFlags.CONTINUE_ON_FAILURE)
+    base_diffs = error_prone_backend_a.diff_from(backend_b)
+    log.events = []
+
+    error_prone_backend_a.sync_from(
+        backend_b, flags=DiffSyncFlags.CONTINUE_ON_FAILURE | DiffSyncFlags.LOG_UNCHANGED_RECORDS
+    )
     # Not all sync operations succeeded on the first try
     remaining_diffs = error_prone_backend_a.diff_from(backend_b)
     print(remaining_diffs.str())  # for debugging of any failure
@@ -433,6 +564,9 @@ def test_diffsync_sync_from_with_continue_on_failure_flag(log, error_prone_backe
     assert [event for event in log.events if event["level"] == "error"] != []
     # Some messages with status="error" should have been logged - these may be the same as the above
     assert [event for event in log.events if event.get("status") == "error"] != []
+
+    check_sync_logs_against_diff(error_prone_backend_a, base_diffs, log, errors_permitted=True)
+
     log.events = []
 
     # Retry up to 10 times, we should sync successfully eventually

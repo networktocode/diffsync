@@ -29,7 +29,7 @@ def generic_diffsync_model():
     return DiffSyncModel()
 
 
-class ErrorProneModel(DiffSyncModel):
+class ErrorProneModelMixin:
     """Test class that sometimes throws exceptions when creating/updating/deleting instances."""
 
     _counter: ClassVar[int] = 0
@@ -38,25 +38,31 @@ class ErrorProneModel(DiffSyncModel):
     def create(cls, diffsync: DiffSync, ids: Mapping, attrs: Mapping):
         """As DiffSyncModel.create(), but periodically throw exceptions."""
         cls._counter += 1
-        if not cls._counter % 3:
+        if not cls._counter % 5:
             raise ObjectNotCreated("Random creation error!")
-        return super().create(diffsync, ids, attrs)
+        if not cls._counter % 4:
+            return None  # non-fatal error
+        return super().create(diffsync, ids, attrs)  # type: ignore
 
     def update(self, attrs: Mapping):
         """As DiffSyncModel.update(), but periodically throw exceptions."""
         # pylint: disable=protected-access
         self.__class__._counter += 1
-        if not self.__class__._counter % 3:
+        if not self.__class__._counter % 5:
             raise ObjectNotUpdated("Random update error!")
-        return super().update(attrs)
+        if not self.__class__._counter % 4:
+            return None  # non-fatal error
+        return super().update(attrs)  # type: ignore
 
     def delete(self):
         """As DiffSyncModel.delete(), but periodically throw exceptions."""
         # pylint: disable=protected-access
         self.__class__._counter += 1
-        if not self.__class__._counter % 3:
+        if not self.__class__._counter % 5:
             raise ObjectNotDeleted("Random deletion error!")
-        return super().delete()
+        if not self.__class__._counter % 4:
+            return None  # non-fatal error
+        return super().delete()  # type: ignore
 
 
 class Site(DiffSyncModel):
@@ -266,15 +272,15 @@ def backend_a_minus_some_models():
     return missing_models
 
 
-class ErrorProneSiteA(ErrorProneModel, SiteA):
+class ErrorProneSiteA(ErrorProneModelMixin, SiteA):
     """A Site that sometimes throws exceptions."""
 
 
-class ErrorProneDeviceA(ErrorProneModel, DeviceA):
+class ErrorProneDeviceA(ErrorProneModelMixin, DeviceA):
     """A Device that sometimes throws exceptions."""
 
 
-class ErrorProneInterface(ErrorProneModel, Interface):
+class ErrorProneInterface(ErrorProneModelMixin, Interface):
     """An Interface that sometimes throws exceptions."""
 
 
