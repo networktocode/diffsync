@@ -40,9 +40,8 @@ jobs:
     - stage: "build"
       before_script:
         - "pip install invoke toml"
-        - "invoke build-image --nocache"
       script:
-        - "invoke pytest"
+        - "invoke build-image --nocache"
       python: "3.7"
 
     - stage: "test"
