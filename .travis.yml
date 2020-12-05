@@ -37,7 +37,7 @@ jobs:
         - "invoke pylint"
       python: 3.7
 
-    - stage: "Build"
+    - stage: "build"
       before_script:
         - "pip install invoke toml"
         - "invoke build-image --nocache"
@@ -45,14 +45,12 @@ jobs:
         - "invoke pytest"
       python: "3.7"
 
-    - stage: "Test"
-      env:
-        - "INVOKE_LOCAL=True"
+    - stage: "test"
       before_script:
         - "pip install invoke poetry toml"
         - "poetry install"
       script:
-        - "invoke pytest"
+        - "invoke pytest --local"
 
 deploy:
   provider: "script"
