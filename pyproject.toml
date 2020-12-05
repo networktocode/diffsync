@@ -22,7 +22,6 @@ colorama = {version = "^0.4.3", optional = true}
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.1.0"
-requests_mock = "^1.7.0"
 pyyaml = "^5.3"
 black = "^19.10b0"
 pylint = "^2.4.4"
