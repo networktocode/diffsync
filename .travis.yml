@@ -5,6 +5,9 @@ stages:
   - "test"
 
 language: "python"
+python:
+  - "3.7"
+
 services:
   - "docker"
 
@@ -30,7 +33,7 @@ jobs:
       env:
         - "INVOKE_LOCAL=True"
       before_script:
-        - "pip install invoke toml"
+        - "pip install invoke poetry toml"
         - "poetry install --no-interaction --no-ansi --no-root"
       script:
         - "invoke black"
