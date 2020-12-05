@@ -1,23 +1,47 @@
 ---
+# Add additional stages in the order of execution here, and then under the job:include: key
+stages:
+  - lint
+  - test
+
 language: "python"
 services:
   - "docker"
-python:
-  - 3.7
-  - 3.8
 
 env:
+  matrix:
+    - "PYTHON_VER=3.7"
+    - "PYTHON_VER=3.8"
+    - "PYTHON_VER=3.9"
   global:
     # yamllint disable-line rule:line-length
     - secure: "oSEtMKAmz3dlzrFnRLp3D/KgdSFy7XmVv6c3aSP7LXi8L2ljRrqFOB6BU3RQ6hNbSF3/bvpM9I4QKfZmOyId23Pr5UoMzaN8eL+xL8ZLkjZp0ngVZcCeXRvGwcmg4WJvVOnq3T/NoC/zwtsZbUt19yIJVVCEQqc84im90g6cLNMUulxQOvh6M/qgW4AFhAfi7lUFybl/RiWZYhvFchWifYTj7IfvZSDtin4UStJj7UApguqW4SseTZ/bmt18GSkOn9WO0sOaUSkehkT3NEMy97TLY73KgYb3LNrP47C2NPYQyyzJdb0szJ9CcVKtFjBBl5bqN5MGW/fqtqbh84Jq2GhTHNiYBcu6u/CJ+fscWYJkEWo0nNeED/ef8Vwv1M/q68IVeWsNO3+Se41WvOhMRsM8u1ek6+sHyyTNcVpGIUw4phHBsfCNiIlydWr8VpjZv9N3E4KqKRyjtpOoZElY11ZJa5rEL4D0s3JgSug958dYg/vsh+QVivNb9bbC/o9vBFqZGhWzGmNW2F3ezODZ9JcBlf1TEIZf8QPAHEO2SF5XCVRcDyByefqW28pOzwgk9Acl1/zIh5fiH/9ZAemlxjr17t4DQQbeQ/wbF6Gsmn0cYYoxjWMSrLqMD7TRQOTAYcxWAOKN/hCK/K6DS96r2CW5pU506zKMvezrskDmmX0="
+
 before_script:
   - "pip install invoke"
-  - "invoke build-test-container -p $TRAVIS_PYTHON_VERSION"
+  - invoke build-image --nocache
   - "curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py > /tmp/get-poetry.py"
   - "python /tmp/get-poetry.py -y --version 1.0.2"
   - "source $HOME/.poetry/env"
+
 script:
-  - "invoke tests -p $TRAVIS_PYTHON_VERSION"
+  - invoke pytest
+
+jobs:
+  include:
+    - stage: lint
+      env:
+        - INVOKE_LOCAL=True
+      before_script:
+        - pip install invoke toml
+      script:
+        - invoke black
+        - invoke bandit # Bandit fails to function on > Py3.8 https://github.com/PyCQA/bandit/issues/639
+        - invoke pydocstyle
+        - invoke flake8
+        - invoke yamllint
+        - invoke pylint
+
 deploy:
   provider: "script"
   script: "poetry config pypi-token.pypi $PYPI_TOKEN && poetry publish --build"
@@ -26,3 +50,4 @@ deploy:
     tags: true
     branch: "master"
     python: "3.7"
+
