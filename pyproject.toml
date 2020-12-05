@@ -15,10 +15,13 @@ include = [
 ]
 
 [tool.poetry.dependencies]
-python = "~3.7 || ~3.8 || ~3.9"
+python = "~ 3.6 || ~3.7 || ~3.8 || ~3.9"
 pydantic = "^1.7.2"
 structlog = "^20.1.0"
 colorama = {version = "^0.4.3", optional = true}
+
+# For Pydantic
+dataclasses = {version = "^0.7", python = "~3.6"}
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.1.0"
@@ -30,7 +33,6 @@ yamllint = "^1.20.0"
 bandit = "^1.6.2"
 invoke = "^1.4.1"
 flake8 = "^3.8.3"
-ipython = "^7.18.1"
 mypy = "^0.782"
 pytest-cov = "^2.10.1"
 pytest-structlog = "^0.3"
