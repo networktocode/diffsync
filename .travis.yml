@@ -1,8 +1,8 @@
 ---
 # Add additional stages in the order of execution here, and then under the job:include: key
 stages:
-  - lint
-  - test
+  - "lint"
+  - "test"
 
 language: "python"
 services:
@@ -19,28 +19,28 @@ env:
 
 before_script:
   - "pip install invoke"
-  - invoke build-image --nocache
+  - "invoke build-image --nocache"
   - "curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py > /tmp/get-poetry.py"
   - "python /tmp/get-poetry.py -y --version 1.0.2"
   - "source $HOME/.poetry/env"
 
 script:
-  - invoke pytest
+  - "invoke pytest"
 
 jobs:
   include:
-    - stage: lint
+    - stage: "lint"
       env:
-        - INVOKE_LOCAL=True
+        - "INVOKE_LOCAL=True"
       before_script:
-        - pip install invoke toml
+        - "pip install invoke toml"
       script:
-        - invoke black
-        - invoke bandit # Bandit fails to function on > Py3.8 https://github.com/PyCQA/bandit/issues/639
-        - invoke pydocstyle
-        - invoke flake8
-        - invoke yamllint
-        - invoke pylint
+        - "invoke black"
+        - "invoke bandit"  # Bandit fails to function on > Py3.8 https://github.com/PyCQA/bandit/issues/639
+        - "invoke pydocstyle"
+        - "invoke flake8"
+        - "invoke yamllint"
+        - "invoke pylint"
 
 deploy:
   provider: "script"
@@ -50,4 +50,3 @@ deploy:
     tags: true
     branch: "master"
     python: "3.7"
-

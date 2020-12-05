@@ -82,7 +82,9 @@ def run_cmd(context, exec_cmd, name=NAME, image_ver=IMAGE_VER, local=INVOKE_LOCA
 
 
 @task
-def build_image(context, name=NAME, python_ver=PYTHON_VER, image_ver=IMAGE_VER, nocache=False, forcerm=False):
+def build_image(
+    context, name=NAME, python_ver=PYTHON_VER, image_ver=IMAGE_VER, nocache=False, forcerm=False
+):  # pylint: disable=too-many-arguments
     """This will build an image with the provided name and python version.
 
     Args:
@@ -94,16 +96,14 @@ def build_image(context, name=NAME, python_ver=PYTHON_VER, image_ver=IMAGE_VER, 
         forcerm (bool): Always remove intermediate containers
     """
     print(f"Building image {name}:{image_ver}")
-    command = (
-        f"docker build --tag {name}:{image_ver} --build-arg PYTHON_VER={python_ver} -f Dockerfile ."
-    )
+    command = f"docker build --tag {name}:{image_ver} --build-arg PYTHON_VER={python_ver} -f Dockerfile ."
 
     if nocache:
         command += " --no-cache"
     if forcerm:
         command += " --force-rm"
 
-    result = context.run(command, hide=True)
+    result = context.run(command, hide=False)
     if result.exited != 0:
         print(f"Failed to build image {name}:{image_ver}\nError: {result.stderr}")
 
