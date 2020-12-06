@@ -1,17 +1,17 @@
 ---
 # Add additional stages in the order of execution here, and then under the job:include: key
-# dist: "focal"  # Ubuntu 20.04
+dist: "focal"  # Ubuntu 20.04
 stages:
-  - "lint"
-  - "build"
-  - "test"
+  - name: "Lint"
+  - name: "Build"
+  - name: "Unit Test"
 
 language: "python"
 python:
   - "3.6"
   - "3.7"
-  - "3.8"
-  - "3.9"
+  # - "3.8"
+  # - "3.9"
 
 services:
   - "docker"
@@ -23,7 +23,7 @@ env:
 
 jobs:
   include:
-    - stage: "lint"
+    - stage: "Lint"
       env:
         - "INVOKE_LOCAL=True"
       before_script:
@@ -38,7 +38,7 @@ jobs:
         - "invoke pylint"
       python: "3.7"
 
-    - stage: "build"
+    - stage: "Build"
       before_script:
         - "pip install invoke poetry toml"
       script:
@@ -46,7 +46,7 @@ jobs:
         - "poetry build"
       python: "3.7"
 
-    - stage: "test"
+    - stage: "Unit Test"
       before_script:
         - "pip install invoke poetry toml"
         - "poetry install"
