@@ -7,11 +7,6 @@ stages:
   - name: "Unit Test"
 
 language: "python"
-python:
-  - "3.6"
-  - "3.7"
-  # - "3.8"
-  # - "3.9"
 
 services:
   - "docker"
@@ -52,6 +47,12 @@ jobs:
         - "poetry install"
       script:
         - "invoke pytest --local"
+      python:
+        - "3.6"
+        - "3.7"
+        # - "3.8"
+        # - "3.9"
+
 
 deploy:
   provider: "script"
