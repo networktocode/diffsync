@@ -3,6 +3,7 @@
 # dist: "focal"  # Ubuntu 20.04
 stages:
   - "lint"
+  - "build"
   - "test"
 
 language: "python"
