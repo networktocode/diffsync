@@ -1,6 +1,6 @@
 ---
 # Add additional stages in the order of execution here, and then under the job:include: key
-dist: "focal"  # Ubuntu 20.04
+# dist: "focal"  # Ubuntu 20.04
 stages:
   - "lint"
   - "test"
@@ -37,12 +37,20 @@ jobs:
         - "invoke pylint"
       python: "3.7"
 
+    - stage: "build"
+      before_script:
+        - "pip install invoke toml"
+      script:
+        - "invoke build-image --nocache"
+        - "poetry build"
+      python: "3.7"
+
     - stage: "test"
       before_script:
-        - "pip install invoke"
-        - "invoke build-image --nocache"
+        - "pip install invoke poetry toml"
+        - "poetry install"
       script:
-        - "invoke pytest"
+        - "invoke pytest --local"
 
 deploy:
   provider: "script"
