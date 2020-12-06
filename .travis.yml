@@ -40,7 +40,7 @@ jobs:
 
     - stage: "build"
       before_script:
-        - "pip install invoke toml"
+        - "pip install invoke poetry toml"
       script:
         - "invoke build-image --nocache"
         - "poetry build"
