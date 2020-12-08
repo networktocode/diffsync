@@ -10,4 +10,7 @@ COPY pyproject.toml /local
 COPY poetry.lock /local
 
 RUN poetry config virtualenvs.create false \
-  && poetry install --no-interaction --no-ansi
+  && poetry install --no-interaction --no-ansi --no-root
+
+COPY . /local
+RUN poetry install --no-interaction --no-ansi 
