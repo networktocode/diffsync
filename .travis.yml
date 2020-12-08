@@ -42,6 +42,7 @@ jobs:
         - "invoke black"
         - "invoke bandit"  # Bandit fails to function on > Py3.8 https://github.com/PyCQA/bandit/issues/639
         - "invoke pydocstyle"
+        - "invoke mypy"
         - "invoke flake8"
         - "invoke yamllint"
         - "invoke pylint"

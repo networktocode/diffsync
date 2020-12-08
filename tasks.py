@@ -17,7 +17,7 @@ limitations under the License.
 import os
 import sys
 from distutils.util import strtobool
-from invoke import task
+from invoke import task  # type: ignore
 
 try:
     import toml
@@ -188,10 +188,12 @@ def flake8(context, name=NAME, image_ver=IMAGE_VER, local=INVOKE_LOCAL):
 @task
 def mypy(context, name=NAME, image_ver=IMAGE_VER, local=INVOKE_LOCAL):
     """This will run mypy for the specified name and Python version.
+
     Args:
         context (obj): Used to run specific commands
         name (str): Used to name the docker image
-        python_ver (str): Will use the Python version docker image to build from
+        image_ver (str): Define image version
+        local (bool): Define as `True` to execute locally
     """
     # pty is set to true to properly run the docker commands due to the invocation process of docker
     # https://docs.pyinvoke.org/en/latest/api/runners.html - Search for pty for more information
