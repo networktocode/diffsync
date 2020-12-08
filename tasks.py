@@ -149,7 +149,7 @@ def pytest(context, name=NAME, image_ver=IMAGE_VER, local=INVOKE_LOCAL):
     # pty is set to true to properly run the docker commands due to the invocation process of docker
     # https://docs.pyinvoke.org/en/latest/api/runners.html - Search for pty for more information
     # Install python module
-    exec_cmd = "pytest -vv"
+    exec_cmd = "pytest --cov=diffsync --cov-config pyproject.toml --cov-report html --cov-report term -vv"
     run_cmd(context, exec_cmd, name, image_ver, local)
 
 
@@ -182,6 +182,20 @@ def flake8(context, name=NAME, image_ver=IMAGE_VER, local=INVOKE_LOCAL):
     # pty is set to true to properly run the docker commands due to the invocation process of docker
     # https://docs.pyinvoke.org/en/latest/api/runners.html - Search for pty for more information
     exec_cmd = "flake8 ."
+    run_cmd(context, exec_cmd, name, image_ver, local)
+
+
+@task
+def mypy(context, name=NAME, image_ver=IMAGE_VER, local=INVOKE_LOCAL):
+    """This will run mypy for the specified name and Python version.
+    Args:
+        context (obj): Used to run specific commands
+        name (str): Used to name the docker image
+        python_ver (str): Will use the Python version docker image to build from
+    """
+    # pty is set to true to properly run the docker commands due to the invocation process of docker
+    # https://docs.pyinvoke.org/en/latest/api/runners.html - Search for pty for more information
+    exec_cmd = 'find . -name "*.py" | xargs mypy --show-error-codes'
     run_cmd(context, exec_cmd, name, image_ver, local)
 
 
@@ -277,6 +291,7 @@ def tests(context, name=NAME, image_ver=IMAGE_VER, local=INVOKE_LOCAL):
     pylint(context, name, image_ver, local)
     yamllint(context, name, image_ver, local)
     pydocstyle(context, name, image_ver, local)
+    mypy(context, name, image_ver, local)
     bandit(context, name, image_ver, local)
     pytest(context, name, image_ver, local)
 
