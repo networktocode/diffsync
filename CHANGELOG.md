@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.2.0 - 2020-12-08
+
+### Added
+
+- #45 - minimum Python version lowered from 3.7 to 3.6, also now tested against Python 3.9.
+
 ## v1.1.0 - 2020-12-01
 
 ### Added
