@@ -245,19 +245,28 @@ class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
         return diff_element
 
 
-class DiffSyncSyncer:
+class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
     """Helper class implementing data synchronization logic for DiffSync.
 
     Independent from DiffSync and DiffSyncModel as those classes are purely data objects, while this stores some state.
     """
 
-    def __init__(
-        self, diff: Diff, src_diffsync: "DiffSync", dst_diffsync: "DiffSync", flags: DiffSyncFlags,
+    def __init__(  # pylint: disable=too-many-arguments
+        self,
+        diff: Diff,
+        src_diffsync: "DiffSync",
+        dst_diffsync: "DiffSync",
+        flags: DiffSyncFlags,
+        callback: Optional[Callable[[int, int], None]] = None,
     ):
         """Create a DiffSyncSyncer instance, ready to call `perform_sync()` against."""
         self.diff = diff
         self.dst_diffsync = dst_diffsync
         self.flags = flags
+        self.callback = callback
+
+        self.elements_processed = 0
+        self.total_elements = len(diff)
 
         self.base_logger = structlog.get_logger().new(src=src_diffsync, dst=dst_diffsync, flags=flags)
 
@@ -265,6 +274,13 @@ class DiffSyncSyncer:
         self.logger: structlog.BoundLogger = self.base_logger
         self.model_class: Type["DiffSyncModel"]
         self.action: Optional[str] = None
+
+    def incr_elements_processed(self, delta: int = 1):
+        """Increment self.elements_processed, then call self.callback if present."""
+        if delta:
+            self.elements_processed += delta
+            if self.callback:
+                self.callback(self.elements_processed, self.total_elements)
 
     def perform_sync(self) -> bool:
         """Perform data synchronization based on the provided diff.
@@ -326,6 +342,8 @@ class DiffSyncSyncer:
                 self.dst_diffsync.remove(model, remove_children=True)
                 return changed
             self.dst_diffsync.remove(model)
+
+        self.incr_elements_processed()
 
         for child in element.get_children():
             changed |= self.sync_diff_element(child, parent_model=model)

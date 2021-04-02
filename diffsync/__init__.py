@@ -455,29 +455,45 @@ class DiffSync:
     # Synchronization between DiffSync instances
     # ------------------------------------------------------------------------------
 
-    def sync_from(self, source: "DiffSync", diff_class: Type[Diff] = Diff, flags: DiffSyncFlags = DiffSyncFlags.NONE):
+    def sync_from(
+        self,
+        source: "DiffSync",
+        diff_class: Type[Diff] = Diff,
+        flags: DiffSyncFlags = DiffSyncFlags.NONE,
+        callback: Optional[Callable[[int, int], None]] = None,
+    ):
         """Synchronize data from the given source DiffSync object into the current DiffSync object.
 
         Args:
             source (DiffSync): object to sync data from into this one
             diff_class (class): Diff or subclass thereof to use to calculate the diffs to use for synchronization
             flags (DiffSyncFlags): Flags influencing the behavior of this sync.
+            callback (function): Function with parameters (current, total), to be called at intervals as the
+                calculation of the diff proceeds.
         """
         diff = self.diff_from(source, diff_class=diff_class, flags=flags)
-        syncer = DiffSyncSyncer(diff=diff, src_diffsync=source, dst_diffsync=self, flags=flags)
+        syncer = DiffSyncSyncer(diff=diff, src_diffsync=source, dst_diffsync=self, flags=flags, callback=callback)
         result = syncer.perform_sync()
         if result:
             self.sync_complete(source, diff, flags, syncer.base_logger)
 
-    def sync_to(self, target: "DiffSync", diff_class: Type[Diff] = Diff, flags: DiffSyncFlags = DiffSyncFlags.NONE):
+    def sync_to(
+        self,
+        target: "DiffSync",
+        diff_class: Type[Diff] = Diff,
+        flags: DiffSyncFlags = DiffSyncFlags.NONE,
+        callback: Optional[Callable[[int, int], None]] = None,
+    ):
         """Synchronize data from the current DiffSync object into the given target DiffSync object.
 
         Args:
             target (DiffSync): object to sync data into from this one.
             diff_class (class): Diff or subclass thereof to use to calculate the diffs to use for synchronization
             flags (DiffSyncFlags): Flags influencing the behavior of this sync.
+            callback (function): Function with parameters (current, total), to be called at intervals as the
+                calculation of the diff proceeds.
         """
-        target.sync_from(self, diff_class=diff_class, flags=flags)
+        target.sync_from(self, diff_class=diff_class, flags=flags, callback=callback)
 
     def sync_complete(
         self,

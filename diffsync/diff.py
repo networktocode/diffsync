@@ -33,6 +33,13 @@ class Diff:
         `self.children[group][unique_id] == DiffElement(...)`
         """
 
+    def __len__(self):
+        """Total number of DiffElements stored herein."""
+        total = 0
+        for child in self.get_children():
+            total += len(child)
+        return total
+
     def complete(self):
         """Method to call when this Diff has been fully populated with data and is "complete".
 
@@ -204,6 +211,13 @@ class DiffElement:  # pylint: disable=too-many-instance-attributes
             f'{self.type} "{self.name}" : {self.keys} : '
             f"{self.source_name} → {self.dest_name} : {self.get_attrs_diffs()}"
         )
+
+    def __len__(self):
+        """Total number of DiffElements in this one, including itself."""
+        total = 1  # self
+        for child in self.get_children():
+            total += len(child)
+        return total
 
     @property
     def action(self) -> Optional[Text]:
