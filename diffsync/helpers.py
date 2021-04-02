@@ -1,6 +1,6 @@
 """DiffSync helper classes for calculating and performing diff and sync operations.
 
-Copyright (c) 2020 Network To Code, LLC <info@networktocode.com>
+Copyright (c) 2020-2021 Network To Code, LLC <info@networktocode.com>
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from collections.abc import Iterable as ABCIterable, Mapping as ABCMapping
-from typing import Iterable, List, Mapping, Optional, Tuple, Type, TYPE_CHECKING
+from typing import Callable, Iterable, List, Mapping, Optional, Tuple, Type, TYPE_CHECKING
 
 import structlog  # type: ignore
 
@@ -29,14 +29,19 @@ if TYPE_CHECKING:  # pragma: no cover
     from . import DiffSync, DiffSyncModel  # pylint: disable=cyclic-import
 
 
-class DiffSyncDiffer:
+class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
     """Helper class implementing diff calculation logic for DiffSync.
 
     Independent from Diff and DiffElement as those classes are purely data objects, while this stores some state.
     """
 
-    def __init__(
-        self, src_diffsync: "DiffSync", dst_diffsync: "DiffSync", flags: DiffSyncFlags, diff_class: Type[Diff] = Diff
+    def __init__(  # pylint: disable=too-many-arguments
+        self,
+        src_diffsync: "DiffSync",
+        dst_diffsync: "DiffSync",
+        flags: DiffSyncFlags,
+        diff_class: Type[Diff] = Diff,
+        callback: Optional[Callable[[int, int], None]] = None,
     ):
         """Create a DiffSyncDiffer for calculating diffs between the provided DiffSync instances."""
         self.src_diffsync = src_diffsync
@@ -45,12 +50,26 @@ class DiffSyncDiffer:
 
         self.logger = structlog.get_logger().new(src=src_diffsync, dst=dst_diffsync, flags=flags)
         self.diff_class = diff_class
+        self.callback = callback
         self.diff: Optional[Diff] = None
+
+        self.models_processed = 0
+        self.total_models = len(src_diffsync) + len(dst_diffsync)
+        self.logger.debug(f"Diff calculation between these two datasets will involve {self.total_models} models")
+
+    def incr_models_processed(self, delta: int = 1):
+        """Increment self.models_processed, then call self.callback if present."""
+        if delta:
+            self.models_processed += delta
+            if self.callback:
+                self.callback(self.models_processed, self.total_models)
 
     def calculate_diffs(self) -> Diff:
         """Calculate diffs between the src and dst DiffSync objects and return the resulting Diff."""
         if self.diff is not None:
             return self.diff
+
+        self.models_processed = 0
 
         self.logger.info("Beginning diff calculation")
         self.diff = self.diff_class()
@@ -66,7 +85,7 @@ class DiffSyncDiffer:
         self.diff.complete()
         return self.diff
 
-    def diff_object_list(self, src: Iterable["DiffSyncModel"], dst: Iterable["DiffSyncModel"]) -> List[DiffElement]:
+    def diff_object_list(self, src: List["DiffSyncModel"], dst: List["DiffSyncModel"]) -> List[DiffElement]:
         """Calculate diffs between two lists of like objects.
 
         Helper method to `calculate_diffs`, usually doesn't need to be called directly.
@@ -89,6 +108,9 @@ class DiffSyncDiffer:
         else:
             # In the future we might support set, etc...
             raise TypeError(f"Type combination {type(src)}/{type(dst)} is not supported... for now")
+
+        # Any non-intersection between src and dst can be counted as "processed" and done.
+        self.incr_models_processed(max(len(src) - len(combined_dict), 0) + max(len(dst) - len(combined_dict), 0))
 
         self.validate_objects_for_diff(combined_dict.values())
 
@@ -168,10 +190,15 @@ class DiffSyncDiffer:
             diff_class=self.diff_class,
         )
 
+        delta = 0
         if src_obj:
             diff_element.add_attrs(source=src_obj.get_attrs(), dest=None)
+            delta += 1
         if dst_obj:
             diff_element.add_attrs(source=None, dest=dst_obj.get_attrs())
+            delta += 1
+
+        self.incr_models_processed(delta)
 
         # Recursively diff the children of src_obj and dst_obj and attach the resulting diffs to the diff_element
         self.diff_child_objects(diff_element, src_obj, dst_obj)

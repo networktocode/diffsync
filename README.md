@@ -22,9 +22,11 @@ A.sync_from(B)
 A.sync_to(B)
 ```
 
+You may wish to peruse the [`diffsync` GitHub topic](https://github.com/topics/diffsync) for examples of projects using this library.
+
 # Getting started
 
-To be able to properly compare different datasets, DiffSync relies on a shared datamodel that both systems must use.
+To be able to properly compare different datasets, DiffSync relies on a shared data model that both systems must use.
 Specifically, each system or dataset must provide a `DiffSync` "adapter" subclass, which in turn represents its dataset as instances of one or more `DiffSyncModel` data model classes.
 
 When comparing two systems, DiffSync detects the intersection between the two systems (which data models they have in common, and which attributes are shared between each pair of data models) and uses this intersection to compare and/or synchronize the data.
@@ -39,9 +41,9 @@ Each `DiffSyncModel` subclass supports the following class-level attributes:
 - `_attributes` - List of non-identifier instance field names for this object; used to identify the fields in common between data models for different systems (Optional)
 - `_children` - Dict of `{<model_name>: <field_name>}` indicating which fields store references to child data model instances. (Optional)
 
-> DiffSyncModel instances must be uniquely identified by their unique id, composed of all fields defined in `_identifiers`. The unique id must be globally meaningful (such as an unique instance name or slug), as it is used to identify object correspondence between differing systems or data sets. It **must not** be a value that is only locally meaningful, such as a database primary key integer value.
+> DiffSyncModel instances must be uniquely identified by their unique ID (or, in database terminology, [natural key](https://en.wikipedia.org/wiki/Natural_key)), which is composed of the union of all fields defined in `_identifiers`. The unique ID must be globally meaningful (such as an unique instance name or slug), as it is used to identify object correspondence between differing systems or data sets. It **must not** be a value that is only locally meaningful to a specific data set, such as a database primary key value.
 
-> Only fields listed in `_identifiers`, `_attributes`, or `_children` will be potentially included in comparison and synchronization between systems or data sets. Any other fields will be ignored; this allows for a model to additionally contain fields that are only locally relevant (such as database primary key values) and therefore are irrelevant to comparisons.
+> Only fields listed in `_identifiers`, `_attributes`, or `_children` will be potentially included in comparison and synchronization between systems or data sets. Any other fields will be ignored; this allows for a model to additionally contain fields that are only locally relevant (such as database primary key values) and therefore are irrelevant to comparison and synchronization.
 
 ```python
 from typing import List, Optional
