@@ -25,6 +25,11 @@ def intersection(lst1, lst2) -> List:
     return lst3
 
 
+def symmetric_difference(lst1, lst2) -> List:
+    """Calculate the symmetric difference of two lists."""
+    return sorted(set(lst1) ^ set(lst2))
+
+
 class OrderedDefaultDict(OrderedDict):
     """A combination of collections.OrderedDict and collections.DefaultDict behavior."""
 

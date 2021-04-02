@@ -22,7 +22,7 @@ import structlog  # type: ignore
 from .diff import Diff, DiffElement
 from .enum import DiffSyncModelFlags, DiffSyncFlags, DiffSyncStatus
 from .exceptions import ObjectNotFound, ObjectNotCreated, ObjectNotUpdated, ObjectNotDeleted, ObjectCrudException
-from .utils import intersection
+from .utils import intersection, symmetric_difference
 
 if TYPE_CHECKING:  # pragma: no cover
     # For type annotation purposes, we have a circular import loop between __init__.py and this file.
@@ -41,7 +41,7 @@ class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
         dst_diffsync: "DiffSync",
         flags: DiffSyncFlags,
         diff_class: Type[Diff] = Diff,
-        callback: Optional[Callable[[int, int], None]] = None,
+        callback: Optional[Callable[[str, int, int], None]] = None,
     ):
         """Create a DiffSyncDiffer for calculating diffs between the provided DiffSync instances."""
         self.src_diffsync = src_diffsync
@@ -62,7 +62,7 @@ class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
         if delta:
             self.models_processed += delta
             if self.callback:
-                self.callback(self.models_processed, self.total_models)
+                self.callback("diff", self.models_processed, self.total_models)
 
     def calculate_diffs(self) -> Diff:
         """Calculate diffs between the src and dst DiffSync objects and return the resulting Diff."""
@@ -73,6 +73,16 @@ class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
 
         self.logger.info("Beginning diff calculation")
         self.diff = self.diff_class()
+
+        skipped_types = symmetric_difference(self.dst_diffsync.top_level, self.src_diffsync.top_level)
+        # This won't count everything, since these top-level types may have child types which are
+        # implicitly also skipped as well, but we don't want to waste too much time on this calculation.
+        for skipped_type in skipped_types:
+            if skipped_type in self.dst_diffsync.top_level:
+                self.incr_models_processed(len(self.dst_diffsync.get_all(skipped_type)))
+            elif skipped_type in self.src_diffsync.top_level:
+                self.incr_models_processed(len(self.src_diffsync.get_all(skipped_type)))
+
         for obj_type in intersection(self.dst_diffsync.top_level, self.src_diffsync.top_level):
             diff_elements = self.diff_object_list(
                 src=self.src_diffsync.get_all(obj_type), dst=self.dst_diffsync.get_all(obj_type),
@@ -170,15 +180,19 @@ class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
         log = self.logger.bind(model=model, unique_id=unique_id)
         if self.flags & DiffSyncFlags.SKIP_UNMATCHED_SRC and not dst_obj:
             log.debug("Skipping unmatched source object")
+            self.incr_models_processed()
             return None
         if self.flags & DiffSyncFlags.SKIP_UNMATCHED_DST and not src_obj:
             log.debug("Skipping unmatched dest object")
+            self.incr_models_processed()
             return None
         if src_obj and src_obj.model_flags & DiffSyncModelFlags.IGNORE:
             log.debug("Skipping due to IGNORE flag on source object")
+            self.incr_models_processed()
             return None
         if dst_obj and dst_obj.model_flags & DiffSyncModelFlags.IGNORE:
             log.debug("Skipping due to IGNORE flag on dest object")
+            self.incr_models_processed()
             return None
 
         diff_element = DiffElement(
@@ -224,6 +238,11 @@ class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
             for child_type, child_fieldname in src_mapping.items():
                 if child_type in dst_mapping:
                     children_mapping[child_type] = child_fieldname
+                else:
+                    self.incr_models_processed(len(getattr(src_obj, child_fieldname)))
+            for child_type, child_fieldname in dst_mapping.items():
+                if child_type not in src_mapping:
+                    self.incr_models_processed(len(getattr(dst_obj, child_fieldname)))
         elif src_obj:
             children_mapping = src_obj.get_children_mapping()
         elif dst_obj:
@@ -257,7 +276,7 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
         src_diffsync: "DiffSync",
         dst_diffsync: "DiffSync",
         flags: DiffSyncFlags,
-        callback: Optional[Callable[[int, int], None]] = None,
+        callback: Optional[Callable[[str, int, int], None]] = None,
     ):
         """Create a DiffSyncSyncer instance, ready to call `perform_sync()` against."""
         self.diff = diff
@@ -280,7 +299,7 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
         if delta:
             self.elements_processed += delta
             if self.callback:
-                self.callback(self.elements_processed, self.total_elements)
+                self.callback("sync", self.elements_processed, self.total_elements)
 
     def perform_sync(self) -> bool:
         """Perform data synchronization based on the provided diff.

@@ -460,7 +460,7 @@ class DiffSync:
         source: "DiffSync",
         diff_class: Type[Diff] = Diff,
         flags: DiffSyncFlags = DiffSyncFlags.NONE,
-        callback: Optional[Callable[[int, int], None]] = None,
+        callback: Optional[Callable[[Text, int, int], None]] = None,
     ):
         """Synchronize data from the given source DiffSync object into the current DiffSync object.
 
@@ -468,10 +468,10 @@ class DiffSync:
             source (DiffSync): object to sync data from into this one
             diff_class (class): Diff or subclass thereof to use to calculate the diffs to use for synchronization
             flags (DiffSyncFlags): Flags influencing the behavior of this sync.
-            callback (function): Function with parameters (current, total), to be called at intervals as the
-                calculation of the diff proceeds.
+            callback (function): Function with parameters (stage, current, total), to be called at intervals as the
+                calculation of the diff and subsequent sync proceed.
         """
-        diff = self.diff_from(source, diff_class=diff_class, flags=flags)
+        diff = self.diff_from(source, diff_class=diff_class, flags=flags, callback=callback)
         syncer = DiffSyncSyncer(diff=diff, src_diffsync=source, dst_diffsync=self, flags=flags, callback=callback)
         result = syncer.perform_sync()
         if result:
@@ -482,7 +482,7 @@ class DiffSync:
         target: "DiffSync",
         diff_class: Type[Diff] = Diff,
         flags: DiffSyncFlags = DiffSyncFlags.NONE,
-        callback: Optional[Callable[[int, int], None]] = None,
+        callback: Optional[Callable[[Text, int, int], None]] = None,
     ):
         """Synchronize data from the current DiffSync object into the given target DiffSync object.
 
@@ -490,8 +490,8 @@ class DiffSync:
             target (DiffSync): object to sync data into from this one.
             diff_class (class): Diff or subclass thereof to use to calculate the diffs to use for synchronization
             flags (DiffSyncFlags): Flags influencing the behavior of this sync.
-            callback (function): Function with parameters (current, total), to be called at intervals as the
-                calculation of the diff proceeds.
+            callback (function): Function with parameters (stage, current, total), to be called at intervals as the
+                calculation of the diff and subsequent sync proceed.
         """
         target.sync_from(self, diff_class=diff_class, flags=flags, callback=callback)
 
@@ -526,7 +526,7 @@ class DiffSync:
         source: "DiffSync",
         diff_class: Type[Diff] = Diff,
         flags: DiffSyncFlags = DiffSyncFlags.NONE,
-        callback: Optional[Callable[[int, int], None]] = None,
+        callback: Optional[Callable[[Text, int, int], None]] = None,
     ) -> Diff:
         """Generate a Diff describing the difference from the other DiffSync to this one.
 
@@ -534,7 +534,7 @@ class DiffSync:
             source (DiffSync): Object to diff against.
             diff_class (class): Diff or subclass thereof to use for diff calculation and storage.
             flags (DiffSyncFlags): Flags influencing the behavior of this diff operation.
-            callback (function): Function with parameters (current, total), to be called at intervals as the
+            callback (function): Function with parameters (stage, current, total), to be called at intervals as the
                 calculation of the diff proceeds.
         """
         differ = DiffSyncDiffer(
@@ -547,7 +547,7 @@ class DiffSync:
         target: "DiffSync",
         diff_class: Type[Diff] = Diff,
         flags: DiffSyncFlags = DiffSyncFlags.NONE,
-        callback: Optional[Callable[[int, int], None]] = None,
+        callback: Optional[Callable[[Text, int, int], None]] = None,
     ) -> Diff:
         """Generate a Diff describing the difference from this DiffSync to another one.
 
@@ -555,7 +555,7 @@ class DiffSync:
             target (DiffSync): Object to diff against.
             diff_class (class): Diff or subclass thereof to use for diff calculation and storage.
             flags (DiffSyncFlags): Flags influencing the behavior of this diff operation.
-            callback (function): Function with parameters (current, total), to be called at intervals as the
+            callback (function): Function with parameters (stage, current, total), to be called at intervals as the
                 calculation of the diff proceeds.
         """
         return target.diff_from(self, diff_class=diff_class, flags=flags, callback=callback)

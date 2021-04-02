@@ -49,6 +49,12 @@ def test_diff_dict_with_no_diffs():
     assert diff.dict() == {}
 
 
+def test_diff_len_with_no_diffs():
+    diff = Diff()
+
+    assert len(diff) == 0
+
+
 def test_diff_children():
     """Test the basic functionality of the Diff class when adding child elements."""
     diff = Diff()
@@ -115,6 +121,11 @@ def test_diff_dict_with_diffs(diff_with_children):
         },
         "person": {"Jimbo": {"+": {}}, "Sully": {"-": {}}},
     }
+
+
+def test_diff_len_with_diffs(diff_with_children):
+    assert len(diff_with_children) == 5
+    assert len(diff_with_children) == sum(count for count in diff_with_children.summary().values())
 
 
 def test_order_children_default(backend_a, backend_b):
