@@ -1,6 +1,6 @@
 """Unit tests for the DiffSync class.
 
-Copyright (c) 2020 Network To Code, LLC <info@networktocode.com>
+Copyright (c) 2020-2021 Network To Code, LLC <info@networktocode.com>
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

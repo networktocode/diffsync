@@ -24,15 +24,15 @@ ds1.sync_to(ds2, callback=print_callback)
 You should see output similar to the following:
 
 ```
-diff: Processed     1/  200 records.
-diff: Processed     3/  200 records.
+diff: Processed   1/200 records.
+diff: Processed   3/200 records.
 ...
-diff: Processed   199/  200 records.
-diff: Processed   200/  200 records.
-sync: Processed     1/  134 records.
-sync: Processed     2/  134 records.
+diff: Processed 199/200 records.
+diff: Processed 200/200 records.
+sync: Processed   1/134 records.
+sync: Processed   2/134 records.
 ...
-sync: Processed   134/  134 records.
+sync: Processed 134/134 records.
 ```
 
 A few points to note:

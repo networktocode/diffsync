@@ -61,7 +61,7 @@ class DiffSync2(DiffSync):
 
 def print_callback(stage, current, total):
     """Callback for DiffSync; stage is "diff"/"sync", current is records processed to date, total is self-evident."""
-    print(f"{stage}: Processed {current:>5}/{total:>5} records.")
+    print(f"{stage}: Processed {current:>3}/{total} records.")
 
 
 def main():
