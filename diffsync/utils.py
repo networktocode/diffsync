@@ -1,6 +1,6 @@
 """Utility functions for DiffSync library.
 
-Copyright (c) 2020 Network To Code, LLC <info@networktocode.com>
+Copyright (c) 2020-2021 Network To Code, LLC <info@networktocode.com>
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,6 +23,11 @@ def intersection(lst1, lst2) -> List:
     """Calculate the intersection of two lists, with ordering based on the first list."""
     lst3 = [value for value in lst1 if value in lst2]
     return lst3
+
+
+def symmetric_difference(lst1, lst2) -> List:
+    """Calculate the symmetric difference of two lists."""
+    return sorted(set(lst1) ^ set(lst2))
 
 
 class OrderedDefaultDict(OrderedDict):

@@ -1,6 +1,6 @@
 """Unit tests for the DiffElement class.
 
-Copyright (c) 2020 Network To Code, LLC <info@networktocode.com>
+Copyright (c) 2020-2021 Network To Code, LLC <info@networktocode.com>
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -57,6 +57,11 @@ def test_diff_element_dict_with_no_diffs():
     assert element.dict() == {}
 
 
+def test_diff_element_len_with_no_diffs():
+    element = DiffElement("interface", "eth0", {"device_name": "device1", "name": "eth0"})
+    assert len(element) == 1
+
+
 def test_diff_element_attrs():
     """Test the basic functionality of the DiffElement class when setting and retrieving attrs."""
     element = DiffElement("interface", "eth0", {"device_name": "device1", "name": "eth0"})
@@ -109,6 +114,13 @@ def test_diff_element_dict_with_diffs():
     assert element.dict() == {"+": {"description": "my interface", "interface_type": "ethernet"}}
     element.add_attrs(dest={"description": "your interface"})
     assert element.dict() == {"-": {"description": "your interface"}, "+": {"description": "my interface"}}
+
+
+def test_diff_element_len_with_diffs():
+    element = DiffElement("interface", "eth0", {"device_name": "device1", "name": "eth0"})
+    element.add_attrs(source={"interface_type": "ethernet", "description": "my interface"})
+    element.add_attrs(dest={"description": "your interface"})
+    assert len(element) == 1
 
 
 def test_diff_element_dict_with_diffs_no_attrs():
@@ -172,3 +184,8 @@ def test_diff_element_dict_with_child_diffs(diff_element_with_children):
             "lo1": {"-": {"description": "Loopback 1"}},
         },
     }
+
+
+def test_diff_element_len_with_child_diffs(diff_element_with_children):
+    assert len(diff_element_with_children) == 5
+    assert len(diff_element_with_children) == sum(count for count in diff_element_with_children.summary().values())

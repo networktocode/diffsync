@@ -1,12 +1,12 @@
+# Example 1
 
-
-This is a simple example to show how diffsync can be used to compare and synchronize multiple data sources.
+This is a simple example to show how DiffSync can be used to compare and synchronize multiple data sources.
 
 For this example, we have a shared model for Device and Interface defined in `models.py`
 And we have 3 instances of DiffSync based on the same model but with different values (BackendA, BackendB & BackendC).
 
+First create and populate all 3 objects:
 
-First create and populate all 3 objects
 ```python
 from backend_a import BackendA
 from backend_b import BackendB
@@ -27,7 +27,8 @@ c.load()
 print(c.str())
 ```
 
-Configure verbosity of DiffSync's structured logging to console; the default is full verbosity (all logs including debugging)
+Configure verbosity of DiffSync's structured logging to console; the default is full verbosity (all logs including debugging):
+
 ```python
 from diffsync.logging import enable_console_logging
 enable_console_logging(verbosity=0)  # Show WARNING and ERROR logs only
@@ -35,25 +36,29 @@ enable_console_logging(verbosity=0)  # Show WARNING and ERROR logs only
 # enable_console_logging(verbosity=2)  # Also include DEBUG logs
 ```
 
-Show the differences between A and B
+Show the differences between A and B:
+
 ```python
 diff_a_b = a.diff_to(b)
 print(diff_a_b.str())
 ```
 
-Show the differences between B and C
+Show the differences between B and C:
+
 ```python
 diff_b_c = c.diff_from(b)
 print(diff_b_c.str())
 ```
 
-Synchronize A and B (update B with the contents of A)
+Synchronize A and B (update B with the contents of A):
+
 ```python
 a.sync_to(b)
 print(a.diff_to(b).str())
 ```
 
-Now A and B will show no differences
+Now A and B will show no differences:
+
 ```python
 diff_a_b = a.diff_to(b)
 print(diff_a_b.str())

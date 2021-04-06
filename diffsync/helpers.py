@@ -1,6 +1,6 @@
 """DiffSync helper classes for calculating and performing diff and sync operations.
 
-Copyright (c) 2020 Network To Code, LLC <info@networktocode.com>
+Copyright (c) 2020-2021 Network To Code, LLC <info@networktocode.com>
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,28 +15,33 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from collections.abc import Iterable as ABCIterable, Mapping as ABCMapping
-from typing import Iterable, List, Mapping, Optional, Tuple, Type, TYPE_CHECKING
+from typing import Callable, Iterable, List, Mapping, Optional, Tuple, Type, TYPE_CHECKING
 
 import structlog  # type: ignore
 
 from .diff import Diff, DiffElement
 from .enum import DiffSyncModelFlags, DiffSyncFlags, DiffSyncStatus
 from .exceptions import ObjectNotFound, ObjectNotCreated, ObjectNotUpdated, ObjectNotDeleted, ObjectCrudException
-from .utils import intersection
+from .utils import intersection, symmetric_difference
 
 if TYPE_CHECKING:  # pragma: no cover
     # For type annotation purposes, we have a circular import loop between __init__.py and this file.
     from . import DiffSync, DiffSyncModel  # pylint: disable=cyclic-import
 
 
-class DiffSyncDiffer:
+class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
     """Helper class implementing diff calculation logic for DiffSync.
 
     Independent from Diff and DiffElement as those classes are purely data objects, while this stores some state.
     """
 
-    def __init__(
-        self, src_diffsync: "DiffSync", dst_diffsync: "DiffSync", flags: DiffSyncFlags, diff_class: Type[Diff] = Diff
+    def __init__(  # pylint: disable=too-many-arguments
+        self,
+        src_diffsync: "DiffSync",
+        dst_diffsync: "DiffSync",
+        flags: DiffSyncFlags,
+        diff_class: Type[Diff] = Diff,
+        callback: Optional[Callable[[str, int, int], None]] = None,
     ):
         """Create a DiffSyncDiffer for calculating diffs between the provided DiffSync instances."""
         self.src_diffsync = src_diffsync
@@ -45,15 +50,39 @@ class DiffSyncDiffer:
 
         self.logger = structlog.get_logger().new(src=src_diffsync, dst=dst_diffsync, flags=flags)
         self.diff_class = diff_class
+        self.callback = callback
         self.diff: Optional[Diff] = None
+
+        self.models_processed = 0
+        self.total_models = len(src_diffsync) + len(dst_diffsync)
+        self.logger.debug(f"Diff calculation between these two datasets will involve {self.total_models} models")
+
+    def incr_models_processed(self, delta: int = 1):
+        """Increment self.models_processed, then call self.callback if present."""
+        if delta:
+            self.models_processed += delta
+            if self.callback:
+                self.callback("diff", self.models_processed, self.total_models)
 
     def calculate_diffs(self) -> Diff:
         """Calculate diffs between the src and dst DiffSync objects and return the resulting Diff."""
         if self.diff is not None:
             return self.diff
 
+        self.models_processed = 0
+
         self.logger.info("Beginning diff calculation")
         self.diff = self.diff_class()
+
+        skipped_types = symmetric_difference(self.dst_diffsync.top_level, self.src_diffsync.top_level)
+        # This won't count everything, since these top-level types may have child types which are
+        # implicitly also skipped as well, but we don't want to waste too much time on this calculation.
+        for skipped_type in skipped_types:
+            if skipped_type in self.dst_diffsync.top_level:
+                self.incr_models_processed(len(self.dst_diffsync.get_all(skipped_type)))
+            elif skipped_type in self.src_diffsync.top_level:
+                self.incr_models_processed(len(self.src_diffsync.get_all(skipped_type)))
+
         for obj_type in intersection(self.dst_diffsync.top_level, self.src_diffsync.top_level):
             diff_elements = self.diff_object_list(
                 src=self.src_diffsync.get_all(obj_type), dst=self.dst_diffsync.get_all(obj_type),
@@ -66,7 +95,7 @@ class DiffSyncDiffer:
         self.diff.complete()
         return self.diff
 
-    def diff_object_list(self, src: Iterable["DiffSyncModel"], dst: Iterable["DiffSyncModel"]) -> List[DiffElement]:
+    def diff_object_list(self, src: List["DiffSyncModel"], dst: List["DiffSyncModel"]) -> List[DiffElement]:
         """Calculate diffs between two lists of like objects.
 
         Helper method to `calculate_diffs`, usually doesn't need to be called directly.
@@ -89,6 +118,9 @@ class DiffSyncDiffer:
         else:
             # In the future we might support set, etc...
             raise TypeError(f"Type combination {type(src)}/{type(dst)} is not supported... for now")
+
+        # Any non-intersection between src and dst can be counted as "processed" and done.
+        self.incr_models_processed(max(len(src) - len(combined_dict), 0) + max(len(dst) - len(combined_dict), 0))
 
         self.validate_objects_for_diff(combined_dict.values())
 
@@ -148,15 +180,19 @@ class DiffSyncDiffer:
         log = self.logger.bind(model=model, unique_id=unique_id)
         if self.flags & DiffSyncFlags.SKIP_UNMATCHED_SRC and not dst_obj:
             log.debug("Skipping unmatched source object")
+            self.incr_models_processed()
             return None
         if self.flags & DiffSyncFlags.SKIP_UNMATCHED_DST and not src_obj:
             log.debug("Skipping unmatched dest object")
+            self.incr_models_processed()
             return None
         if src_obj and src_obj.model_flags & DiffSyncModelFlags.IGNORE:
             log.debug("Skipping due to IGNORE flag on source object")
+            self.incr_models_processed()
             return None
         if dst_obj and dst_obj.model_flags & DiffSyncModelFlags.IGNORE:
             log.debug("Skipping due to IGNORE flag on dest object")
+            self.incr_models_processed()
             return None
 
         diff_element = DiffElement(
@@ -168,10 +204,15 @@ class DiffSyncDiffer:
             diff_class=self.diff_class,
         )
 
+        delta = 0
         if src_obj:
             diff_element.add_attrs(source=src_obj.get_attrs(), dest=None)
+            delta += 1
         if dst_obj:
             diff_element.add_attrs(source=None, dest=dst_obj.get_attrs())
+            delta += 1
+
+        self.incr_models_processed(delta)
 
         # Recursively diff the children of src_obj and dst_obj and attach the resulting diffs to the diff_element
         self.diff_child_objects(diff_element, src_obj, dst_obj)
@@ -197,6 +238,11 @@ class DiffSyncDiffer:
             for child_type, child_fieldname in src_mapping.items():
                 if child_type in dst_mapping:
                     children_mapping[child_type] = child_fieldname
+                else:
+                    self.incr_models_processed(len(getattr(src_obj, child_fieldname)))
+            for child_type, child_fieldname in dst_mapping.items():
+                if child_type not in src_mapping:
+                    self.incr_models_processed(len(getattr(dst_obj, child_fieldname)))
         elif src_obj:
             children_mapping = src_obj.get_children_mapping()
         elif dst_obj:
@@ -218,19 +264,28 @@ class DiffSyncDiffer:
         return diff_element
 
 
-class DiffSyncSyncer:
+class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
     """Helper class implementing data synchronization logic for DiffSync.
 
     Independent from DiffSync and DiffSyncModel as those classes are purely data objects, while this stores some state.
     """
 
-    def __init__(
-        self, diff: Diff, src_diffsync: "DiffSync", dst_diffsync: "DiffSync", flags: DiffSyncFlags,
+    def __init__(  # pylint: disable=too-many-arguments
+        self,
+        diff: Diff,
+        src_diffsync: "DiffSync",
+        dst_diffsync: "DiffSync",
+        flags: DiffSyncFlags,
+        callback: Optional[Callable[[str, int, int], None]] = None,
     ):
         """Create a DiffSyncSyncer instance, ready to call `perform_sync()` against."""
         self.diff = diff
         self.dst_diffsync = dst_diffsync
         self.flags = flags
+        self.callback = callback
+
+        self.elements_processed = 0
+        self.total_elements = len(diff)
 
         self.base_logger = structlog.get_logger().new(src=src_diffsync, dst=dst_diffsync, flags=flags)
 
@@ -238,6 +293,13 @@ class DiffSyncSyncer:
         self.logger: structlog.BoundLogger = self.base_logger
         self.model_class: Type["DiffSyncModel"]
         self.action: Optional[str] = None
+
+    def incr_elements_processed(self, delta: int = 1):
+        """Increment self.elements_processed, then call self.callback if present."""
+        if delta:
+            self.elements_processed += delta
+            if self.callback:
+                self.callback("sync", self.elements_processed, self.total_elements)
 
     def perform_sync(self) -> bool:
         """Perform data synchronization based on the provided diff.
@@ -299,6 +361,8 @@ class DiffSyncSyncer:
                 self.dst_diffsync.remove(model, remove_children=True)
                 return changed
             self.dst_diffsync.remove(model)
+
+        self.incr_elements_processed()
 
         for child in element.get_children():
             changed |= self.sync_diff_element(child, parent_model=model)

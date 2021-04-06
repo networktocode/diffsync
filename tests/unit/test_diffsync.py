@@ -1,6 +1,6 @@
 """Unit tests for the DiffSync class.
 
-Copyright (c) 2020 Network To Code, LLC <info@networktocode.com>
+Copyright (c) 2020-2021 Network To Code, LLC <info@networktocode.com>
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -41,6 +41,10 @@ def test_diffsync_dict_with_no_data(generic_diffsync):
 
 def test_diffsync_str_with_no_data(generic_diffsync):
     assert generic_diffsync.str() == ""
+
+
+def test_diffsync_len_with_no_data(generic_diffsync):
+    assert len(generic_diffsync) == 0
 
 
 def test_diffsync_diff_self_with_no_data_has_no_diffs(generic_diffsync):
@@ -285,6 +289,10 @@ unused: []\
     )
 
 
+def test_diffsync_len_with_data(backend_a):
+    assert len(backend_a) == 23
+
+
 def test_diffsync_diff_self_with_data_has_no_diffs(backend_a):
     # Self diff should always show no diffs!
     assert backend_a.diff_from(backend_a).has_diffs() is False
@@ -328,6 +336,24 @@ def test_diffsync_diff_from_with_custom_diff_class(backend_a, backend_b):
     assert diff_ba.is_complete is True
 
 
+def test_diffsync_diff_with_callback(backend_a, backend_b):
+    last_value = {"current": 0, "total": 0}
+
+    def callback(stage, current, total):
+        assert stage == "diff"
+        last_value["current"] = current
+        last_value["total"] = total
+
+    expected = len(backend_a) + len(backend_b)
+
+    backend_a.diff_from(backend_b, callback=callback)
+    assert last_value == {"current": expected, "total": expected}
+
+    last_value = {"current": 0, "total": 0}
+    backend_a.diff_to(backend_b, callback=callback)
+    assert last_value == {"current": expected, "total": expected}
+
+
 def test_diffsync_sync_from(backend_a, backend_b):
     backend_a.sync_complete = mock.Mock()
     backend_b.sync_complete = mock.Mock()
@@ -366,6 +392,20 @@ def test_diffsync_sync_from(backend_a, backend_b):
         backend_a.get_by_uids(["nyc", "sfo"], Device)
     with pytest.raises(ObjectNotFound):
         backend_a.get_by_uids(["nyc", "sfo"], "device")
+
+
+def test_diffsync_sync_with_callback(backend_a, backend_b):
+    last_value = {"current": 0, "total": 0}
+
+    def callback(stage, current, total):
+        assert stage in ("diff", "sync")
+        last_value["current"] = current
+        last_value["total"] = total
+
+    expected = len(backend_a.diff_from(backend_b))
+
+    backend_a.sync_from(backend_b, callback=callback)
+    assert last_value == {"current": expected, "total": expected}
 
 
 def check_successful_sync_log_sanity(log, src, dst, flags):

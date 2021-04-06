@@ -1,6 +1,6 @@
 """DiffSync front-end classes and logic.
 
-Copyright (c) 2020 Network To Code, LLC <info@networktocode.com>
+Copyright (c) 2020-2021 Network To Code, LLC <info@networktocode.com>
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@ limitations under the License.
 """
 from collections import defaultdict
 from inspect import isclass
-from typing import ClassVar, Dict, List, Mapping, MutableMapping, Optional, Text, Tuple, Type, Union
+from typing import Callable, ClassVar, Dict, List, Mapping, MutableMapping, Optional, Text, Tuple, Type, Union
 
 from pydantic import BaseModel, PrivateAttr
 import structlog  # type: ignore
@@ -359,7 +359,7 @@ class DiffSyncModel(BaseModel):
 class DiffSync:
     """Class for storing a group of DiffSyncModel instances and diffing/synchronizing to another DiffSync instance."""
 
-    # Add mapping of names to specific model classes here:
+    # In any subclass, you would add mapping of names to specific model classes here:
     # modelname1 = MyModelClass1
     # modelname2 = MyModelClass2
 
@@ -418,6 +418,10 @@ class DiffSync:
     def __repr__(self):
         return f"<{str(self)}>"
 
+    def __len__(self):
+        """Total number of elements stored in self._data."""
+        return sum(len(entries) for entries in self._data.values())
+
     def load(self):
         """Load all desired data from whatever backend data source into this instance."""
         # No-op in this generic class
@@ -451,29 +455,45 @@ class DiffSync:
     # Synchronization between DiffSync instances
     # ------------------------------------------------------------------------------
 
-    def sync_from(self, source: "DiffSync", diff_class: Type[Diff] = Diff, flags: DiffSyncFlags = DiffSyncFlags.NONE):
+    def sync_from(
+        self,
+        source: "DiffSync",
+        diff_class: Type[Diff] = Diff,
+        flags: DiffSyncFlags = DiffSyncFlags.NONE,
+        callback: Optional[Callable[[Text, int, int], None]] = None,
+    ):
         """Synchronize data from the given source DiffSync object into the current DiffSync object.
 
         Args:
             source (DiffSync): object to sync data from into this one
             diff_class (class): Diff or subclass thereof to use to calculate the diffs to use for synchronization
             flags (DiffSyncFlags): Flags influencing the behavior of this sync.
+            callback (function): Function with parameters (stage, current, total), to be called at intervals as the
+                calculation of the diff and subsequent sync proceed.
         """
-        diff = self.diff_from(source, diff_class=diff_class, flags=flags)
-        syncer = DiffSyncSyncer(diff=diff, src_diffsync=source, dst_diffsync=self, flags=flags)
+        diff = self.diff_from(source, diff_class=diff_class, flags=flags, callback=callback)
+        syncer = DiffSyncSyncer(diff=diff, src_diffsync=source, dst_diffsync=self, flags=flags, callback=callback)
         result = syncer.perform_sync()
         if result:
             self.sync_complete(source, diff, flags, syncer.base_logger)
 
-    def sync_to(self, target: "DiffSync", diff_class: Type[Diff] = Diff, flags: DiffSyncFlags = DiffSyncFlags.NONE):
+    def sync_to(
+        self,
+        target: "DiffSync",
+        diff_class: Type[Diff] = Diff,
+        flags: DiffSyncFlags = DiffSyncFlags.NONE,
+        callback: Optional[Callable[[Text, int, int], None]] = None,
+    ):
         """Synchronize data from the current DiffSync object into the given target DiffSync object.
 
         Args:
             target (DiffSync): object to sync data into from this one.
             diff_class (class): Diff or subclass thereof to use to calculate the diffs to use for synchronization
             flags (DiffSyncFlags): Flags influencing the behavior of this sync.
+            callback (function): Function with parameters (stage, current, total), to be called at intervals as the
+                calculation of the diff and subsequent sync proceed.
         """
-        target.sync_from(self, diff_class=diff_class, flags=flags)
+        target.sync_from(self, diff_class=diff_class, flags=flags, callback=callback)
 
     def sync_complete(
         self,
@@ -502,7 +522,11 @@ class DiffSync:
     # ------------------------------------------------------------------------------
 
     def diff_from(
-        self, source: "DiffSync", diff_class: Type[Diff] = Diff, flags: DiffSyncFlags = DiffSyncFlags.NONE
+        self,
+        source: "DiffSync",
+        diff_class: Type[Diff] = Diff,
+        flags: DiffSyncFlags = DiffSyncFlags.NONE,
+        callback: Optional[Callable[[Text, int, int], None]] = None,
     ) -> Diff:
         """Generate a Diff describing the difference from the other DiffSync to this one.
 
@@ -510,12 +534,20 @@ class DiffSync:
             source (DiffSync): Object to diff against.
             diff_class (class): Diff or subclass thereof to use for diff calculation and storage.
             flags (DiffSyncFlags): Flags influencing the behavior of this diff operation.
+            callback (function): Function with parameters (stage, current, total), to be called at intervals as the
+                calculation of the diff proceeds.
         """
-        differ = DiffSyncDiffer(src_diffsync=source, dst_diffsync=self, flags=flags, diff_class=diff_class)
+        differ = DiffSyncDiffer(
+            src_diffsync=source, dst_diffsync=self, flags=flags, diff_class=diff_class, callback=callback
+        )
         return differ.calculate_diffs()
 
     def diff_to(
-        self, target: "DiffSync", diff_class: Type[Diff] = Diff, flags: DiffSyncFlags = DiffSyncFlags.NONE
+        self,
+        target: "DiffSync",
+        diff_class: Type[Diff] = Diff,
+        flags: DiffSyncFlags = DiffSyncFlags.NONE,
+        callback: Optional[Callable[[Text, int, int], None]] = None,
     ) -> Diff:
         """Generate a Diff describing the difference from this DiffSync to another one.
 
@@ -523,8 +555,10 @@ class DiffSync:
             target (DiffSync): Object to diff against.
             diff_class (class): Diff or subclass thereof to use for diff calculation and storage.
             flags (DiffSyncFlags): Flags influencing the behavior of this diff operation.
+            callback (function): Function with parameters (stage, current, total), to be called at intervals as the
+                calculation of the diff proceeds.
         """
-        return target.diff_from(self, diff_class=diff_class, flags=flags)
+        return target.diff_from(self, diff_class=diff_class, flags=flags, callback=callback)
 
     # ------------------------------------------------------------------------------
     # Object Storage Management
@@ -567,21 +601,21 @@ class DiffSync:
             raise ObjectNotFound(f"{modelname} {uid} not present in {self.name}")
         return self._data[modelname][uid]
 
-    def get_all(self, obj: Union[Text, DiffSyncModel, Type[DiffSyncModel]]):
+    def get_all(self, obj: Union[Text, DiffSyncModel, Type[DiffSyncModel]]) -> List[DiffSyncModel]:
         """Get all objects of a given type.
 
         Args:
             obj: DiffSyncModel class or instance, or modelname string, that defines the type of the objects to retrieve
 
         Returns:
-            ValuesList[DiffSyncModel]: List of Object
+            List[DiffSyncModel]: List of Object
         """
         if isinstance(obj, str):
             modelname = obj
         else:
             modelname = obj.get_type()
 
-        return self._data[modelname].values()
+        return list(self._data[modelname].values())
 
     def get_by_uids(
         self, uids: List[Text], obj: Union[Text, DiffSyncModel, Type[DiffSyncModel]]
