@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.3.0 - 2021-04-07
+
+### Added
+
+- #48 - added optional `callback` argument to `diff_from`/`diff_to`/`sync_from`/`sync_to` for use with progress reporting.
+
 ## v1.2.0 - 2020-12-08
 
 ### Added
