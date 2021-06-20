@@ -27,11 +27,9 @@ def main():
     local = LocalAdapter()
     local.load()
 
-
     print("Initializing and loading Nautobot Data ...")
     nautobot = NautobotAdapter()
     nautobot.load()
-
 
     if args.diff:
         print("Calculating the Diff between the local adapter and Nautobot ...")
@@ -41,7 +39,6 @@ def main():
     elif args.sync:
         print("Updating the list of countries in Nautobot ...")
         nautobot.sync_from(local)
-
 
 
 if __name__ == "__main__":
