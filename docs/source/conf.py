@@ -13,6 +13,8 @@
 import os
 import sys
 
+from sphinx.ext.apidoc import main
+
 try:
     import toml
 except ImportError:
@@ -21,7 +23,8 @@ except ImportError:
 
 # -- Variable setup --------------------------------------------------------------
 
-PYPROJECT_CONFIG = toml.load(f"{os.path.dirname(os.path.dirname(os.getcwd()))}/pyproject.toml")
+CURR_DIR = os.path.dirname(os.path.dirname(os.getcwd()))
+PYPROJECT_CONFIG = toml.load(f"{CURR_DIR}/pyproject.toml")
 TOOL_CONFIG = PYPROJECT_CONFIG["tool"]["poetry"]
 
 # -- Project information -----------------------------------------------------
@@ -83,5 +86,13 @@ def remove_module_docstring(app, what, name, obj, options, lines):
         del lines[1:]
 
 
+def run_apidoc(_):
+    """Adds the sphinx-apidoc command as a callback during the build process."""
+    src_dir = f"{CURR_DIR}/docs/source"
+    main(["-MTf", "-t", f"{src_dir}/template/api", "-o", f"{src_dir}/api", TOOL_CONFIG["name"]])
+
+
 def setup(app):
+    """Registers the callbacks to be called when the event is emitted."""
+    app.connect("builder-inited", run_apidoc)
     app.connect("autodoc-process-docstring", remove_module_docstring)
