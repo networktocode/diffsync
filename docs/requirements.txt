@@ -2,3 +2,7 @@ m2r2==0.2.7
 Sphinx
 toml
 sphinx-rtd-theme
+pydantic
+structlog
+colorama
+dataclasses
