@@ -30,7 +30,7 @@ TOOL_CONFIG = PYPROJECT_CONFIG["tool"]["poetry"]
 
 # Inserts the diffsync library into the path. This is needed for RTD env to find the
 # library needed for autodocs.
-sys.path.insert(0, os.path.abspath(f"{ROOT_DIR}/{TOOL_CONFIG['name']}/"))
+sys.path.insert(0, os.path.abspath("../.."))
 
 # -- Project information -----------------------------------------------------
 
