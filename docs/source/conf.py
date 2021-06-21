@@ -10,9 +10,9 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-import os
 import sys
 
+from pathlib import Path
 from sphinx.ext.apidoc import main
 
 try:
@@ -23,8 +23,9 @@ except ImportError:
 
 # -- Variable setup --------------------------------------------------------------
 
-CURR_DIR = os.path.dirname(os.path.dirname(os.getcwd()))
-PYPROJECT_CONFIG = toml.load(f"{CURR_DIR}/pyproject.toml")
+ROOT_DIR = Path(__file__).parent.parent.parent
+CURR_DIR = f"{ROOT_DIR}/docs/source"
+PYPROJECT_CONFIG = toml.load(f"{ROOT_DIR}/pyproject.toml")
 TOOL_CONFIG = PYPROJECT_CONFIG["tool"]["poetry"]
 
 # -- Project information -----------------------------------------------------
@@ -88,9 +89,7 @@ def remove_module_docstring(app, what, name, obj, options, lines):
 
 def run_apidoc(_):
     """Adds the sphinx-apidoc command as a callback during the build process."""
-    cur_dir = os.path.abspath(os.path.dirname(__file__))
-    print(cur_dir)
-    main([TOOL_CONFIG["name"], "-MTf", "-t", f"{cur_dir}/template/api", "-o", f"{cur_dir}/api"])
+    main(["-MTf", "-t", f"{CURR_DIR}/template/api", "-o", f"{CURR_DIR}/api", f"{ROOT_DIR}/{TOOL_CONFIG['name']}"])
 
 
 def setup(app):
