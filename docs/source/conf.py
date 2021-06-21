@@ -10,6 +10,7 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
+import os
 import sys
 
 from pathlib import Path
@@ -20,13 +21,16 @@ try:
 except ImportError:
     sys.exit("Please make sure to `pip install toml` or enable the Poetry shell and run `poetry install`.")
 
-
 # -- Variable setup --------------------------------------------------------------
 
 ROOT_DIR = Path(__file__).parent.parent.parent
 CURR_DIR = f"{ROOT_DIR}/docs/source"
 PYPROJECT_CONFIG = toml.load(f"{ROOT_DIR}/pyproject.toml")
 TOOL_CONFIG = PYPROJECT_CONFIG["tool"]["poetry"]
+
+# Inserts the diffsync library into the path. This is needed for RTD env to find the
+# library needed for autodocs.
+sys.path.insert(0, os.path.abspath(f"{ROOT_DIR}/{TOOL_CONFIG['name']}/"))
 
 # -- Project information -----------------------------------------------------
 
