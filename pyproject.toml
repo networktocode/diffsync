@@ -37,6 +37,9 @@ mypy = "^0.782"
 pytest-cov = "^2.10.1"
 pytest-structlog = "^0.3"
 coverage = {extras = ["toml"], version = "^5.3"}
+Sphinx = "^4.0.2"
+m2r2 = "^0.2.7"
+sphinx-rtd-theme = "^0.5.2"
 
 [tool.black]
 line-length = 120
