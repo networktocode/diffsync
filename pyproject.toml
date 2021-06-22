@@ -26,7 +26,7 @@ dataclasses = {version = "^0.7", python = "~3.6"}
 sphinx = {version = "^4.0.2", optional = true}
 m2r2 = {version = "^0.2.7", optional = true}
 sphinx-rtd-theme = {version = "^0.5.2", optional = true}
-toml = {version = "^0.5.2", optional = true}
+toml = {version = "^0.10.2", optional = true}
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.1.0"
