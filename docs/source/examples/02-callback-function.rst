@@ -1,6 +1,6 @@
-*********
-Example 2
-*********
+******************
+Callback Function
+******************
 
 .. mdinclude:: ../../../examples/example2/README.md
    :start-line: 2
