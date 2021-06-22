@@ -19,11 +19,14 @@ python = "^3.6"
 pydantic = "^1.7.4,!=1.8,!=1.8.1"
 structlog = "^20.1.0"
 colorama = {version = "^0.4.3", optional = true}
+# For Pydantic
+dataclasses = {version = "^0.7", python = "~3.6"}
+
+# For RTD poetry integration
 sphinx = {version = "^4.0.2", optional = true}
 m2r2 = {version = "^0.2.7", optional = true}
 sphinx-rtd-theme = {version = "^0.5.2", optional = true}
-# For Pydantic
-dataclasses = {version = "^0.7", python = "~3.6"}
+toml = {version = "^0.5.2", optional = true}
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.1.0"
@@ -45,7 +48,7 @@ sphinx-rtd-theme = "^0.5.2"
 
 [tool.poetry.extras]
 docs = [
-    "Sphinx",
+    "sphinx",
     "m2r2",
     "toml",
     "sphinx-rtd-theme",
