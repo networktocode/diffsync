@@ -36,7 +36,7 @@ sys.path.insert(0, os.path.abspath("../.."))
 # -- Project information -----------------------------------------------------
 
 project = TOOL_CONFIG["name"]
-copyright = f"2021, {','.join(TOOL_CONFIG['authors'])}"
+copyright = f"2020-2021, {','.join(TOOL_CONFIG['authors'])}"
 author = ",".join(TOOL_CONFIG["authors"])
 
 # The full version, including alpha/beta/rc tags
