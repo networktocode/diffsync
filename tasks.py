@@ -316,20 +316,6 @@ def html(context, sourcedir="docs/source", builddir="docs/build"):
 
 
 @task
-def api_doc(context, sourcedir="diffsync", output="docs/source/api"):
-    """Creates api docs using sphinx-apidoc command.
-
-    Args:
-        context (obj): Used to run specific commands
-        sourcedir (str, optional): Source directory for sphinx-apidoc to use. Defaults to "diffsync".
-        output (str, optional): Output dir for sphinx-apidoc to place rendered files. Defaults to "docs/source/api".
-    """
-    print("Building api documentation...")
-    command = f"sphinx-apidoc -MTf -t docs/source/template/api -o {output} {sourcedir}"
-    context.run(command)
-
-
-@task
 def clean_docs(context, builddir="docs/build"):
     """Removes the build directory and all of its contents.
 
