@@ -23,6 +23,8 @@ colorama = {version = "^0.4.3", optional = true}
 # For Pydantic
 dataclasses = {version = "^0.7", python = "~3.6"}
 
+mkdocstrings = {version = "^0.15.2", optional = true}
+mkdocs-include-markdown-plugin = {version = "^3.1.4", optional = true}
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.1.0"
