@@ -22,7 +22,7 @@ A.sync_from(B)
 A.sync_to(B)
 ```
 
-You may wish to peruse the [`diffsync` GitHub topic](https://github.com/topics/diffsync) for examples of projects using this library.
+You may wish to peruse the `diffsync` [GitHub topic](https://github.com/topics/diffsync) for examples of projects using this library.
 
 # Getting started
 

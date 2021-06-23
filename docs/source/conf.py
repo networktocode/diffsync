@@ -90,7 +90,7 @@ def remove_module_docstring(app, what, name, obj, options, lines):
 
 def run_apidoc(_):
     """Adds the sphinx-apidoc command as a callback during the build process."""
-    main(["-MTf", "-t", f"{CURR_DIR}/template/api", "-o", f"{CURR_DIR}/api", f"{ROOT_DIR}/{TOOL_CONFIG['name']}"])
+    main(["-MTfe", "-t", f"{CURR_DIR}/template/api", "-o", f"{CURR_DIR}/api", f"{ROOT_DIR}/{TOOL_CONFIG['name']}"])
 
 
 def setup(app):
