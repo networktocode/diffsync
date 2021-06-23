@@ -1,0 +1,33 @@
+site_name: "DiffSync Documentation"
+site_url: "https://diffsync.readthedocs.io"
+repo_url: "https://github.com/networktocode/diffsync"
+site_description: "Library to easily sync/diff/update 2 different data sources"
+site_author: "Network to Code, LLC <info@networktocode.com>"
+edit_uri: "edit/main/diffsync/docs"
+copyright: "© Copyright 2020-2021, Network to Code, LLC <info@networktocode.com>."
+theme:
+  name: "readthedocs"
+  navigation_depth: 4
+extra_css:
+  - "extra.css"
+plugins:
+  - "search"
+  - "mkdocstrings"
+  - "include-markdown"
+nav:
+  - Introduction: "index.md"
+  - Getting Started: "getting_started.md"
+  - License: "license.md"
+  - Examples:
+      - Using Multiple Data Sources: "examples/example1.md"
+      - Using a Callback Function: "examples/example2.md"
+  - API Reference:
+      - Module:
+          - DiffSync: "api_reference/diffsync.md"
+          - DiffSyncModel: "api_reference/diffsyncmodel.md"
+      - Diff: "api_reference/diff/index.md"
+      - Enum: "api_reference/enum/index.md"
+      - Exceptions: "api_reference/exceptions/index.md"
+      - Helpers: "api_reference/helpers/index.md"
+      - Logging: "api_reference/logging/index.md"
+      - Utils: "api_reference/utils/index.md"

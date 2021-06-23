@@ -1,5 +1,5 @@
 # DiffSync
-
+<!--intro start--> 
 DiffSync is a utility library that can be used to compare and synchronize different datasets.
 
 For example, it can be used to compare a list of devices from 2 inventory systems and, if required, synchronize them in either direction.
@@ -23,9 +23,9 @@ A.sync_to(B)
 ```
 
 You may wish to peruse the [`diffsync` GitHub topic](https://github.com/topics/diffsync) for examples of projects using this library.
-
+<!--intro end-->
 # Getting started
-
+<!--getting started start-->
 To be able to properly compare different datasets, DiffSync relies on a shared data model that both systems must use.
 Specifically, each system or dataset must provide a `DiffSync` "adapter" subclass, which in turn represents its dataset as instances of one or more `DiffSyncModel` data model classes.
 
@@ -151,3 +151,4 @@ class BackendA(DiffSync):
         # The default DiffSync.sync_complete() method does nothing, but it's always a good habit to call super():
         super().sync_complete(source, diff, flags, logger)
 ```
+<!--getting started end-->

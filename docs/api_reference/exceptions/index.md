@@ -1,0 +1,5 @@
+# DiffSync.Exceptions
+
+::: diffsync.exceptions
+
+

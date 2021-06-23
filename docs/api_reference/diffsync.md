@@ -1,0 +1,4 @@
+# DiffSync
+
+::: diffsync.DiffSync
+

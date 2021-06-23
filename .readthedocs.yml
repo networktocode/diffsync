@@ -1,9 +1,8 @@
 ---
 version: 2
 
-sphinx:
-  builder: "html"
-  configuration: "docs/source/conf.py"
+mkdocs:
+  configuration: "mkdocs.yml"
   fail_on_warning: false
 
 python:
