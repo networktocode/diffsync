@@ -1,5 +1,0 @@
-# DiffSync.Enum
-
-::: diffsync.enum
-
-

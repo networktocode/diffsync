@@ -1,4 +1,0 @@
-# DiffSync Model
-
-::: diffsync.DiffSyncModel
-
