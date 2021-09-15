@@ -18,10 +18,6 @@ python:
 services:
   - "docker"
 
-# env:
-  # global:
-    # yamllint disable-line rule:line-length
-
 # Script & Before Script for test stage
 before_script:
   - "pip install invoke poetry toml"
