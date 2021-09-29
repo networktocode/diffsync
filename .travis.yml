@@ -18,11 +18,6 @@ python:
 services:
   - "docker"
 
-env:
-  global:
-    # yamllint disable-line rule:line-length
-    - secure: "oSEtMKAmz3dlzrFnRLp3D/KgdSFy7XmVv6c3aSP7LXi8L2ljRrqFOB6BU3RQ6hNbSF3/bvpM9I4QKfZmOyId23Pr5UoMzaN8eL+xL8ZLkjZp0ngVZcCeXRvGwcmg4WJvVOnq3T/NoC/zwtsZbUt19yIJVVCEQqc84im90g6cLNMUulxQOvh6M/qgW4AFhAfi7lUFybl/RiWZYhvFchWifYTj7IfvZSDtin4UStJj7UApguqW4SseTZ/bmt18GSkOn9WO0sOaUSkehkT3NEMy97TLY73KgYb3LNrP47C2NPYQyyzJdb0szJ9CcVKtFjBBl5bqN5MGW/fqtqbh84Jq2GhTHNiYBcu6u/CJ+fscWYJkEWo0nNeED/ef8Vwv1M/q68IVeWsNO3+Se41WvOhMRsM8u1ek6+sHyyTNcVpGIUw4phHBsfCNiIlydWr8VpjZv9N3E4KqKRyjtpOoZElY11ZJa5rEL4D0s3JgSug958dYg/vsh+QVivNb9bbC/o9vBFqZGhWzGmNW2F3ezODZ9JcBlf1TEIZf8QPAHEO2SF5XCVRcDyByefqW28pOzwgk9Acl1/zIh5fiH/9ZAemlxjr17t4DQQbeQ/wbF6Gsmn0cYYoxjWMSrLqMD7TRQOTAYcxWAOKN/hCK/K6DS96r2CW5pU506zKMvezrskDmmX0="
-
 # Script & Before Script for test stage
 before_script:
   - "pip install invoke poetry toml"
