@@ -13,7 +13,7 @@ B.load()
 
 # Show the difference between both systems, that is, what would change if we applied changes from System B to System A
 diff_a_b = A.diff_from(B)
-print(diff.str())
+print(diff_a_b.str())
 
 # Update System A to align with the current status of system B
 A.sync_from(B)
