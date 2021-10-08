@@ -82,7 +82,7 @@ def run_cmd(context, exec_cmd, name=NAME, image_ver=IMAGE_VER, local=INVOKE_LOCA
 
 
 @task
-def build_image(
+def build(
     context, name=NAME, python_ver=PYTHON_VER, image_ver=IMAGE_VER, nocache=False, forcerm=False
 ):  # pylint: disable=too-many-arguments
     """This will build an image with the provided name and python version.
@@ -123,7 +123,7 @@ def clean_image(context, name=NAME, image_ver=IMAGE_VER):
 
 
 @task
-def rebuild_image(context, name=NAME, python_ver=PYTHON_VER, image_ver=IMAGE_VER):
+def rebuild(context, name=NAME, python_ver=PYTHON_VER, image_ver=IMAGE_VER):
     """This will clean the image and then rebuild image without using cache.
 
     Args:
@@ -133,7 +133,7 @@ def rebuild_image(context, name=NAME, python_ver=PYTHON_VER, image_ver=IMAGE_VER
         image_ver (str): Define image version
     """
     clean_image(context, name, image_ver)
-    build_image(context, name, python_ver, image_ver)
+    build(context, name, python_ver, image_ver)
 
 
 @task
