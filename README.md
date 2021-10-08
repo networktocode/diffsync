@@ -42,7 +42,7 @@ $ pip install git+https://github.com/networktocode/diffsync.git@main
 ```
 
 # Contributing
-Pull requests are welcomed and automatically built and tested against multiple versions of Python through TravisCI.
+Pull requests are welcomed and automatically built and tested against multiple versions of Python through GitHub Actions.
 
 The project is following Network to Code software development guidelines and are leveraging the following:
 
