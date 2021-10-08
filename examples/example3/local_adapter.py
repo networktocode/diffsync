@@ -45,9 +45,11 @@ class LocalAdapter(DiffSync):
             region = self.get(obj=self.region, identifier=slugify(country.get("region")))
 
             name = country.get("country")
-            item = self.country(
-                slug=slugify(name), name=name, subregion=country.get("subregion", None), region=region.slug
-            )
+
+            # The population is store in thousands in the local file so we need to convert it
+            population = int(float(country.get("pop2021")) * 1000)
+
+            item = self.country(slug=slugify(name), name=name, population=population, region=region.slug)
             self.add(item)
 
             region.add_child(item)

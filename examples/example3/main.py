@@ -5,10 +5,12 @@ import argparse
 import pprint
 
 from diffsync import Diff
+from diffsync.enum import DiffSyncFlags
 from diffsync.logging import enable_console_logging
 
 from local_adapter import LocalAdapter
 from nautobot_adapter import NautobotAdapter
+from diff import AlphabeticalOrderDiff
 
 
 def main():
@@ -26,21 +28,21 @@ def main():
     print("Initializing and loading Local Data ...")
     local = LocalAdapter()
     local.load()
-    # print(local.str())
 
     print("Initializing and loading Nautobot Data ...")
     nautobot = NautobotAdapter()
     nautobot.load()
-    # print(nautobot.str())
+
+    flags = DiffSyncFlags.SKIP_UNMATCHED_DST
 
     if args.diff:
         print("Calculating the Diff between the local adapter and Nautobot ...")
-        diff = nautobot.diff_from(local)
+        diff = nautobot.diff_from(local, flags=flags, diff_class=AlphabeticalOrderDiff)
         print(diff.str())
 
     elif args.sync:
         print("Updating the list of countries in Nautobot ...")
-        nautobot.sync_from(local)
+        nautobot.sync_from(local, flags=flags, diff_class=AlphabeticalOrderDiff)
 
 
 if __name__ == "__main__":

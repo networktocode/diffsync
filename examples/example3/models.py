@@ -21,14 +21,14 @@ class Region(DiffSyncModel):
 class Country(DiffSyncModel):
     """Example model of a Country.
 
-    A must be part of a region and can be also associated with a subregion.
+    A country must be part of a region and has an attribute to capture its population.
     """
 
     _modelname = "country"
     _identifiers = ("slug",)
-    _attributes = ("name", "region", "subregion")
+    _attributes = ("name", "region", "population")
 
     slug: str
     name: str
     region: str
-    subregion: Optional[str]
+    population: Optional[int]
