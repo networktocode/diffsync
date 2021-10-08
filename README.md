@@ -26,7 +26,7 @@ A.sync_to(B)
 
 # Documentation
 
-the documentation is available [here]((https://diffsync.readthedocs.io/en/latest/index.html))
+The documentation is available [on Read The Docs](https://diffsync.readthedocs.io/en/latest/index.html).
 
 # Installation
 
