@@ -298,3 +298,30 @@ def tests(context, name=NAME, image_ver=IMAGE_VER, local=INVOKE_LOCAL):
     pytest(context, name, image_ver, local)
 
     print("All tests have passed!")
+
+
+@task
+def html(context, sourcedir="docs/source", builddir="docs/build"):
+    """Creates html docs using sphinx-build command.
+
+    Args:
+        context (obj): Used to run specific commands
+        sourcedir (str, optional): Source directory for sphinx to use. Defaults to "source".
+        builddir (str, optional): Output directory for sphinx to use. Defaults to "build".
+    """
+    print("Building html documentation...")
+    clean_docs(context, builddir)
+    command = f"sphinx-build {sourcedir} {builddir}"
+    context.run(command)
+
+
+@task
+def clean_docs(context, builddir="docs/build"):
+    """Removes the build directory and all of its contents.
+
+    Args:
+        context (obj): Used to run specific commands
+        builddir (str, optional): Directory to be removed. Defaults to "build".
+    """
+    print(f"Removing everything under {builddir} directory...")
+    context.run("rm -rf " + builddir)
