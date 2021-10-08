@@ -124,7 +124,7 @@ jobs:
       - name: "Build Container"
         run: "poetry run invoke build"
       - name: "Run Tests"
-        run: "poetry run invoke unittest"
+        run: "poetry run invoke pytest"
     needs:
       - "pylint"
   publish_gh:
