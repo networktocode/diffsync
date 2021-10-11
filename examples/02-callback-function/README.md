@@ -2,6 +2,9 @@
 
 This example shows how you can set up DiffSync to invoke a callback function to update its status as a sync proceeds. This could be used to, for example, update a status bar (such as with the [tqdm](https://github.com/tqdm/tqdm) library), although here for simplicity we'll just have the callback print directly to the console.
 
+> The source code for this example is in Github in the [examples/02-callback-function/](https://github.com/networktocode/diffsync/tree/main/examples/02-callback-function) directory.
+
+
 ```python
 from diffsync.logging import enable_console_logging
 from example2 import DiffSync1, DiffSync2, print_callback
@@ -10,11 +13,11 @@ enable_console_logging(verbosity=0)  # Show WARNING and ERROR logs only
 
 # Create a DiffSync1 instance and populate it with records numbered 1-100
 ds1 = DiffSync1()
-ds1.populate(count=100)
+ds1.load(count=100)
 
 # Create a DiffSync2 instance and populate it with 100 random records in the range 1-200
 ds2 = DiffSync2()
-ds2.populate(count=100)
+ds2.load(count=100)
 
 # Identify and attempt to resolve the differences between the two,
 # periodically invoking print_callback() as DiffSync progresses
@@ -22,7 +25,6 @@ ds1.sync_to(ds2, callback=print_callback)
 ```
 
 You should see output similar to the following:
-
 ```
 diff: Processed   1/200 records.
 diff: Processed   3/200 records.

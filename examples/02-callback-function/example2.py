@@ -68,13 +68,13 @@ def main():
     """Create instances of DiffSync1 and DiffSync2 and sync them with a progress-reporting callback function."""
     enable_console_logging(verbosity=0)  # Show WARNING and ERROR logs only
 
-    # Create a DiffSync1 instance and populate it with records numbered 1-100
+    # Create a DiffSync1 instance and load it with records numbered 1-100
     ds1 = DiffSync1()
-    ds1.populate(count=100)
+    ds1.load(count=100)
 
-    # Create a DiffSync2 instance and populate it with 100 random records in the range 1-200
+    # Create a DiffSync2 instance and load it with 100 random records in the range 1-200
     ds2 = DiffSync2()
-    ds2.populate(count=100)
+    ds2.load(count=100)
 
     # Identify and attempt to resolve the differences between the two,
     # periodically invoking print_callback() as DiffSync progresses
