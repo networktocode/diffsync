@@ -1,6 +1,5 @@
-import os
+"""Extension of the Base model for the Nautobot DiffSync Adapter to manage the CRUD operations."""
 import pynautobot
-
 
 from diffsync import DiffSync
 from models import Region, Country
@@ -18,7 +17,7 @@ class NautobotRegion(Region):
 
 class NautobotCountry(Country):
     """Extend the Country to manage Country in Nautobot. CREATE/UPDATE/DELETE.
-    
+
     Country are represented in Nautobot as a dcim.region object as well but a country must have a parent.
     Subregion information will be store in the description of the object in Nautobot
     """
@@ -38,7 +37,6 @@ class NautobotCountry(Country):
         Returns:
             NautobotCountry: DiffSync object newly created
         """
-
         # Retrieve the parent region in internal cache to access its UUID
         #  because the UUID is required to associate the object to its parent region in Nautobot
         region = diffsync.get(diffsync.region, attrs.get("region"))
@@ -75,7 +73,6 @@ class NautobotCountry(Country):
         Raises:
             ObjectNotUpdated: if an error occurred.
         """
-
         # Retrive the pynautobot object from Nautobot since we only have the UUID internally
         remote = self.diffsync.nautobot.dcim.regions.get(self.remote_id)
 

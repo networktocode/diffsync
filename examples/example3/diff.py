@@ -1,3 +1,4 @@
+"""Custom Diff class for DiffSync to influence the behavior of the core Engine."""
 from diffsync.diff import Diff
 
 

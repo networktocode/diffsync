@@ -1,9 +1,11 @@
+"""DiffSync adapter to load data from a local file."""
 import json
 
 from slugify import slugify
 
-from diffsync import DiffSync
 from models import Region, Country
+from diffsync import DiffSync
+
 
 COUNTRIES_FILE = "countries.json"
 
@@ -25,14 +27,13 @@ class LocalAdapter(DiffSync):
 
     def load(self, filename=COUNTRIES_FILE):
         """Load all regions and countries from a local JSON file."""
-
         data_file = open(filename, "r")
         countries = json.loads(data_file.read())
 
         # Load all regions first
         # A Region object will be create for each region and it will be store inside the object with self.add
         # To create a Region we are using "self.region" instead of "Region" directly to allow someone to extend this adapter without redefining everything.
-        region_names = set([country.get("region") for country in countries])
+        region_names = {country.get("region") for country in countries}
         for region in region_names:
             self.add(self.region(slug=slugify(region), name=region))
 

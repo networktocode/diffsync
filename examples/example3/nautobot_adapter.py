@@ -1,9 +1,11 @@
+"""DiffSync Adapter for Nautobot to manage regions."""
 import os
 import pynautobot
 
+from nautobot_models import NautobotCountry, NautobotRegion
+
 from diffsync import DiffSync
 
-from nautobot_models import NautobotCountry, NautobotRegion
 
 NAUTOBOT_URL = os.getenv("NAUTOBOT_URL", "https://demo.nautobot.com")
 NAUTOBOT_TOKEN = os.getenv("NAUTOBOT_TOKEN", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
@@ -40,10 +42,11 @@ class NautobotAdapter(DiffSync):
 
     def load(self):
         """Load all data from Nautobot into the internal cache after transformation."""
-
         # Initialize pynautobot to interact with Nautobot and store it within the adapter
         # to reuse it later
-        self.nautobot = pynautobot.api(url=NAUTOBOT_URL, token=NAUTOBOT_TOKEN)
+        self.nautobot = pynautobot.api(
+            url=NAUTOBOT_URL, token=NAUTOBOT_TOKEN
+        )  # pylint: disable=attribute-defined-outside-init
 
         # Pull all regions from Nautobot, which includes all regions and all countries
         regions = self.nautobot.dcim.regions.all()
@@ -75,10 +78,9 @@ class NautobotAdapter(DiffSync):
 
     def sync_from(self, *args, **kwargs):
         """Sync the data with Nautobot but first ensure that all the required Custom fields are present in Nautobot."""
-
         # Check if all required custom fields exist, create them if they don't
         for custom_field in CUSTOM_FIELDS:
-            nb_cfs = self.cfs = self.nautobot.extras.custom_fields.filter(name=custom_field.get("name"))
+            nb_cfs = self.nautobot.extras.custom_fields.filter(name=custom_field.get("name"))
             if not nb_cfs:
                 self.nautobot.extras.custom_fields.create(**custom_field)
 

@@ -2,9 +2,7 @@
 """Main executable for DiffSync "example2"."""
 import sys
 import argparse
-import pprint
 
-from diffsync import Diff
 from diffsync.enum import DiffSyncFlags
 from diffsync.logging import enable_console_logging
 
