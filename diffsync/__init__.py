@@ -692,6 +692,15 @@ class DiffSync:
                         # Since this is "cleanup" code, log an error and continue, instead of letting the exception raise
                         self._log.error(f"Unable to remove child {child_id} of {modelname} {uid} - not found!")
 
+    def add_or_update(self, obj: DiffSyncModel):
+        """Attempt to run self.add, but if raises ObjectAlreadyExists, call obj.update."""
+        try:
+            self.add(obj)
+        except ObjectAlreadyExists:
+            # If object found, update dat badboy
+            self._log.info("Object {0} already exists. Attempting to update.".format(obj))
+            obj.update(obj.get_attrs())
+
 
 # DiffSyncModel references DiffSync and DiffSync references DiffSyncModel. Break the typing loop:
 DiffSyncModel.update_forward_refs()

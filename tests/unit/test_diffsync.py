@@ -81,11 +81,30 @@ def test_diffsync_get_by_uids_with_no_data(generic_diffsync):
         generic_diffsync.get_by_uids(["any", "another"], DiffSyncModel)
 
 
-def test_diffsync_add(generic_diffsync, generic_diffsync_model):
+def test_diffsync_add_raises_already_exists(generic_diffsync, generic_diffsync_model):
     # A DiffSync can store arbitrary DiffSyncModel objects, even if it doesn't know about them at definition time.
     generic_diffsync.add(generic_diffsync_model)
     with pytest.raises(ObjectAlreadyExists):
         generic_diffsync.add(generic_diffsync_model)
+
+
+def test_diffsync_add_or_update(generic_diffsync):
+    # Create interface object to be used to test the add AND update functionality
+    intf = Interface(device_name="device1", name="eth1")
+
+    generic_diffsync.add_or_update(intf)
+    add = generic_diffsync.dict()["interface"]["device1__eth1"]
+
+    # Assert no description has been added
+    assert "description" not in add
+
+    # Update diffsync model and verify it is successfully updated
+    intf.description = "Testing update functionality"
+    generic_diffsync.add_or_update(intf)
+
+    # Assert interface is properly updated
+    update = generic_diffsync.dict()["interface"]["device1__eth1"]
+    assert update["description"] == "Testing update functionality"
 
 
 def test_diffsync_get_with_generic_model(generic_diffsync, generic_diffsync_model):
