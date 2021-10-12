@@ -40,7 +40,7 @@ class LocalAdapter(DiffSync):
             self.add(self.region(slug=slugify(region), name=region))
 
         # Load all countries
-        # A Country object will be create for each country, it will be store inside the object with self.add
+        # A Country object will be created for each country, it will be stored inside the adapter with self.add(),
         # and it will be linked to its parent with parent.add_child(item)
         for country in countries:
 
