@@ -39,7 +39,7 @@ def main():
         diff = nautobot.diff_from(local, flags=flags, diff_class=AlphabeticalOrderDiff)
         print(diff.str())
 
-    elif args.sync:
+    if args.sync:
         print("Updating the list of countries in Nautobot ...")
         nautobot.sync_from(local, flags=flags, diff_class=AlphabeticalOrderDiff)
 
