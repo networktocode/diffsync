@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Main executable for DiffSync "example2"."""
+"""Main executable for DiffSync "example3"."""
 import sys
 import argparse
 
