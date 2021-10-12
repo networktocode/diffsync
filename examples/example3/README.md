@@ -28,7 +28,7 @@ export NAUTOBOT_TOKEN = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 ## Try the example
 
 The first time a lot of changes should be reported between Nautobot and the local data because by default the demo instance doesn't have the subregion define.
-After the first sync, the diff should show no difference. 
+After the first sync, on subsequent runs, the diff should show no changes. 
 At this point, `Diffsync` will be able to identify and fix all changes in Nautobot. You can try to add/update or delete any country in Nautobot and DiffSync will automatically catch it and it will fix it with running in sync mode.
 
 ```
