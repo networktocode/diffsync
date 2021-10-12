@@ -31,6 +31,7 @@ def main():
     nautobot = NautobotAdapter()
     nautobot.load()
 
+    # If a Region exists in Nautobot (the "destination") but not in the local data, skip it, rather than deleting it
     flags = DiffSyncFlags.SKIP_UNMATCHED_DST
 
     if args.diff:
