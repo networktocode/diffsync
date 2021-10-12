@@ -31,9 +31,9 @@ class NautobotAdapter(DiffSync):
     region = NautobotRegion
     country = NautobotCountry
 
-    # Since all countries are associated with a region, we don't need to list country here
     # When doing a diff or a sync between 2 adapters,
     #  diffsync will recursively check all models defined at the top level and their children.
+    # Since countries are defined as children of a region, we don't need to list country here
     top_level = ["region"]
 
     # Human readable name of the Adapter,
