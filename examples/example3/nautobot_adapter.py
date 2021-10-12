@@ -27,7 +27,7 @@ class NautobotAdapter(DiffSync):
     # We are using NautobotCountry and NautobotRegion instead of Region and Country
     # because we are using these classes to manage the logic to integrate with Nautobot
     # NautobotRegion is just a small extension to store the UUID and does not support any CRUD operation toward Nautobot
-    # NautobotCountry support the creation, update or deletion of a country in Nautobot
+    # NautobotCountry supports the creation, update or deletion of a country in Nautobot
     region = NautobotRegion
     country = NautobotCountry
 
