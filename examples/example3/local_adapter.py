@@ -57,4 +57,3 @@ class LocalAdapter(DiffSync):
 
             region.add_child(item)
 
-        data_file.close()
