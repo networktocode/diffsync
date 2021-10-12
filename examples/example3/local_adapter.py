@@ -13,6 +13,8 @@ COUNTRIES_FILE = "countries.json"
 class LocalAdapter(DiffSync):
     """DiffSync Adapter to Load the list of regions and countries from a local JSON file."""
 
+    # Define all data models that this adapter makes use of.
+    # Note that the variable names ("region", "country") need to match between DiffSync Adapter classes.
     region = Region
     country = Country
 
