@@ -22,7 +22,7 @@ CUSTOM_FIELDS = [
 
 
 class NautobotAdapter(DiffSync):
-    """Example of a DiffSync adapter implementation."""
+    """Example of a DiffSync adapter implementation using pynautobot to communicate with a remote Nautobot system."""
 
     # We are using NautobotCountry and NautobotRegion instead of Region and Country
     # because we are using these classes to manage the logic to integrate with Nautobot
