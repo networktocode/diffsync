@@ -13,4 +13,4 @@ class AlphabeticalOrderDiff(Diff):
             # it's possible to access additional information about the object
             #  like  child.action can be "update", "create" or "delete"
 
-            yield children[child_name]
+            yield child
