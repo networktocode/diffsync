@@ -13,7 +13,7 @@ from diff import AlphabeticalOrderDiff
 
 def main():
     """Demonstrate DiffSync behavior using the example backends provided."""
-    parser = argparse.ArgumentParser("example1")
+    parser = argparse.ArgumentParser("example3")
     parser.add_argument("--verbosity", "-v", default=0, action="count")
     parser.add_argument("--diff", action="store_true")
     parser.add_argument("--sync", action="store_true")
