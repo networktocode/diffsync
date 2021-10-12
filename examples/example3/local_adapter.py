@@ -33,7 +33,7 @@ class LocalAdapter(DiffSync):
             countries = json.load(data_file)
 
         # Load all regions first
-        # A Region object will be create for each region and it will be store inside the object with self.add
+        # A Region object will be created for each region and it will be stored inside the adapter with self.add()
         # To create a Region we are using "self.region" instead of "Region" directly to allow someone to extend this adapter without redefining everything.
         region_names = {country.get("region") for country in countries}
         for region in region_names:
