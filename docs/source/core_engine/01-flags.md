@@ -7,7 +7,7 @@ The core engine of DiffSync is meant to be transparent for most users but in som
 
 The flags offers a powerful way to instruct the core engine how to handle some specific situation without changing the data. One way to think of the flags is to represent them as configuration for the core engine. Currently 2 set of flags are supported:
 - **global flags**: applicable to all data.
-- **model flags**: applicable to a single instance of a model.
+- **model flags**: applicable to a specific model or to individual instances of a model.
 
 > *The flags are stored in binary format which allow to store them in a single variable. See the section below [Working with flags](#working-with-flags) to learn how to manage them.*
 
