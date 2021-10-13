@@ -33,7 +33,7 @@ class MyDiff(Diff):
 
 ## Change the order in which the element are being processed 
 
-By default, all objects of the same type will be stored in a dictionary and as such the order in which they will be processed during a diff or a sync operation is not guarantee. When the order in which a given group of object should be processed is important, it's possible to define your own ordering inside a custom Diff class.
+By default, all objects of the same type will be stored in a dictionary and as such the order in which they will be processed during a diff or a sync operation is not guaranteed (although in most cases, it will match the order in which they were initially loaded and added to the adapter). When the order in which a given group of object should be processed is important, it's possible to define your own ordering inside a custom Diff class.
 
 When iterating over a list of objects, either at the top level or as a group of children of a given object, the core engine is looking for a function named after the type of the object `order_children_<type>` and if none is found it will rely on the default function `order_children_default`. Either function need to be present and need to return an Iterator of DiffElement. 
 
