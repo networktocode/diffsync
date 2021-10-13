@@ -5,7 +5,7 @@ When performing a diff or a sync operation, a diff object is generated. A diff o
 
 The diff object helps to access all the DiffElements. It's possible to provide your own Diff class in order to customize some of its capabilities including:
 - The rendering of the result of the diff
-- The order in which the element are being processed 
+- The order in which the elements are processed 
 
 ## Using your own Diff class
 
