@@ -1,7 +1,7 @@
 """DiffSync adapter to load data from a local file."""
 import json
 
-from slugify import slugify
+from slugify import slugify  # pylint: disable=import-error
 
 from models import Region, Country
 from diffsync import DiffSync

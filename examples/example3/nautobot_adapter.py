@@ -1,6 +1,6 @@
 """DiffSync Adapter for Nautobot to manage regions."""
 import os
-import pynautobot
+import pynautobot  # pylint: disable=import-error
 
 from nautobot_models import NautobotCountry, NautobotRegion
 
