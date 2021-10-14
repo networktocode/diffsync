@@ -3,12 +3,12 @@
 import sys
 import argparse
 
-from diffsync.enum import DiffSyncFlags
-from diffsync.logging import enable_console_logging
-
 from local_adapter import LocalAdapter
 from nautobot_adapter import NautobotAdapter
 from diff import AlphabeticalOrderDiff
+
+from diffsync.enum import DiffSyncFlags
+from diffsync.logging import enable_console_logging
 
 
 def main():

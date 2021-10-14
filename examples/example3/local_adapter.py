@@ -27,7 +27,7 @@ class LocalAdapter(DiffSync):
     # mainly used when doing a diff to indicate where each data is coming from
     type = "Local"
 
-    def load(self, filename=COUNTRIES_FILE):
+    def load(self, filename=COUNTRIES_FILE):  # pylint: disable=arguments-differ
         """Load all regions and countries from a local JSON file."""
         with open(filename, "r") as data_file:
             countries = json.load(data_file)

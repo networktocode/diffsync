@@ -17,7 +17,7 @@ limitations under the License.
 
 # pylint: disable=wrong-import-order
 from diffsync import DiffSync
-from models import Site, Device, Interface
+from models import Site, Device, Interface  # pylint: disable=no-name-in-module
 
 DATA = {
     "atl": {

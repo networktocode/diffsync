@@ -1,8 +1,12 @@
 """Extension of the Base model for the Nautobot DiffSync Adapter to manage the CRUD operations."""
 import pynautobot
 
-from diffsync import DiffSync
 from models import Region, Country
+
+from diffsync import DiffSync
+
+
+# pylint: disable=no-member
 
 
 class NautobotRegion(Region):

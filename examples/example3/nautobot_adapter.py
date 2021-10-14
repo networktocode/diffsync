@@ -6,6 +6,7 @@ from nautobot_models import NautobotCountry, NautobotRegion
 
 from diffsync import DiffSync
 
+# pylint: disable=attribute-defined-outside-init
 
 NAUTOBOT_URL = os.getenv("NAUTOBOT_URL", "https://demo.nautobot.com")
 NAUTOBOT_TOKEN = os.getenv("NAUTOBOT_TOKEN", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
@@ -44,9 +45,7 @@ class NautobotAdapter(DiffSync):
         """Load all data from Nautobot into the internal cache after transformation."""
         # Initialize pynautobot to interact with Nautobot and store it within the adapter
         # to reuse it later
-        self.nautobot = pynautobot.api(
-            url=NAUTOBOT_URL, token=NAUTOBOT_TOKEN
-        )  # pylint: disable=attribute-defined-outside-init
+        self.nautobot = pynautobot.api(url=NAUTOBOT_URL, token=NAUTOBOT_TOKEN)
 
         # Pull all regions from Nautobot, which includes all regions and all countries
         regions = self.nautobot.dcim.regions.all()
@@ -76,7 +75,7 @@ class NautobotAdapter(DiffSync):
             self.add(item)
             parent.add_child(item)
 
-    def sync_from(self, *args, **kwargs):
+    def sync_from(self, *args, **kwargs):  # pylint: disable=signature-differs
         """Sync the data with Nautobot but first ensure that all the required Custom fields are present in Nautobot."""
         # Check if all required custom fields exist, create them if they don't
         for custom_field in CUSTOM_FIELDS:

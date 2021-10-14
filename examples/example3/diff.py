@@ -8,7 +8,7 @@ class AlphabeticalOrderDiff(Diff):
     @classmethod
     def order_children_default(cls, children):
         """Simple diff to return all children in alphabetical order."""
-        for child_name, child in sorted(children.items()):
+        for child in sorted(children.values()):
 
             # it's possible to access additional information about the object
             #  like  child.action can be "update", "create" or "delete"
