@@ -56,4 +56,3 @@ class LocalAdapter(DiffSync):
             self.add(item)
 
             region.add_child(item)
-
