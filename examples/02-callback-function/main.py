@@ -37,7 +37,7 @@ class DiffSync1(DiffSync):
 
     top_level = ["number"]
 
-    def populate(self, count):
+    def load(self, count):  # pylint: disable=arguments-differ
         """Construct Numbers from 1 to count."""
         for i in range(count):
             self.add(Number(number=(i + 1)))
@@ -50,7 +50,7 @@ class DiffSync2(DiffSync):
 
     top_level = ["number"]
 
-    def populate(self, count):
+    def load(self, count):  # pylint: disable=arguments-differ
         """Construct count numbers in the range (1 - 2*count)."""
         prev = 0
         for i in range(count):  # pylint: disable=unused-variable

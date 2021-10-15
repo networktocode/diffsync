@@ -7,7 +7,7 @@ This example shows how you can set up DiffSync to invoke a callback function to 
 
 ```python
 from diffsync.logging import enable_console_logging
-from example2 import DiffSync1, DiffSync2, print_callback
+from main import DiffSync1, DiffSync2, print_callback
 
 enable_console_logging(verbosity=0)  # Show WARNING and ERROR logs only
 
