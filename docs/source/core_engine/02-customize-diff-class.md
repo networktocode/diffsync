@@ -56,13 +56,14 @@ class AlphabeticalOrderDiff(Diff):
 
         # Organize the children's name by action create, update or delete
         for child_name, child in children.items():
-            action = child.action or "update
+            action = child.action or "skip"
             children_by_type[action].append(child_name)
 
         # Create a global list, organized per action
         sorted_children = sorted(children_by_type["create"])
         sorted_children += sorted(children_by_type["update"])
         sorted_children += sorted(children_by_type["delete"])
+        sorted_children += sorted(children_by_type["skip"])
 
         for name in sorted_children:
             yield children[name]
