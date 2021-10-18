@@ -59,8 +59,7 @@ class MyAdapter(DiffSync):
 
 | Name | Description | Binary Value |
 |---|---|---|
-| IGNORE | Do not render diffs containing this model; do not make any changes to this model when synchronizing.  Can be used to indicate a model instance that exists but should not be changed by DiffSync.
- | 0b1 |
+| IGNORE | Do not render diffs containing this model; do not make any changes to this model when synchronizing.  Can be used to indicate a model instance that exists but should not be changed by DiffSync. | 0b1 |
 | SKIP_CHILDREN_ON_DELETE | When deleting this model, do not recursively delete its children. Can be used for the case where deletion of a model results in the automatic deletion of all its children. | 0b10 |
 
 ## Working with flags
