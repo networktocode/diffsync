@@ -3,7 +3,7 @@ import json
 
 from slugify import slugify  # pylint: disable=import-error
 
-from models import Region, Country
+from models import Region, Country  # pylint: disable=no-name-in-module
 from diffsync import DiffSync
 
 
