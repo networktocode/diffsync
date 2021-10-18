@@ -9,7 +9,7 @@ The flags offers a powerful way to instruct the core engine how to handle some s
 - **global flags**: applicable to all data.
 - **model flags**: applicable to a specific model or to individual instances of a model.
 
-> *The flags are stored in binary format which allow to store them in a single variable. See the section below [Working with flags](#working-with-flags) to learn how to manage them.*
+> *The flags are stored in binary format which allows storing multiple flags in a single variable. See the section below [Working with flags](#working-with-flags) to learn how to manage them.*
 
 The list of supported flags is expected to grow over time as more use cases are identified. If you think some additional flags should be supported, please reach out via Github to start a discussion.
 
