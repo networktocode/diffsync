@@ -3,9 +3,7 @@
 
 When performing a diff or a sync operation, a diff object is generated. A diff object is itself composed of DiffElement objects representing the different elements of the original datasets with their differences.  
 
-The diff object helps to access all the DiffElements. It's possible to provide your own Diff class in order to customize some of its capabilities including:
-- The rendering of the result of the diff
-- The order in which the elements are processed 
+The diff object helps to access all the DiffElements. It's possible to provide your own Diff class in order to customize some of its capabilities the main one being the order in which the elements are processed.
 
 ## Using your own Diff class
 
@@ -17,18 +15,6 @@ To use your own diff class, you need to provide it at runtime when calling one o
 >>> diff = remote_adapter.diff_from(local_adapter, diff_class=AlphabeticalOrderDiff)
 >>> type(diff)
 <class 'AlphabeticalOrderDiff'>
-```
-
-## Change the rendering of the result of the diff
-
-To update how the result of a diff is rendered by default, you can provide your own `str()` function of the diff class.
-
-```python
->>> from diffsync.diff import Diff
-class MyDiff(Diff):
-
-    def str(self):
-        # Generate a string representation of the diff
 ```
 
 ## Change the order in which the element are being processed 
