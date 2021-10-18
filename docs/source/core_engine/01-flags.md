@@ -30,7 +30,7 @@ diff = nautobot.diff_from(local, flags=flags)
 | CONTINUE_ON_FAILURE | Continue synchronizing even if failures are encountered when syncing individual models. | 0b1 |
 | SKIP_UNMATCHED_SRC | Ignore objects that only exist in the source/"from" DiffSync when determining diffs and syncing.  If this flag is set, no new objects will be created in the target/"to" DiffSync. | 0b10 |
 | SKIP_UNMATCHED_DST | Ignore objects that only exist in the target/"to" DiffSync when determining diffs and syncing.  If this flag is set, no objects will be deleted from the target/"to" DiffSync. | 0b100 |
-| SKIP_UNMATCHED_BOTH | Convenient flag that combine both SKIP_UNMATCHED_SRC and SKIP_UNMATCHED_DST into a single flag | 0b110 |
+| SKIP_UNMATCHED_BOTH | Convenience value combining both SKIP_UNMATCHED_SRC and SKIP_UNMATCHED_DST into a single flag | 0b110 |
 | LOG_UNCHANGED_RECORDS | If this flag is set, a log message will be generated during synchronization for each model, even unchanged ones. | 0b1000 |
 
 ## Model flags
