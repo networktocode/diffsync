@@ -5,7 +5,7 @@ The core engine of DiffSync is meant to be transparent for most users but in som
 
 # Global and Model Flags
 
-The flags offers a powerful way to instruct the core engine how to handle some specific situation without changing the data. One way to think of the flags is to represent them as configuration for the core engine. Currently 2 set of flags are supported:
+These flags offer a powerful way to instruct the core engine how to handle some specific situation without changing the data. One way to think of the flags is to represent them as configuration for the core engine. Currently 2 sets of flags are supported:
 - **global flags**: applicable to all data.
 - **model flags**: applicable to a specific model or to individual instances of a model.
 
