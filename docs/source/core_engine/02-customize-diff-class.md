@@ -40,8 +40,8 @@ When iterating over a list of objects, either at the top level or as a group of 
 In the example below, by default all devices will be sorted per type of CRUD operations (`order_children_device`) while all other objects will be sorted alphabetically (`order_children_default`)
 
 ```python
-class AlphabeticalOrderDiff(Diff):
-    """Simple diff to return all children country in alphabetical order."""
+class MixedOrderingDiff(Diff):
+    """Alternate diff class to list children in alphabetical order, except devices to be ordered by CRUD action."""
 
     @classmethod
     def order_children_default(cls, children):
