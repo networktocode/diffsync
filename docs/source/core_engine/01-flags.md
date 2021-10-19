@@ -104,13 +104,17 @@ After a flag has been enabled, it's possible to disable it with a bitwise NOT op
 
 ```python
 >>> from diffsync.enum import DiffSyncFlags
->>> flags = 0
-# Setting the flag SKIP_UNMATCHED_DST
->>> flags |= DiffSyncFlags.SKIP_UNMATCHED_DST
+>>> flags = DiffSyncFlags.NONE
+# Setting the flags SKIP_UNMATCHED_DST and CONTINUE_ON_FAILURE
+>>> flags |= DiffSyncFlags.SKIP_UNMATCHED_DST | DiffSyncFlags.CONTINUE_ON_FAILURE
+>>> flags
+<DiffSyncFlags.SKIP_UNMATCHED_DST|CONTINUE_ON_FAILURE: 5>
 >>> bool(flags & DiffSyncFlags.SKIP_UNMATCHED_DST)
->>> True
-# Unsetting the flag SKIP_UNMATCHED_DST
+True
+# Unsetting the flag SKIP_UNMATCHED_DST; CONTINUE_ON_FAILURE remains set
 >>> flags &= ~DiffSyncFlags.SKIP_UNMATCHED_DST
+>>> flags
+<DiffSyncFlags.CONTINUE_ON_FAILURE: 1>
 >>> bool(flags & DiffSyncFlags.SKIP_UNMATCHED_DST)
->>> False
+False
 ```
