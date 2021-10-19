@@ -1,12 +1,11 @@
 
-# Getting started
 
 To be able to properly compare different datasets, DiffSync relies on a shared data model that both systems must use.
 Specifically, each system or dataset must provide a `DiffSync` "adapter" subclass, which in turn represents its dataset as instances of one or more `DiffSyncModel` data model classes.
 
 When comparing two systems, DiffSync detects the intersection between the two systems (which data models they have in common, and which attributes are shared between each pair of data models) and uses this intersection to compare and/or synchronize the data.
 
-## Define your model with DiffSyncModel
+# Define your model with DiffSyncModel
 
 `DiffSyncModel` is based on [Pydantic](https://pydantic-docs.helpmanual.io/) and is using Python typing to define the format of each attribute.
 Each `DiffSyncModel` subclass supports the following class-level attributes:
@@ -37,11 +36,11 @@ class Site(DiffSyncModel):
     database_pk: Optional[int]  # not listed in _identifiers/_attributes/_children as it's only locally significant
 ```
 
-### Relationship between models
+## Relationship between models
 
 Currently the relationships between models are very loose by design. Instead of storing an object, it's recommended to store the unique id of an object and retrieve it from the store as needed. The `add_child()` API of `DiffSyncModel` provides this behavior as a default.
 
-## Define your system adapter with DiffSync
+# Define your system adapter with DiffSync
 
 A `DiffSync` "adapter" subclass must reference each model available at the top of the object by its modelname and must have a `top_level` attribute defined to indicate how the diff and the synchronization should be done. In the example below, `"site"` is the only top level object so the synchronization engine will only check all known `Site` instances and all children of each Site. In this case, as shown in the code above, `Device`s are children of `Site`s, so this is exactly the intended logic.
 
@@ -58,7 +57,7 @@ class BackendA(DiffSync):
 
 It's up to the implementer to populate the `DiffSync`'s internal cache with the appropriate data. In the example below we are using the `load()` method to populate the cache but it's not mandatory, it could be done differently.
 
-## Store data in a `DiffSync` object
+# Store data in a `DiffSync` object
 
 To add a site to the local cache/store, you need to pass a valid `DiffSyncModel` object to the `add()` function.
 
@@ -77,13 +76,13 @@ class BackendA(DiffSync):
         site.add_child(device)
 ```
 
-## Update remote system on sync
+# Update remote system on sync
 
 When data synchronization is performed via `sync_from()` or `sync_to()`, DiffSync automatically updates the in-memory
 `DiffSyncModel` objects of the receiving adapter. The implementer of this class is responsible for ensuring that any remote system or data store is updated correspondingly. There are two usual ways to do this, depending on whether it's more
 convenient to manage individual records (as in a database) or modify the entire data store in one pass (as in a file-based data store).
 
-### Manage individual records
+## Manage individual records
 
 To update individual records in a remote system, you need to extend your `DiffSyncModel` class(es) to define your own `create`, `update` and/or `delete` methods for each model.
 A `DiffSyncModel` instance stores a reference to its parent `DiffSync` adapter instance in case you need to use it to look up other model instances from the `DiffSync`'s cache.
@@ -110,7 +109,7 @@ class Device(DiffSyncModel):
         return self
 ```
 
-### Bulk/batch modifications
+## Bulk/batch modifications
 
 If you prefer to update the entire remote system with the final state after performing all individual create/update/delete operations (as might be the case if your "remote system" is a single YAML or JSON file), the easiest place to implement this logic is in the `sync_complete()` callback method that is automatically invoked by DiffSync upon completion of a sync operation.
 

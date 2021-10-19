@@ -1,5 +1,5 @@
 
-# Example 3
+# Example 3 - Work with a remote system
 
 This is a simple example to show how DiffSync can be used to compare and synchronize data with a remote system like [Nautobot](https://nautobot.readthedocs.io) via a REST API.
 
@@ -8,6 +8,11 @@ A country must be part of a region and has an attribute to capture its populatio
 
 The comparison and synchronization of dataset is done between a local JSON file and the [public instance of Nautobot](https://demo.nautobot.com).
 
+Also, this example is showing :
+- How to set a Global Flags to ignore object that are not matching 
+- How to provide a custom Diff class to change the ordering of a group of object
+
+> The source code for this example is in Github in the [examples/03-remote-system/](https://github.com/networktocode/diffsync/tree/main/examples/03-remote-system) directory.
 
 ## Install the requirements
 
