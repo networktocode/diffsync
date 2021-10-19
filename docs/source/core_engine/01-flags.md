@@ -100,7 +100,7 @@ True
 
 ### Disable a flag (bitwise NOT)
 
-After a flag has been enabled, it's possible to disable it with a bitwise NOT operator : `&= ~`
+After a flag has been enabled, it's possible to disable it with a bitwise AND NOT operator : `&= ~`
 
 ```python
 >>> from diffsync.enum import DiffSyncFlags
