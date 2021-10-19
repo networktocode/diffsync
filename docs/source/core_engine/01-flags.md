@@ -90,12 +90,12 @@ Validating if a flag is enabled is possible with the bitwise operator AND: `&`. 
 
 ```python
 >>> from diffsync.enum import DiffSyncFlags
->>> flags = 0
+>>> flags = DiffSyncFlags.NONE
 >>> bool(flags & DiffSyncFlags.CONTINUE_ON_FAILURE)
->>> False
+False
 >>> flags |= DiffSyncFlags.CONTINUE_ON_FAILURE
 >>> bool(flags & DiffSyncFlags.CONTINUE_ON_FAILURE)
->>> True
+True
 ```
 
 ### Disable a flag (bitwise NOT)
