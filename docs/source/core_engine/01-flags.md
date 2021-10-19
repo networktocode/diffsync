@@ -1,8 +1,4 @@
 
-The core engine of DiffSync is meant to be transparent for most users but in some cases it's important to have the ability to change its behavior to adjust to some specific use cases. For these use cases, there are several ways to customize its behavior:
- - Global and Model Flags
- - Diff class
-
 # Global and Model Flags
 
 These flags offer a powerful way to instruct the core engine how to handle some specific situation without changing the data. One way to think of the flags is to represent them as configuration for the core engine. Currently 2 sets of flags are supported:
@@ -64,7 +60,7 @@ class MyAdapter(DiffSync):
 
 ## Working with flags
 
-Flags are stored in binary format. In binary format, each bit of a variable represents 1 flag which allow us to have up to 64 flags stored in a single variable. Using binary flags provides more flexibility to add support for more flags in the future without redefining the current interfaces and the current DiffSync API.
+Flags are stored in binary format. In binary format, each bit of a variable represents 1 flag which allow us to have up to many flags stored in a single variable. Using binary flags provides more flexibility to add support for more flags in the future without redefining the current interfaces and the current DiffSync API.
 
 ### Enable a flag (Bitwise OR)
 
