@@ -1,9 +1,11 @@
-# Example 1
+# Example 1 - Multiple Data Sources
 
 This is a simple example to show how DiffSync can be used to compare and synchronize multiple data sources.
 
 For this example, we have a shared model for Device and Interface defined in `models.py`
 And we have 3 instances of DiffSync based on the same model but with different values (BackendA, BackendB & BackendC).
+
+> The source code for this example is in Github in the [examples/01-multiple-data-sources/](https://github.com/networktocode/diffsync/tree/main/examples/01-multiple-data-sources) directory.
 
 First create and populate all 3 objects:
 
