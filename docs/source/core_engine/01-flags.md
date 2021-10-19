@@ -72,14 +72,16 @@ Enabling a flag is possible with the bitwise OR operator `|=`. It's important to
 
 ```python
 >>> from diffsync.enum import DiffSyncFlags
->>> flags = 0
->>> flags |= DiffSyncFlags.CONTINUE_ON_FAILURE
->>> bin(flags)
+>>> flags = DiffSyncFlags.CONTINUE_ON_FAILURE
+>>> flags
+<DiffSyncFlags.CONTINUE_ON_FAILURE: 1>
+>>> bin(flags.value)
 '0b1'
 >>> flags |= DiffSyncFlags.SKIP_UNMATCHED_DST
->>> bin(flags)
+>>> flags
+<DiffSyncFlags.SKIP_UNMATCHED_DST|CONTINUE_ON_FAILURE: 5>
+>>> bin(flags.value)
 '0b101'
-# Both CONTINUE_ON_FAILURE and SKIP_UNMATCHED_DST flags have been enabled
 ```
 
 ### Checking the value of a specific flag (bitwise AND)
