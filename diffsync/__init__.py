@@ -653,8 +653,12 @@ class DiffSync:
         modelname = obj.get_type()
         uid = obj.get_unique_id()
 
-        if uid in self._data[modelname]:
-            raise ObjectAlreadyExists(f"Object {uid} already present")
+        existing_obj = self._data[modelname].get(uid)
+        if existing_obj:
+            if existing_obj != obj:
+                raise ObjectAlreadyExists(f"Object {uid} already present")
+            # Return so we don't have to change anything on the existing object and underlying data
+            return
 
         if not obj.diffsync:
             obj.diffsync = self
