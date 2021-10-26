@@ -37,7 +37,7 @@ class DiffSyncModel(BaseModel):
     This class has several underscore-prefixed class variables that subclasses should set as desired; see below.
 
     NOTE: The groupings _identifiers, _attributes, and _children are mutually exclusive; any given field name can
-          be included in **at most** one of these three tuples.
+    be included in **at most** one of these three tuples.
     """
 
     _modelname: ClassVar[str] = "diffsyncmodel"

@@ -17,21 +17,21 @@ limitations under the License.
 
 # pylint: disable=wrong-import-order
 from diffsync import DiffSync
-from models import Site, Device, Interface
+from models import Site, Device, Interface  # pylint: disable=no-name-in-module
 
 DATA = {
     "nyc": {
-        "nyc-spine1": {"role": "spine", "interfaces": {"eth0": "Interface 0", "eth1": "Interface 1"}},
+        "nyc-spine1": {"role": "spine", "interfaces": {"eth0": "Interface 1/1", "eth1": "Interface 1"}},
         "nyc-spine2": {"role": "spine", "interfaces": {"eth0": "Interface 0", "eth1": "Interface 1"}},
     },
     "sfo": {
-        "sfo-spine1": {"role": "spine", "interfaces": {"eth0": "Interface 0", "eth1": "Interface 1"}},
-        "sfo-spine2": {"role": "spine", "interfaces": {"eth0": "TBD", "eth1": "ddd", "eth2": "Interface 2"}},
+        "sfo-spine1": {"role": "leaf", "interfaces": {"eth0": "Interface 0", "eth1": "Interface 1"}},
+        "sfo-spine2": {"role": "spine", "interfaces": {"eth0": "Interface 0/0", "eth1": "Interface 0/1"}},
     },
 }
 
 
-class BackendA(DiffSync):
+class BackendC(DiffSync):
     """Example of a DiffSync adapter implementation."""
 
     site = Site
@@ -40,12 +40,10 @@ class BackendA(DiffSync):
 
     top_level = ["site"]
 
-    type = "Backend A"
-
     nb = None
 
     def load(self):
-        """Initialize the BackendA Object by loading some site, device and interfaces from DATA."""
+        """Initialize the BackendC Object by loading some site, device and interfaces from DATA."""
         for site_name, site_data in DATA.items():
             site = self.site(name=site_name)
             self.add(site)

@@ -17,25 +17,21 @@ limitations under the License.
 
 # pylint: disable=wrong-import-order
 from diffsync import DiffSync
-from models import Site, Device, Interface
+from models import Site, Device, Interface  # pylint: disable=no-name-in-module
 
 DATA = {
-    "atl": {
-        "atl-spine1": {"role": "spine", "interfaces": {"eth0": "Interface 0", "eth1": "Interface 1"}},
-        "atl-spine2": {"role": "spine", "interfaces": {"eth0": "Interface 0", "eth1": "Interface 1"}},
-    },
     "nyc": {
-        "nyc-spine1": {"role": "spine", "interfaces": {"eth0": "Interface 0/0", "eth1": "Interface 1"}},
+        "nyc-spine1": {"role": "spine", "interfaces": {"eth0": "Interface 0", "eth1": "Interface 1"}},
         "nyc-spine2": {"role": "spine", "interfaces": {"eth0": "Interface 0", "eth1": "Interface 1"}},
     },
     "sfo": {
-        "sfo-spine1": {"role": "leaf", "interfaces": {"eth0": "Interface 0", "eth1": "Interface 1"}},
-        "sfo-spine2": {"role": "spine", "interfaces": {"eth0": "TBD", "eth1": "ddd"}},
+        "sfo-spine1": {"role": "spine", "interfaces": {"eth0": "Interface 0", "eth1": "Interface 1"}},
+        "sfo-spine2": {"role": "spine", "interfaces": {"eth0": "TBD", "eth1": "ddd", "eth2": "Interface 2"}},
     },
 }
 
 
-class BackendB(DiffSync):
+class BackendA(DiffSync):
     """Example of a DiffSync adapter implementation."""
 
     site = Site
@@ -44,20 +40,22 @@ class BackendB(DiffSync):
 
     top_level = ["site"]
 
+    type = "Backend A"
+
     nb = None
 
     def load(self):
-        """Initialize the BackendB Object by loading some site, device and interfaces from DATA."""
+        """Initialize the BackendA Object by loading some site, device and interfaces from DATA."""
         for site_name, site_data in DATA.items():
             site = self.site(name=site_name)
-            self.add_or_update(site)
+            self.add(site)
 
             for device_name, device_data in site_data.items():
                 device = self.device(name=device_name, role=device_data["role"], site_name=site_name)
-                self.add_or_update(device)
+                self.add(device)
                 site.add_child(device)
 
                 for intf_name, desc in device_data["interfaces"].items():
                     intf = self.interface(name=intf_name, device_name=device_name, description=desc)
-                    self.add_or_update(intf)
+                    self.add(intf)
                     device.add_child(intf)

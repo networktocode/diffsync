@@ -82,7 +82,7 @@ def run_cmd(context, exec_cmd, name=NAME, image_ver=IMAGE_VER, local=INVOKE_LOCA
 
 
 @task
-def build_image(
+def build(
     context, name=NAME, python_ver=PYTHON_VER, image_ver=IMAGE_VER, nocache=False, forcerm=False
 ):  # pylint: disable=too-many-arguments
     """This will build an image with the provided name and python version.
@@ -123,7 +123,7 @@ def clean_image(context, name=NAME, image_ver=IMAGE_VER):
 
 
 @task
-def rebuild_image(context, name=NAME, python_ver=PYTHON_VER, image_ver=IMAGE_VER):
+def rebuild(context, name=NAME, python_ver=PYTHON_VER, image_ver=IMAGE_VER):
     """This will clean the image and then rebuild image without using cache.
 
     Args:
@@ -133,7 +133,7 @@ def rebuild_image(context, name=NAME, python_ver=PYTHON_VER, image_ver=IMAGE_VER
         image_ver (str): Define image version
     """
     clean_image(context, name, image_ver)
-    build_image(context, name, python_ver, image_ver)
+    build(context, name, python_ver, image_ver)
 
 
 @task
@@ -197,7 +197,7 @@ def mypy(context, name=NAME, image_ver=IMAGE_VER, local=INVOKE_LOCAL):
     """
     # pty is set to true to properly run the docker commands due to the invocation process of docker
     # https://docs.pyinvoke.org/en/latest/api/runners.html - Search for pty for more information
-    exec_cmd = 'find . -name "*.py" | xargs mypy --show-error-codes'
+    exec_cmd = 'find . -name "*.py" -not -path "*/examples/*" -not -path "*/docs/*" | xargs mypy --show-error-codes'
     run_cmd(context, exec_cmd, name, image_ver, local)
 
 
@@ -298,3 +298,30 @@ def tests(context, name=NAME, image_ver=IMAGE_VER, local=INVOKE_LOCAL):
     pytest(context, name, image_ver, local)
 
     print("All tests have passed!")
+
+
+@task
+def html(context, sourcedir="docs/source", builddir="docs/build"):
+    """Creates html docs using sphinx-build command.
+
+    Args:
+        context (obj): Used to run specific commands
+        sourcedir (str, optional): Source directory for sphinx to use. Defaults to "source".
+        builddir (str, optional): Output directory for sphinx to use. Defaults to "build".
+    """
+    print("Building html documentation...")
+    clean_docs(context, builddir)
+    command = f"sphinx-build {sourcedir} {builddir}"
+    context.run(command)
+
+
+@task
+def clean_docs(context, builddir="docs/build"):
+    """Removes the build directory and all of its contents.
+
+    Args:
+        context (obj): Used to run specific commands
+        builddir (str, optional): Directory to be removed. Defaults to "build".
+    """
+    print(f"Removing everything under {builddir} directory...")
+    context.run("rm -rf " + builddir)

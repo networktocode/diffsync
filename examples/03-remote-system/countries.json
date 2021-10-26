@@ -1,0 +1,1626 @@
+[
+    {
+      "country": "Vatican City",
+      "pop2021": "0.8000",
+      "area": 1,
+      "region": "Europe",
+      "subregion": "Southern Europe"
+    },
+    {
+      "country": "Tokelau",
+      "pop2021": "1.3730",
+      "area": 12,
+      "region": "Oceania",
+      "subregion": "Polynesia"
+    },
+    {
+      "country": "Niue",
+      "pop2021": "1.6190",
+      "area": 260,
+      "region": "Oceania",
+      "subregion": "Polynesia"
+    },
+    {
+      "country": "Falkland Islands",
+      "pop2021": "3.5330",
+      "area": 12173,
+      "region": "Americas",
+      "subregion": "South America"
+    },
+    {
+      "country": "Montserrat",
+      "pop2021": "4.9770",
+      "area": 102,
+      "region": "Americas",
+      "subregion": "Caribbean"
+    },
+    {
+      "country": "Saint Pierre and Miquelon",
+      "pop2021": "5.7660",
+      "area": 242,
+      "region": "Americas",
+      "subregion": "Northern America"
+    },
+    {
+      "country": "Saint Barthelemy",
+      "pop2021": "9.9070",
+      "area": 21,
+      "region": "Americas",
+      "subregion": "Caribbean"
+    },
+    {
+      "country": "Nauru",
+      "pop2021": "10.8760",
+      "area": 21,
+      "region": "Oceania",
+      "subregion": "Micronesia"
+    },
+    {
+      "country": "Wallis and Futuna",
+      "pop2021": "11.0940",
+      "area": 142,
+      "region": "Oceania",
+      "subregion": "Polynesia"
+    },
+    {
+      "country": "Tuvalu",
+      "pop2021": "11.9310",
+      "area": 26,
+      "region": "Oceania",
+      "subregion": "Polynesia"
+    },
+    {
+      "country": "Anguilla",
+      "pop2021": "15.1170",
+      "area": 91,
+      "region": "Americas",
+      "subregion": "Caribbean"
+    },
+    {
+      "country": "Cook Islands",
+      "pop2021": "17.5650",
+      "area": 236,
+      "region": "Oceania",
+      "subregion": "Polynesia"
+    },
+    {
+      "country": "Palau",
+      "pop2021": "18.1690",
+      "area": 459,
+      "region": "Oceania",
+      "subregion": "Micronesia"
+    },
+    {
+      "country": "British Virgin Islands",
+      "pop2021": "30.4210",
+      "area": 151,
+      "region": "Americas",
+      "subregion": "Caribbean"
+    },
+    {
+      "country": "Gibraltar",
+      "pop2021": "33.6980",
+      "area": 6,
+      "region": "Europe",
+      "subregion": "Southern Europe"
+    },
+    {
+      "country": "San Marino",
+      "pop2021": "34.0170",
+      "area": 61,
+      "region": "Europe",
+      "subregion": "Southern Europe"
+    },
+    {
+      "country": "Liechtenstein",
+      "pop2021": "38.2500",
+      "area": 160,
+      "region": "Europe",
+      "subregion": "Western Europe"
+    },
+    {
+      "country": "Turks and Caicos Islands",
+      "pop2021": "39.2310",
+      "area": 948,
+      "region": "Americas",
+      "subregion": "Caribbean"
+    },
+    {
+      "country": "Saint Martin",
+      "pop2021": "39.2340",
+      "area": 53,
+      "region": "Americas",
+      "subregion": "Caribbean"
+    },
+    {
+      "country": "Monaco",
+      "pop2021": "39.5110",
+      "area": 2,
+      "region": "Europe",
+      "subregion": "Western Europe"
+    },
+    {
+      "country": "Sint Maarten",
+      "pop2021": "43.4120",
+      "area": 34,
+      "region": "Americas",
+      "subregion": "Caribbean"
+    },
+    {
+      "country": "Faroe Islands",
+      "pop2021": "49.0490",
+      "area": 1393,
+      "region": "Europe",
+      "subregion": "Northern Europe"
+    },
+    {
+      "country": "Saint Kitts and Nevis",
+      "pop2021": "53.5440",
+      "area": 261,
+      "region": "Americas",
+      "subregion": "Caribbean"
+    },
+    {
+      "country": "American Samoa",
+      "pop2021": "55.1000",
+      "area": 199,
+      "region": "Oceania",
+      "subregion": "Polynesia"
+    },
+    {
+      "country": "Greenland",
+      "pop2021": "56.8770",
+      "area": 2166086,
+      "region": "Americas",
+      "subregion": "Northern America"
+    },
+    {
+      "country": "Northern Mariana Islands",
+      "pop2021": "57.9170",
+      "area": 464,
+      "region": "Oceania",
+      "subregion": "Micronesia"
+    },
+    {
+      "country": "Marshall Islands",
+      "pop2021": "59.6100",
+      "area": 181,
+      "region": "Oceania",
+      "subregion": "Micronesia"
+    },
+    {
+      "country": "Bermuda",
+      "pop2021": "62.0900",
+      "area": 54,
+      "region": "Americas",
+      "subregion": "Northern America"
+    },
+    {
+      "country": "Cayman Islands",
+      "pop2021": "66.4970",
+      "area": 264,
+      "region": "Americas",
+      "subregion": "Caribbean"
+    },
+    {
+      "country": "Dominica",
+      "pop2021": "72.1670",
+      "area": 751,
+      "region": "Americas",
+      "subregion": "Caribbean"
+    },
+    {
+      "country": "Andorra",
+      "pop2021": "77.3550",
+      "area": 468,
+      "region": "Europe",
+      "subregion": "Southern Europe"
+    },
+    {
+      "country": "Isle of Man",
+      "pop2021": "85.4100",
+      "area": 572,
+      "region": "Europe",
+      "subregion": "Northern Europe"
+    },
+    {
+      "country": "Antigua and Barbuda",
+      "pop2021": "98.7310",
+      "area": 442,
+      "region": "Americas",
+      "subregion": "Caribbean"
+    },
+    {
+      "country": "Seychelles",
+      "pop2021": "98.9080",
+      "area": 452,
+      "region": "Africa",
+      "subregion": "Eastern Africa"
+    },
+    {
+      "country": "United States Virgin Islands",
+      "pop2021": "104.2260",
+      "area": 347,
+      "region": "Americas",
+      "subregion": "Caribbean"
+    },
+    {
+      "country": "Tonga",
+      "pop2021": "106.7600",
+      "area": 747,
+      "region": "Oceania",
+      "subregion": "Polynesia"
+    },
+    {
+      "country": "Aruba",
+      "pop2021": "107.2040",
+      "area": 180,
+      "region": "Americas",
+      "subregion": "Caribbean"
+    },
+    {
+      "country": "Saint Vincent and the Grenadines",
+      "pop2021": "111.2630",
+      "area": 389,
+      "region": "Americas",
+      "subregion": "Caribbean"
+    },
+    {
+      "country": "Grenada",
+      "pop2021": "113.0210",
+      "area": 344,
+      "region": "Americas",
+      "subregion": "Caribbean"
+    },
+    {
+      "country": "Micronesia",
+      "pop2021": "116.2540",
+      "area": 702,
+      "region": "Oceania",
+      "subregion": "Micronesia"
+    },
+    {
+      "country": "Kiribati",
+      "pop2021": "121.3920",
+      "area": 811,
+      "region": "Oceania",
+      "subregion": "Micronesia"
+    },
+    {
+      "country": "Curacao",
+      "pop2021": "164.7980",
+      "area": 444,
+      "region": "Americas",
+      "subregion": "Caribbean"
+    },
+    {
+      "country": "Guam",
+      "pop2021": "170.1790",
+      "area": 549,
+      "region": "Oceania",
+      "subregion": "Micronesia"
+    },
+    {
+      "country": "Saint Lucia",
+      "pop2021": "184.4000",
+      "area": 616,
+      "region": "Americas",
+      "subregion": "Caribbean"
+    },
+    {
+      "country": "Samoa",
+      "pop2021": "200.1490",
+      "area": 2842,
+      "region": "Oceania",
+      "subregion": "Polynesia"
+    },
+    {
+      "country": "Sao Tome and Principe",
+      "pop2021": "223.3680",
+      "area": 964,
+      "region": "Africa",
+      "subregion": "Middle Africa"
+    },
+    {
+      "country": "Mayotte",
+      "pop2021": "279.5150",
+      "area": 374,
+      "region": "Africa",
+      "subregion": "Eastern Africa"
+    },
+    {
+      "country": "French Polynesia",
+      "pop2021": "282.5300",
+      "area": 4167,
+      "region": "Oceania",
+      "subregion": "Polynesia"
+    },
+    {
+      "country": "Barbados",
+      "pop2021": "287.7110",
+      "area": 430,
+      "region": "Americas",
+      "subregion": "Caribbean"
+    },
+    {
+      "country": "New Caledonia",
+      "pop2021": "288.2180",
+      "area": 18575,
+      "region": "Oceania",
+      "subregion": "Melanesia"
+    },
+    {
+      "country": "French Guiana",
+      "pop2021": "306.4480",
+      "area": 83534,
+      "region": "Americas",
+      "subregion": "South America"
+    },
+    {
+      "country": "Vanuatu",
+      "pop2021": "314.4640",
+      "area": 12189,
+      "region": "Oceania",
+      "subregion": "Melanesia"
+    },
+    {
+      "country": "Iceland",
+      "pop2021": "343.3530",
+      "area": 103000,
+      "region": "Europe",
+      "subregion": "Northern Europe"
+    },
+    {
+      "country": "Martinique",
+      "pop2021": "374.7450",
+      "area": 1128,
+      "region": "Americas",
+      "subregion": "Caribbean"
+    },
+    {
+      "country": "Bahamas",
+      "pop2021": "396.9130",
+      "area": 13943,
+      "region": "Americas",
+      "subregion": "Caribbean"
+    },
+    {
+      "country": "Guadeloupe",
+      "pop2021": "400.0200",
+      "area": 1628,
+      "region": "Americas",
+      "subregion": "Caribbean"
+    },
+    {
+      "country": "Belize",
+      "pop2021": "404.9140",
+      "area": 22966,
+      "region": "Americas",
+      "subregion": "Central America"
+    },
+    {
+      "country": "Brunei",
+      "pop2021": "441.5320",
+      "area": 5765,
+      "region": "Asia",
+      "subregion": "South-Eastern Asia"
+    },
+    {
+      "country": "Malta",
+      "pop2021": "442.7840",
+      "area": 316,
+      "region": "Europe",
+      "subregion": "Southern Europe"
+    },
+    {
+      "country": "Maldives",
+      "pop2021": "543.6170",
+      "area": 300,
+      "region": "Asia",
+      "subregion": "Southern Asia"
+    },
+    {
+      "country": "Cape Verde",
+      "pop2021": "561.8980",
+      "area": 4033,
+      "region": "Africa",
+      "subregion": "Western Africa"
+    },
+    {
+      "country": "Suriname",
+      "pop2021": "591.8000",
+      "area": 163820,
+      "region": "Americas",
+      "subregion": "South America"
+    },
+    {
+      "country": "Western Sahara",
+      "pop2021": "611.8750",
+      "area": 266000,
+      "region": "Africa",
+      "subregion": "Northern Africa"
+    },
+    {
+      "country": "Montenegro",
+      "pop2021": "628.0530",
+      "area": 13812,
+      "region": "Europe",
+      "subregion": "Southern Europe"
+    },
+    {
+      "country": "Luxembourg",
+      "pop2021": "634.8140",
+      "area": 2586,
+      "region": "Europe",
+      "subregion": "Western Europe"
+    },
+    {
+      "country": "Macau",
+      "pop2021": "658.3940",
+      "area": 30,
+      "region": "Asia",
+      "subregion": "Eastern Asia"
+    },
+    {
+      "country": "Solomon Islands",
+      "pop2021": "703.9960",
+      "area": 28896,
+      "region": "Oceania",
+      "subregion": "Melanesia"
+    },
+    {
+      "country": "Bhutan",
+      "pop2021": "779.8980",
+      "area": 38394,
+      "region": "Asia",
+      "subregion": "Southern Asia"
+    },
+    {
+      "country": "Guyana",
+      "pop2021": "790.3260",
+      "area": 214969,
+      "region": "Americas",
+      "subregion": "South America"
+    },
+    {
+      "country": "Comoros",
+      "pop2021": "888.4510",
+      "area": 1862,
+      "region": "Africa",
+      "subregion": "Eastern Africa"
+    },
+    {
+      "country": "Reunion",
+      "pop2021": "901.6860",
+      "area": 2511,
+      "region": "Africa",
+      "subregion": "Eastern Africa"
+    },
+    {
+      "country": "Fiji",
+      "pop2021": "902.9060",
+      "area": 18272,
+      "region": "Oceania",
+      "subregion": "Melanesia"
+    },
+    {
+      "country": "Djibouti",
+      "pop2021": "1002.1870",
+      "area": 23200,
+      "region": "Africa",
+      "subregion": "Eastern Africa"
+    },
+    {
+      "country": "Swaziland",
+      "pop2021": "1172.3620",
+      "area": 17364,
+      "region": "Africa",
+      "subregion": "Southern Africa"
+    },
+    {
+      "country": "Cyprus",
+      "pop2021": "1215.5840",
+      "area": 9251,
+      "region": "Europe",
+      "subregion": "Eastern Europe"
+    },
+    {
+      "country": "Mauritius",
+      "pop2021": "1273.4330",
+      "area": 2040,
+      "region": "Africa",
+      "subregion": "Eastern Africa"
+    },
+    {
+      "country": "Estonia",
+      "pop2021": "1325.1850",
+      "area": 45227,
+      "region": "Europe",
+      "subregion": "Northern Europe"
+    },
+    {
+      "country": "Timor-Leste",
+      "pop2021": "1343.8730",
+      "area": 14874,
+      "region": "Asia",
+      "subregion": "South-Eastern Asia"
+    },
+    {
+      "country": "Trinidad and Tobago",
+      "pop2021": "1403.3750",
+      "area": 5130,
+      "region": "Americas",
+      "subregion": "Caribbean"
+    },
+    {
+      "country": "Equatorial Guinea",
+      "pop2021": "1449.8960",
+      "area": 28051,
+      "region": "Africa",
+      "subregion": "Middle Africa"
+    },
+    {
+      "country": "Bahrain",
+      "pop2021": "1748.2960",
+      "area": 765,
+      "region": "Asia",
+      "subregion": "Western Asia"
+    },
+    {
+      "country": "Latvia",
+      "pop2021": "1866.9420",
+      "area": 64559,
+      "region": "Europe",
+      "subregion": "Northern Europe"
+    },
+    {
+      "country": "Guinea-Bissau",
+      "pop2021": "2015.4940",
+      "area": 36125,
+      "region": "Africa",
+      "subregion": "Western Africa"
+    },
+    {
+      "country": "Slovenia",
+      "pop2021": "2078.7240",
+      "area": 20273,
+      "region": "Europe",
+      "subregion": "Southern Europe"
+    },
+    {
+      "country": "Macedonia",
+      "pop2021": "2082.6580",
+      "area": 25713,
+      "region": "Europe",
+      "subregion": "Southern Europe"
+    },
+    {
+      "country": "Lesotho",
+      "pop2021": "2159.0790",
+      "area": 30355,
+      "region": "Africa",
+      "subregion": "Southern Africa"
+    },
+    {
+      "country": "Gabon",
+      "pop2021": "2278.8250",
+      "area": 267668,
+      "region": "Africa",
+      "subregion": "Middle Africa"
+    },
+    {
+      "country": "Botswana",
+      "pop2021": "2397.2410",
+      "area": 582000,
+      "region": "Africa",
+      "subregion": "Southern Africa"
+    },
+    {
+      "country": "Gambia",
+      "pop2021": "2486.9450",
+      "area": 10689,
+      "region": "Africa",
+      "subregion": "Western Africa"
+    },
+    {
+      "country": "Namibia",
+      "pop2021": "2587.3440",
+      "area": 825615,
+      "region": "Africa",
+      "subregion": "Southern Africa"
+    },
+    {
+      "country": "Lithuania",
+      "pop2021": "2689.8620",
+      "area": 65300,
+      "region": "Europe",
+      "subregion": "Northern Europe"
+    },
+    {
+      "country": "Puerto Rico",
+      "pop2021": "2828.2550",
+      "area": 8870,
+      "region": "Americas",
+      "subregion": "Caribbean"
+    },
+    {
+      "country": "Albania",
+      "pop2021": "2872.9330",
+      "area": 28748,
+      "region": "Europe",
+      "subregion": "Southern Europe"
+    },
+    {
+      "country": "Qatar",
+      "pop2021": "2930.5280",
+      "area": 11586,
+      "region": "Asia",
+      "subregion": "Western Asia"
+    },
+    {
+      "country": "Armenia",
+      "pop2021": "2968.1270",
+      "area": 29743,
+      "region": "Asia",
+      "subregion": "Western Asia"
+    },
+    {
+      "country": "Jamaica",
+      "pop2021": "2973.4630",
+      "area": 10991,
+      "region": "Americas",
+      "subregion": "Caribbean"
+    },
+    {
+      "country": "Bosnia and Herzegovina",
+      "pop2021": "3263.4660",
+      "area": 51209,
+      "region": "Europe",
+      "subregion": "Southern Europe"
+    },
+    {
+      "country": "Mongolia",
+      "pop2021": "3329.2890",
+      "area": 1564110,
+      "region": "Asia",
+      "subregion": "Eastern Asia"
+    },
+    {
+      "country": "Uruguay",
+      "pop2021": "3485.1510",
+      "area": 181034,
+      "region": "Americas",
+      "subregion": "South America"
+    },
+    {
+      "country": "Eritrea",
+      "pop2021": "3601.4670",
+      "area": 117600,
+      "region": "Africa",
+      "subregion": "Eastern Africa"
+    },
+    {
+      "country": "Georgia",
+      "pop2021": "3979.7650",
+      "area": 69700,
+      "region": "Asia",
+      "subregion": "Western Asia"
+    },
+    {
+      "country": "Moldova",
+      "pop2021": "4024.0190",
+      "area": 33846,
+      "region": "Europe",
+      "subregion": "Eastern Europe"
+    },
+    {
+      "country": "Croatia",
+      "pop2021": "4081.6510",
+      "area": 56594,
+      "region": "Europe",
+      "subregion": "Southern Europe"
+    },
+    {
+      "country": "Kuwait",
+      "pop2021": "4328.5500",
+      "area": 17818,
+      "region": "Asia",
+      "subregion": "Western Asia"
+    },
+    {
+      "country": "Panama",
+      "pop2021": "4381.5790",
+      "area": 75417,
+      "region": "Americas",
+      "subregion": "Central America"
+    },
+    {
+      "country": "Mauritania",
+      "pop2021": "4775.1190",
+      "area": 1030700,
+      "region": "Africa",
+      "subregion": "Western Africa"
+    },
+    {
+      "country": "New Zealand",
+      "pop2021": "4860.6430",
+      "area": 270467,
+      "region": "Oceania",
+      "subregion": "Australia and New Zealand"
+    },
+    {
+      "country": "Central African Republic",
+      "pop2021": "4919.9810",
+      "area": 622984,
+      "region": "Africa",
+      "subregion": "Middle Africa"
+    },
+    {
+      "country": "Ireland",
+      "pop2021": "4982.9070",
+      "area": 70273,
+      "region": "Europe",
+      "subregion": "Northern Europe"
+    },
+    {
+      "country": "Costa Rica",
+      "pop2021": "5139.0520",
+      "area": 51100,
+      "region": "Americas",
+      "subregion": "Central America"
+    },
+    {
+      "country": "Liberia",
+      "pop2021": "5180.2030",
+      "area": 111369,
+      "region": "Africa",
+      "subregion": "Western Africa"
+    },
+    {
+      "country": "Palestine",
+      "pop2021": "5222.7480",
+      "area": 6220,
+      "region": "Asia",
+      "subregion": "Western Asia"
+    },
+    {
+      "country": "Oman",
+      "pop2021": "5223.3750",
+      "area": 309500,
+      "region": "Asia",
+      "subregion": "Western Asia"
+    },
+    {
+      "country": "Slovakia",
+      "pop2021": "5460.7210",
+      "area": 49037,
+      "region": "Europe",
+      "subregion": "Eastern Europe"
+    },
+    {
+      "country": "Norway",
+      "pop2021": "5465.6300",
+      "area": 323802,
+      "region": "Europe",
+      "subregion": "Northern Europe"
+    },
+    {
+      "country": "Finland",
+      "pop2021": "5548.3600",
+      "area": 338424,
+      "region": "Europe",
+      "subregion": "Northern Europe"
+    },
+    {
+      "country": "Republic of the Congo",
+      "pop2021": "5657.0130",
+      "area": 342000,
+      "region": "Africa",
+      "subregion": "Middle Africa"
+    },
+    {
+      "country": "Denmark",
+      "pop2021": "5813.2980",
+      "area": 43094,
+      "region": "Europe",
+      "subregion": "Northern Europe"
+    },
+    {
+      "country": "Singapore",
+      "pop2021": "5896.6860",
+      "area": 710,
+      "region": "Asia",
+      "subregion": "South-Eastern Asia"
+    },
+    {
+      "country": "Turkmenistan",
+      "pop2021": "6117.9240",
+      "area": 488100,
+      "region": "Asia",
+      "subregion": "Central Asia"
+    },
+    {
+      "country": "El Salvador",
+      "pop2021": "6518.4990",
+      "area": 21041,
+      "region": "Americas",
+      "subregion": "Central America"
+    },
+    {
+      "country": "Kyrgyzstan",
+      "pop2021": "6628.3560",
+      "area": 199951,
+      "region": "Asia",
+      "subregion": "Central Asia"
+    },
+    {
+      "country": "Nicaragua",
+      "pop2021": "6702.3850",
+      "area": 130373,
+      "region": "Americas",
+      "subregion": "Central America"
+    },
+    {
+      "country": "Lebanon",
+      "pop2021": "6769.1460",
+      "area": 10452,
+      "region": "Asia",
+      "subregion": "Western Asia"
+    },
+    {
+      "country": "Bulgaria",
+      "pop2021": "6896.6630",
+      "area": 110879,
+      "region": "Europe",
+      "subregion": "Eastern Europe"
+    },
+    {
+      "country": "Libya",
+      "pop2021": "6958.5320",
+      "area": 1759540,
+      "region": "Africa",
+      "subregion": "Northern Africa"
+    },
+    {
+      "country": "Paraguay",
+      "pop2021": "7219.6380",
+      "area": 406752,
+      "region": "Americas",
+      "subregion": "South America"
+    },
+    {
+      "country": "Laos",
+      "pop2021": "7379.3580",
+      "area": 236800,
+      "region": "Asia",
+      "subregion": "South-Eastern Asia"
+    },
+    {
+      "country": "Hong Kong",
+      "pop2021": "7552.8100",
+      "area": 1104,
+      "region": "Asia",
+      "subregion": "Eastern Asia"
+    },
+    {
+      "country": "Sierra Leone",
+      "pop2021": "8141.3430",
+      "area": 71740,
+      "region": "Africa",
+      "subregion": "Western Africa"
+    },
+    {
+      "country": "Togo",
+      "pop2021": "8478.2500",
+      "area": 56785,
+      "region": "Africa",
+      "subregion": "Western Africa"
+    },
+    {
+      "country": "Serbia",
+      "pop2021": "8697.5500",
+      "area": 88361,
+      "region": "Europe",
+      "subregion": "Southern Europe"
+    },
+    {
+      "country": "Switzerland",
+      "pop2021": "8715.4940",
+      "area": 41284,
+      "region": "Europe",
+      "subregion": "Western Europe"
+    },
+    {
+      "country": "Israel",
+      "pop2021": "8789.7740",
+      "area": 20770,
+      "region": "Asia",
+      "subregion": "Western Asia"
+    },
+    {
+      "country": "Austria",
+      "pop2021": "9043.0700",
+      "area": 83871,
+      "region": "Europe",
+      "subregion": "Western Europe"
+    },
+    {
+      "country": "Papua New Guinea",
+      "pop2021": "9119.0100",
+      "area": 462840,
+      "region": "Oceania",
+      "subregion": "Melanesia"
+    },
+    {
+      "country": "Belarus",
+      "pop2021": "9442.8620",
+      "area": 207600,
+      "region": "Europe",
+      "subregion": "Eastern Europe"
+    },
+    {
+      "country": "Hungary",
+      "pop2021": "9634.1640",
+      "area": 93028,
+      "region": "Europe",
+      "subregion": "Eastern Europe"
+    },
+    {
+      "country": "Tajikistan",
+      "pop2021": "9749.6270",
+      "area": 143100,
+      "region": "Asia",
+      "subregion": "Central Asia"
+    },
+    {
+      "country": "United Arab Emirates",
+      "pop2021": "9991.0890",
+      "area": 83600,
+      "region": "Asia",
+      "subregion": "Western Asia"
+    },
+    {
+      "country": "Honduras",
+      "pop2021": "10062.9910",
+      "area": 112492,
+      "region": "Americas",
+      "subregion": "Central America"
+    },
+    {
+      "country": "Sweden",
+      "pop2021": "10160.1690",
+      "area": 450295,
+      "region": "Europe",
+      "subregion": "Northern Europe"
+    },
+    {
+      "country": "Portugal",
+      "pop2021": "10167.9250",
+      "area": 92090,
+      "region": "Europe",
+      "subregion": "Southern Europe"
+    },
+    {
+      "country": "Azerbaijan",
+      "pop2021": "10223.3420",
+      "area": 86600,
+      "region": "Asia",
+      "subregion": "Western Asia"
+    },
+    {
+      "country": "Jordan",
+      "pop2021": "10269.0210",
+      "area": 89342,
+      "region": "Asia",
+      "subregion": "Western Asia"
+    },
+    {
+      "country": "Greece",
+      "pop2021": "10370.7440",
+      "area": 131990,
+      "region": "Europe",
+      "subregion": "Southern Europe"
+    },
+    {
+      "country": "Czech Republic",
+      "pop2021": "10724.5550",
+      "area": 78865,
+      "region": "Europe",
+      "subregion": "Eastern Europe"
+    },
+    {
+      "country": "Dominican Republic",
+      "pop2021": "10953.7030",
+      "area": 48671,
+      "region": "Americas",
+      "subregion": "Caribbean"
+    },
+    {
+      "country": "Cuba",
+      "pop2021": "11317.5050",
+      "area": 109884,
+      "region": "Americas",
+      "subregion": "Caribbean"
+    },
+    {
+      "country": "South Sudan",
+      "pop2021": "11381.3780",
+      "area": 619745,
+      "region": "Africa",
+      "subregion": "Middle Africa"
+    },
+    {
+      "country": "Haiti",
+      "pop2021": "11541.6850",
+      "area": 27750,
+      "region": "Americas",
+      "subregion": "Caribbean"
+    },
+    {
+      "country": "Belgium",
+      "pop2021": "11632.3260",
+      "area": 30528,
+      "region": "Europe",
+      "subregion": "Western Europe"
+    },
+    {
+      "country": "Bolivia",
+      "pop2021": "11832.9400",
+      "area": 1098581,
+      "region": "Americas",
+      "subregion": "South America"
+    },
+    {
+      "country": "Tunisia",
+      "pop2021": "11935.7660",
+      "area": 163610,
+      "region": "Africa",
+      "subregion": "Northern Africa"
+    },
+    {
+      "country": "Burundi",
+      "pop2021": "12255.4330",
+      "area": 27834,
+      "region": "Africa",
+      "subregion": "Eastern Africa"
+    },
+    {
+      "country": "Benin",
+      "pop2021": "12451.0400",
+      "area": 112622,
+      "region": "Africa",
+      "subregion": "Western Africa"
+    },
+    {
+      "country": "Rwanda",
+      "pop2021": "13276.5130",
+      "area": 26338,
+      "region": "Africa",
+      "subregion": "Eastern Africa"
+    },
+    {
+      "country": "Guinea",
+      "pop2021": "13497.2440",
+      "area": 245857,
+      "region": "Africa",
+      "subregion": "Western Africa"
+    },
+    {
+      "country": "Zimbabwe",
+      "pop2021": "15092.1710",
+      "area": 390757,
+      "region": "Africa",
+      "subregion": "Eastern Africa"
+    },
+    {
+      "country": "Somalia",
+      "pop2021": "16359.5040",
+      "area": 637657,
+      "region": "Africa",
+      "subregion": "Eastern Africa"
+    },
+    {
+      "country": "Chad",
+      "pop2021": "16914.9850",
+      "area": 1284000,
+      "region": "Africa",
+      "subregion": "Middle Africa"
+    },
+    {
+      "country": "Cambodia",
+      "pop2021": "16946.4380",
+      "area": 181035,
+      "region": "Asia",
+      "subregion": "South-Eastern Asia"
+    },
+    {
+      "country": "Netherlands",
+      "pop2021": "17173.0990",
+      "area": 41850,
+      "region": "Europe",
+      "subregion": "Western Europe"
+    },
+    {
+      "country": "Senegal",
+      "pop2021": "17196.3010",
+      "area": 196722,
+      "region": "Africa",
+      "subregion": "Western Africa"
+    },
+    {
+      "country": "Ecuador",
+      "pop2021": "17888.4750",
+      "area": 276841,
+      "region": "Americas",
+      "subregion": "South America"
+    },
+    {
+      "country": "Guatemala",
+      "pop2021": "18249.8600",
+      "area": 108889,
+      "region": "Americas",
+      "subregion": "Central America"
+    },
+    {
+      "country": "Syria",
+      "pop2021": "18275.7020",
+      "area": 185180,
+      "region": "Asia",
+      "subregion": "Western Asia"
+    },
+    {
+      "country": "Zambia",
+      "pop2021": "18920.6510",
+      "area": 752612,
+      "region": "Africa",
+      "subregion": "Eastern Africa"
+    },
+    {
+      "country": "Kazakhstan",
+      "pop2021": "18994.9620",
+      "area": 2724900,
+      "region": "Asia",
+      "subregion": "Central Asia"
+    },
+    {
+      "country": "Romania",
+      "pop2021": "19127.7740",
+      "area": 238391,
+      "region": "Europe",
+      "subregion": "Eastern Europe"
+    },
+    {
+      "country": "Chile",
+      "pop2021": "19212.3610",
+      "area": 756102,
+      "region": "Americas",
+      "subregion": "South America"
+    },
+    {
+      "country": "Malawi",
+      "pop2021": "19647.6840",
+      "area": 118484,
+      "region": "Africa",
+      "subregion": "Eastern Africa"
+    },
+    {
+      "country": "Mali",
+      "pop2021": "20855.7350",
+      "area": 1240192,
+      "region": "Africa",
+      "subregion": "Western Africa"
+    },
+    {
+      "country": "Burkina Faso",
+      "pop2021": "21497.0960",
+      "area": 272967,
+      "region": "Africa",
+      "subregion": "Western Africa"
+    },
+    {
+      "country": "Sri Lanka",
+      "pop2021": "21497.3100",
+      "area": 65610,
+      "region": "Asia",
+      "subregion": "Southern Asia"
+    },
+    {
+      "country": "Taiwan",
+      "pop2021": "23855.0100",
+      "area": 36193,
+      "region": "Asia",
+      "subregion": "Eastern Asia"
+    },
+    {
+      "country": "Niger",
+      "pop2021": "25130.8170",
+      "area": 1267000,
+      "region": "Africa",
+      "subregion": "Western Africa"
+    },
+    {
+      "country": "Australia",
+      "pop2021": "25788.2150",
+      "area": 7692024,
+      "region": "Oceania",
+      "subregion": "Australia and New Zealand"
+    },
+    {
+      "country": "North Korea",
+      "pop2021": "25887.0410",
+      "area": 120538,
+      "region": "Asia",
+      "subregion": "Eastern Asia"
+    },
+    {
+      "country": "Ivory Coast",
+      "pop2021": "27053.6290",
+      "area": 322463,
+      "region": "Africa",
+      "subregion": "Western Africa"
+    },
+    {
+      "country": "Cameroon",
+      "pop2021": "27224.2650",
+      "area": 475442,
+      "region": "Africa",
+      "subregion": "Middle Africa"
+    },
+    {
+      "country": "Madagascar",
+      "pop2021": "28427.3280",
+      "area": 587041,
+      "region": "Africa",
+      "subregion": "Eastern Africa"
+    },
+    {
+      "country": "Venezuela",
+      "pop2021": "28704.9540",
+      "area": 916445,
+      "region": "Americas",
+      "subregion": "South America"
+    },
+    {
+      "country": "Nepal",
+      "pop2021": "29674.9200",
+      "area": 147181,
+      "region": "Asia",
+      "subregion": "Southern Asia"
+    },
+    {
+      "country": "Yemen",
+      "pop2021": "30490.6400",
+      "area": 527968,
+      "region": "Asia",
+      "subregion": "Western Asia"
+    },
+    {
+      "country": "Ghana",
+      "pop2021": "31732.1290",
+      "area": 238533,
+      "region": "Africa",
+      "subregion": "Western Africa"
+    },
+    {
+      "country": "Mozambique",
+      "pop2021": "32163.0470",
+      "area": 801590,
+      "region": "Africa",
+      "subregion": "Eastern Africa"
+    },
+    {
+      "country": "Malaysia",
+      "pop2021": "32776.1940",
+      "area": 330803,
+      "region": "Asia",
+      "subregion": "South-Eastern Asia"
+    },
+    {
+      "country": "Peru",
+      "pop2021": "33359.4180",
+      "area": 1285216,
+      "region": "Americas",
+      "subregion": "South America"
+    },
+    {
+      "country": "Angola",
+      "pop2021": "33933.6100",
+      "area": 1246700,
+      "region": "Africa",
+      "subregion": "Middle Africa"
+    },
+    {
+      "country": "Uzbekistan",
+      "pop2021": "33935.7630",
+      "area": 447400,
+      "region": "Asia",
+      "subregion": "Central Asia"
+    },
+    {
+      "country": "Saudi Arabia",
+      "pop2021": "35340.6830",
+      "area": 2149690,
+      "region": "Asia",
+      "subregion": "Western Asia"
+    },
+    {
+      "country": "Morocco",
+      "pop2021": "37344.7950",
+      "area": 446550,
+      "region": "Africa",
+      "subregion": "Northern Africa"
+    },
+    {
+      "country": "Poland",
+      "pop2021": "37797.0050",
+      "area": 312679,
+      "region": "Europe",
+      "subregion": "Eastern Europe"
+    },
+    {
+      "country": "Canada",
+      "pop2021": "38067.9030",
+      "area": 9984670,
+      "region": "Americas",
+      "subregion": "Northern America"
+    },
+    {
+      "country": "Afghanistan",
+      "pop2021": "39835.4280",
+      "area": 652230,
+      "region": "Asia",
+      "subregion": "Southern Asia"
+    },
+    {
+      "country": "Iraq",
+      "pop2021": "41179.3500",
+      "area": 438317,
+      "region": "Asia",
+      "subregion": "Western Asia"
+    },
+    {
+      "country": "Ukraine",
+      "pop2021": "43466.8190",
+      "area": 603500,
+      "region": "Europe",
+      "subregion": "Eastern Europe"
+    },
+    {
+      "country": "Algeria",
+      "pop2021": "44616.6240",
+      "area": 2381741,
+      "region": "Africa",
+      "subregion": "Northern Africa"
+    },
+    {
+      "country": "Sudan",
+      "pop2021": "44909.3530",
+      "area": 1886068,
+      "region": "Africa",
+      "subregion": "Northern Africa"
+    },
+    {
+      "country": "Argentina",
+      "pop2021": "45605.8260",
+      "area": 2780400,
+      "region": "Americas",
+      "subregion": "South America"
+    },
+    {
+      "country": "Spain",
+      "pop2021": "46745.2160",
+      "area": 505992,
+      "region": "Europe",
+      "subregion": "Southern Europe"
+    },
+    {
+      "country": "Uganda",
+      "pop2021": "47123.5310",
+      "area": 241550,
+      "region": "Africa",
+      "subregion": "Eastern Africa"
+    },
+    {
+      "country": "Colombia",
+      "pop2021": "51265.8440",
+      "area": 1141748,
+      "region": "Americas",
+      "subregion": "South America"
+    },
+    {
+      "country": "South Korea",
+      "pop2021": "51305.1860",
+      "area": 100210,
+      "region": "Asia",
+      "subregion": "Eastern Asia"
+    },
+    {
+      "country": "Myanmar",
+      "pop2021": "54806.0120",
+      "area": 676578,
+      "region": "Asia",
+      "subregion": "South-Eastern Asia"
+    },
+    {
+      "country": "Kenya",
+      "pop2021": "54985.6980",
+      "area": 580367,
+      "region": "Africa",
+      "subregion": "Eastern Africa"
+    },
+    {
+      "country": "South Africa",
+      "pop2021": "60041.9940",
+      "area": 1221037,
+      "region": "Africa",
+      "subregion": "Southern Africa"
+    },
+    {
+      "country": "Italy",
+      "pop2021": "60367.4770",
+      "area": 301336,
+      "region": "Europe",
+      "subregion": "Southern Europe"
+    },
+    {
+      "country": "Tanzania",
+      "pop2021": "61498.4370",
+      "area": 945087,
+      "region": "Africa",
+      "subregion": "Eastern Africa"
+    },
+    {
+      "country": "France",
+      "pop2021": "65426.1790",
+      "area": 551695,
+      "region": "Europe",
+      "subregion": "Western Europe"
+    },
+    {
+      "country": "United Kingdom",
+      "pop2021": "68207.1160",
+      "area": 242900,
+      "region": "Europe",
+      "subregion": "Northern Europe"
+    },
+    {
+      "country": "Thailand",
+      "pop2021": "69950.8500",
+      "area": 513120,
+      "region": "Asia",
+      "subregion": "South-Eastern Asia"
+    },
+    {
+      "country": "Germany",
+      "pop2021": "83900.4730",
+      "area": 357114,
+      "region": "Europe",
+      "subregion": "Western Europe"
+    },
+    {
+      "country": "Iran",
+      "pop2021": "85028.7590",
+      "area": 1648195,
+      "region": "Asia",
+      "subregion": "Southern Asia"
+    },
+    {
+      "country": "Turkey",
+      "pop2021": "85042.7380",
+      "area": 783562,
+      "region": "Asia",
+      "subregion": "Western Asia"
+    },
+    {
+      "country": "DR Congo",
+      "pop2021": "92377.9930",
+      "area": 2344858,
+      "region": "Africa",
+      "subregion": "Middle Africa"
+    },
+    {
+      "country": "Vietnam",
+      "pop2021": "98168.8330",
+      "area": 331212,
+      "region": "Asia",
+      "subregion": "South-Eastern Asia"
+    },
+    {
+      "country": "Egypt",
+      "pop2021": "104258.3270",
+      "area": 1002450,
+      "region": "Africa",
+      "subregion": "Northern Africa"
+    },
+    {
+      "country": "Philippines",
+      "pop2021": "111046.9130",
+      "area": 342353,
+      "region": "Asia",
+      "subregion": "South-Eastern Asia"
+    },
+    {
+      "country": "Ethiopia",
+      "pop2021": "117876.2270",
+      "area": 1104300,
+      "region": "Africa",
+      "subregion": "Eastern Africa"
+    },
+    {
+      "country": "Japan",
+      "pop2021": "126050.8040",
+      "area": 377930,
+      "region": "Asia",
+      "subregion": "Eastern Asia"
+    },
+    {
+      "country": "Mexico",
+      "pop2021": "130262.2160",
+      "area": 1964375,
+      "region": "Americas",
+      "subregion": "Central America"
+    },
+    {
+      "country": "Russia",
+      "pop2021": "145912.0250",
+      "area": 17098242,
+      "region": "Europe",
+      "subregion": "Eastern Europe"
+    },
+    {
+      "country": "Bangladesh",
+      "pop2021": "166303.4980",
+      "area": 147570,
+      "region": "Asia",
+      "subregion": "Southern Asia"
+    },
+    {
+      "country": "Nigeria",
+      "pop2021": "211400.7080",
+      "area": 923768,
+      "region": "Africa",
+      "subregion": "Western Africa"
+    },
+    {
+      "country": "Brazil",
+      "pop2021": "213993.4370",
+      "area": 8515767,
+      "region": "Americas",
+      "subregion": "South America"
+    },
+    {
+      "country": "Pakistan",
+      "pop2021": "225199.9370",
+      "area": 881912,
+      "region": "Asia",
+      "subregion": "Southern Asia"
+    },
+    {
+      "country": "Indonesia",
+      "pop2021": "276361.7830",
+      "area": 1904569,
+      "region": "Asia",
+      "subregion": "South-Eastern Asia"
+    },
+    {
+      "country": "United States",
+      "pop2021": "332915.0730",
+      "area": 9372610,
+      "region": "Americas",
+      "subregion": "Northern America"
+    },
+    {
+      "country": "India",
+      "pop2021": "1393409.0380",
+      "area": 3287590,
+      "region": "Asia",
+      "subregion": "Southern Asia"
+    },
+    {
+      "country": "China",
+      "pop2021": "1444216.1070",
+      "area": 9706961,
+      "region": "Asia",
+      "subregion": "Eastern Asia"
+    }
+  ]

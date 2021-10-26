@@ -286,3 +286,6 @@ fabric.properties
 .vscode/*
 
 *.code-workspace
+
+## Sphinx Documentation ##
+docs/build
