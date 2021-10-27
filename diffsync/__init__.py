@@ -696,14 +696,30 @@ class DiffSync:
                         # Since this is "cleanup" code, log an error and continue, instead of letting the exception raise
                         self._log.error(f"Unable to remove child {child_id} of {modelname} {uid} - not found!")
 
-    def add_or_update(self, obj: DiffSyncModel):
-        """Attempt to run self.add, but if raises ObjectAlreadyExists, call obj.update."""
+    def get_or_create(
+        self, model: Type[DiffSyncModel], identifiers: Dict, attrs: Dict = None
+    ) -> Tuple[DiffSyncModel, bool]:
+        """Attempt to get the object with provided identifiers or create it with provided identifiers and attrs.
+
+        Args:
+            model (DiffSyncModel): The DiffSyncModel to get or create.
+            identifiers (Mapping): Identifiers for the DiffSyncModel to get or create with.
+            attrs (Mapping, optional): Attributes when creating an object if it doesn't exist. Defaults to None.
+
+        Returns:
+            Tuple[DiffSyncModel, bool]: Provides the existing or new object and whether it was created or not.
+        """
+        created = False
         try:
-            self.add(obj)
-        except ObjectAlreadyExists:
-            # If object found, update dat badboy
-            self._log.info("Object {0} already exists. Attempting to update.".format(obj))
-            obj.update(obj.get_attrs())
+            obj = self.get(model, identifiers)
+        except ObjectNotFound:
+            ids_and_attrs = identifiers.copy()
+            if attrs:
+                ids_and_attrs.update(attrs)
+            obj = model(**ids_and_attrs)
+            created = True
+
+        return obj, created
 
 
 # DiffSyncModel references DiffSync and DiffSync references DiffSyncModel. Break the typing loop:

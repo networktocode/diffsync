@@ -49,15 +49,16 @@ class BackendB(DiffSync):
     def load(self):
         """Initialize the BackendB Object by loading some site, device and interfaces from DATA."""
         for site_name, site_data in DATA.items():
-            site = self.site(name=site_name)
-            self.add_or_update(site)
+            site, _ = self.get_or_create(self.site, {"name": site_name})
 
             for device_name, device_data in site_data.items():
-                device = self.device(name=device_name, role=device_data["role"], site_name=site_name)
-                self.add_or_update(device)
+                identifiers = {"name": device_name}
+                attrs = {"role": device_data["role"], "site_name": site_name}
+                device, _ = self.get_or_create(self.device, identifiers, attrs)
                 site.add_child(device)
 
                 for intf_name, desc in device_data["interfaces"].items():
-                    intf = self.interface(name=intf_name, device_name=device_name, description=desc)
-                    self.add_or_update(intf)
+                    identifiers = {"name": intf_name, "device_name": device_name}
+                    attrs = {"description": desc}
+                    intf, _ = self.get_or_create(self.interface, identifiers, attrs)
                     device.add_child(intf)
