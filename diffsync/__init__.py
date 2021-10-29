@@ -648,7 +648,7 @@ class DiffSync:
             obj (DiffSyncModel): Object to store
 
         Raises:
-            ObjectAlreadyExists: if an object with the same uid is already present
+            ObjectAlreadyExists: if an object with the same uid and different attributes is already present.
         """
         modelname = obj.get_type()
         uid = obj.get_unique_id()
@@ -696,9 +696,7 @@ class DiffSync:
                         # Since this is "cleanup" code, log an error and continue, instead of letting the exception raise
                         self._log.error(f"Unable to remove child {child_id} of {modelname} {uid} - not found!")
 
-    def get_or_create(
-        self, model: Type[DiffSyncModel], identifiers: Dict, attrs: Dict = None
-    ) -> Tuple[DiffSyncModel, bool]:
+    def get_or_create(self, model: Type[DiffSyncModel], ids: Dict, attrs: Dict = None) -> Tuple[DiffSyncModel, bool]:
         """Attempt to get the object with provided identifiers or create it with provided identifiers and attrs.
 
         Args:
@@ -711,12 +709,11 @@ class DiffSync:
         """
         created = False
         try:
-            obj = self.get(model, identifiers)
+            obj = self.get(model, ids)
         except ObjectNotFound:
-            ids_and_attrs = identifiers.copy()
-            if attrs:
-                ids_and_attrs.update(attrs)
-            obj = model(**ids_and_attrs)
+            if not attrs:
+                attrs = {}
+            obj = model(**ids, **attrs)
             created = True
 
         return obj, created
