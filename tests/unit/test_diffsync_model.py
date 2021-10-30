@@ -126,14 +126,17 @@ def test_diffsync_model_subclass_add_remove(make_site, make_device, make_interfa
     assert site1.devices == ["device1"]
     with pytest.raises(ObjectStoreWrongType):
         site1.add_child(device1_eth0)
-    with pytest.raises(ObjectAlreadyExists):
+    with pytest.raises(ObjectAlreadyExists) as error:
         site1.add_child(device1)
+    error_model = error.value.args[1]
+    assert isinstance(error_model, DiffSyncModel)
+    assert error_model is device1
 
     site1.remove_child(device1)
     assert site1.devices == []
     with pytest.raises(ObjectStoreWrongType):
         site1.remove_child(device1_eth0)
-    with pytest.raises(ObjectNotFound):
+    with pytest.raises(ObjectNotFound) as error:
         site1.remove_child(device1)
 
     assert device1.interfaces == []
@@ -141,8 +144,11 @@ def test_diffsync_model_subclass_add_remove(make_site, make_device, make_interfa
     assert device1.interfaces == ["device1__eth0"]
     with pytest.raises(ObjectStoreWrongType):
         device1.add_child(site1)
-    with pytest.raises(ObjectAlreadyExists):
+    with pytest.raises(ObjectAlreadyExists) as error:
         device1.add_child(device1_eth0)
+    error_model = error.value.args[1]
+    assert isinstance(error_model, DiffSyncModel)
+    assert error_model is device1_eth0
 
     device1.remove_child(device1_eth0)
     assert device1.interfaces == []

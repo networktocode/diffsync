@@ -329,7 +329,7 @@ class DiffSyncModel(BaseModel):
         attr_name = self._children[child_type]
         childs = getattr(self, attr_name)
         if child.get_unique_id() in childs:
-            raise ObjectAlreadyExists(f"Already storing a {child_type} with unique_id {child.get_unique_id()}")
+            raise ObjectAlreadyExists(f"Already storing a {child_type} with unique_id {child.get_unique_id()}", child)
         childs.append(child.get_unique_id())
 
     def remove_child(self, child: "DiffSyncModel"):
@@ -703,7 +703,7 @@ class DiffSync:
 
         Args:
             model (DiffSyncModel): The DiffSyncModel to get or create.
-            identifiers (Mapping): Identifiers for the DiffSyncModel to get or create with.
+            ids (Mapping): Identifiers for the DiffSyncModel to get or create with.
             attrs (Mapping, optional): Attributes when creating an object if it doesn't exist. Defaults to None.
 
         Returns:
@@ -717,6 +717,36 @@ class DiffSync:
                 attrs = {}
             obj = model(**ids, **attrs)
             created = True
+
+        return obj, created
+
+    def update_or_create(self, model: Type[DiffSyncModel], ids: Dict, attrs: Dict = None) -> Tuple[DiffSyncModel, bool]:
+        """Attempt to update an existing object with provided ids/attrs or create it with provided identifiers and attrs.
+
+        Args:
+            model (DiffSyncModel): The DiffSyncModel to get or create.
+            ids (Mapping): Identifiers for the DiffSyncModel to get or create with.
+            attrs (Mapping, optional): Attributes when creating an object if it doesn't exist. Defaults to None.
+
+        Returns:
+            Tuple[DiffSyncModel, bool]: Provides the existing or new object and whether it was created or not.
+        """
+        created = False
+        try:
+            obj = self.get(model, ids)
+        except ObjectNotFound:
+            if not attrs:
+                attrs = {}
+            obj = model(**ids, **attrs)
+            created = True
+
+        # Update existing obj with attrs
+        if attrs:
+            existing_attrs = obj.get_attrs()
+            mutual_attrs = set(existing_attrs).intersection(attrs)
+            for attr in mutual_attrs:
+                if existing_attrs[attr] != attrs[attr]:
+                    setattr(obj, attr, attrs[attr])
 
         return obj, created
 
