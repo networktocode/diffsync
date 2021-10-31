@@ -699,7 +699,7 @@ class DiffSync:
     def get_or_instantiate(
         self, model: Type[DiffSyncModel], ids: Dict, attrs: Dict = None
     ) -> Tuple[DiffSyncModel, bool]:
-        """Attempt to get the object with provided identifiers or create it with provided identifiers and attrs.
+        """Attempt to get the object with provided identifiers or instantiate it with provided identifiers and attrs.
 
         Args:
             model (DiffSyncModel): The DiffSyncModel to get or create.
@@ -720,8 +720,10 @@ class DiffSync:
 
         return obj, created
 
-    def update_or_create(self, model: Type[DiffSyncModel], ids: Dict, attrs: Dict = None) -> Tuple[DiffSyncModel, bool]:
-        """Attempt to update an existing object with provided ids/attrs or create it with provided identifiers and attrs.
+    def update_or_instantiate(
+        self, model: Type[DiffSyncModel], ids: Dict, attrs: Dict = None
+    ) -> Tuple[DiffSyncModel, bool]:
+        """Attempt to update an existing object with provided ids/attrs or instantiate it with provided identifiers and attrs.
 
         Args:
             model (DiffSyncModel): The DiffSyncModel to get or create.

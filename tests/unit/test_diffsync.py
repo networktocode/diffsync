@@ -159,7 +159,7 @@ def test_diffsync_get_or_update_retrieve_existing_object(generic_diffsync):
     intf = Interface(**intf_indentifiers)
     generic_diffsync.add(intf)
 
-    obj, created = generic_diffsync.update_or_create(Interface, intf_indentifiers)
+    obj, created = generic_diffsync.update_or_instantiate(Interface, intf_indentifiers)
     assert obj is intf
     assert not created
     assert obj.interface_type == "ethernet"
@@ -172,7 +172,7 @@ def test_diffsync_get_or_update_retrieve_existing_object_w_updated_attrs(generic
     intf = Interface(**intf_indentifiers)
     generic_diffsync.add(intf)
 
-    obj, created = generic_diffsync.update_or_create(Interface, intf_indentifiers, intf_attrs)
+    obj, created = generic_diffsync.update_or_instantiate(Interface, intf_indentifiers, intf_attrs)
     assert obj is intf
     assert not created
     assert obj.interface_type == "1000base-t"
@@ -182,7 +182,7 @@ def test_diffsync_get_or_update_retrieve_existing_object_w_updated_attrs(generic
 def test_diffsync_get_or_update_create_object(generic_diffsync):
     intf_indentifiers = {"device_name": "device1", "name": "eth1"}
 
-    obj, created = generic_diffsync.update_or_create(Interface, intf_indentifiers)
+    obj, created = generic_diffsync.update_or_instantiate(Interface, intf_indentifiers)
     assert created
     assert obj.interface_type == "ethernet"
     assert obj.description is None
@@ -192,7 +192,7 @@ def test_diffsync_get_or_update_create_object_w_attrs(generic_diffsync):
     intf_indentifiers = {"device_name": "device1", "name": "eth1"}
     intf_attrs = {"interface_type": "1000base-t", "description": "Testing"}
 
-    obj, created = generic_diffsync.update_or_create(Interface, intf_indentifiers, intf_attrs)
+    obj, created = generic_diffsync.update_or_instantiate(Interface, intf_indentifiers, intf_attrs)
     assert created
     assert obj.interface_type == "1000base-t"
     assert obj.description == "Testing"
