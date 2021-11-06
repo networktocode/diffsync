@@ -1,6 +1,6 @@
-"""Example of a DiffSync adapter implementation.
+"""Example of a DiffSync adapter implementation using new helper methods.
 
-Copyright (c) 2020 Network To Code, LLC <info@networktocode.com>
+Copyright (c) 2021 Network To Code, LLC <info@networktocode.com>
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -86,8 +86,6 @@ class BackendA(DiffSync):
 
     type = "Backend A"
 
-    nb = None
-
     def load(self):
         """Initialize the BackendA Object by loading some site, device and interfaces from DATA."""
         for device_data in BACKEND_DATA_A:
@@ -117,8 +115,6 @@ class BackendB(DiffSync):
     top_level = ["device"]
 
     type = "Backend B"
-
-    nb = None
 
     def load(self):
         """Initialize the BackendB Object by loading some site, device and interfaces from DATA."""

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Main executable for DiffSync "example1".
+"""Main executable for DiffSync "04-get-update-instantiate".
 
 Copyright (c) 2021 Network To Code, LLC <info@networktocode.com>
 

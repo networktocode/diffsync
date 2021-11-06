@@ -136,7 +136,7 @@ def test_diffsync_model_subclass_add_remove(make_site, make_device, make_interfa
     assert site1.devices == []
     with pytest.raises(ObjectStoreWrongType):
         site1.remove_child(device1_eth0)
-    with pytest.raises(ObjectNotFound) as error:
+    with pytest.raises(ObjectNotFound):
         site1.remove_child(device1)
 
     assert device1.interfaces == []
