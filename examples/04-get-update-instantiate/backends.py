@@ -94,12 +94,9 @@ class BackendA(DiffSync):
             device, instantiated = self.get_or_instantiate(
                 self.device, {"name": device_data["name"]}, {"role": device_data["role"]}
             )
-            if instantiated:
-                self.add(device)
 
             site, instantiated = self.get_or_instantiate(self.site, {"name": device_data["site"]})
             if instantiated:
-                self.add(site)
                 device.add_child(site)
 
             for intf_name, desc in device_data["interfaces"].items():
@@ -107,7 +104,6 @@ class BackendA(DiffSync):
                     self.interface, {"name": intf_name, "device_name": device_data["name"]}, {"description": desc}
                 )
                 if instantiated:
-                    self.add(intf)
                     device.add_child(intf)
 
 
@@ -130,12 +126,9 @@ class BackendB(DiffSync):
             device, instantiated = self.get_or_instantiate(
                 self.device, {"name": device_data["name"]}, {"role": device_data["role"]}
             )
-            if instantiated:
-                self.add(device)
 
             site, instantiated = self.get_or_instantiate(self.site, {"name": device_data["site"]})
             if instantiated:
-                self.add(site)
                 device.add_child(site)
 
             for intf_name, desc in device_data["interfaces"].items():
@@ -143,5 +136,4 @@ class BackendB(DiffSync):
                     self.interface, {"name": intf_name, "device_name": device_data["name"]}, {"description": desc}
                 )
                 if instantiated:
-                    self.add(intf)
                     device.add_child(intf)

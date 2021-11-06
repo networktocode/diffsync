@@ -113,86 +113,91 @@ def test_diffsync_add_raises_already_exists_with_updated_object(generic_diffsync
 
 
 def test_diffsync_get_or_instantiate_create_non_existent_object(generic_diffsync):
-    intf_indentifiers = {"device_name": "device1", "name": "eth1"}
-    intf = Interface(**intf_indentifiers)
+    intf_identifiers = {"device_name": "device1", "name": "eth1"}
+    intf = Interface(**intf_identifiers)
 
-    obj, created = generic_diffsync.get_or_instantiate(Interface, intf_indentifiers)
+    # Assert that the object does not currently exist.
+    with pytest.raises(ObjectNotFound):
+        generic_diffsync.get(Interface, intf_identifiers)
+
+    obj, created = generic_diffsync.get_or_instantiate(Interface, intf_identifiers)
     assert obj == intf
     assert created
+    assert obj is generic_diffsync.get(Interface, intf_identifiers)
 
 
 def test_diffsync_get_or_instantiate_retrieve_existing_object(generic_diffsync):
-    intf_indentifiers = {"device_name": "device1", "name": "eth1"}
-    intf = Interface(**intf_indentifiers)
+    intf_identifiers = {"device_name": "device1", "name": "eth1"}
+    intf = Interface(**intf_identifiers)
     generic_diffsync.add(intf)
 
-    obj, created = generic_diffsync.get_or_instantiate(Interface, intf_indentifiers)
+    obj, created = generic_diffsync.get_or_instantiate(Interface, intf_identifiers)
     assert obj is intf
     assert not created
 
 
 def test_diffsync_get_or_instantiate_retrieve_create_non_existent_w_attrs(generic_diffsync):
-    intf_indentifiers = {"device_name": "device1", "name": "eth1"}
+    intf_identifiers = {"device_name": "device1", "name": "eth1"}
     intf_attrs = {"interface_type": "1000base-t", "description": "Testing"}
 
-    obj, created = generic_diffsync.get_or_instantiate(Interface, intf_indentifiers, intf_attrs)
-    assert obj == Interface(**intf_indentifiers, **intf_attrs)
+    obj, created = generic_diffsync.get_or_instantiate(Interface, intf_identifiers, intf_attrs)
     assert created
     assert obj.interface_type == "1000base-t"
     assert obj.description == "Testing"
+    assert obj is generic_diffsync.get(Interface, intf_identifiers)
 
 
 def test_diffsync_get_or_instantiate_retrieve_existing_object_wo_attrs(generic_diffsync):
-    intf_indentifiers = {"device_name": "device1", "name": "eth1"}
-    intf = Interface(**intf_indentifiers)
+    intf_identifiers = {"device_name": "device1", "name": "eth1"}
+    intf = Interface(**intf_identifiers)
     generic_diffsync.add(intf)
 
-    obj, created = generic_diffsync.get_or_instantiate(Interface, intf_indentifiers)
+    obj, created = generic_diffsync.get_or_instantiate(Interface, intf_identifiers)
     assert obj is intf
     assert not created
     assert obj.interface_type == "ethernet"
     assert obj.description is None
 
 
-def test_diffsync_get_or_update_retrieve_existing_object(generic_diffsync):
-    intf_indentifiers = {"device_name": "device1", "name": "eth1"}
-    intf = Interface(**intf_indentifiers)
+def test_diffsync_update_or_instantiate_retrieve_existing_object(generic_diffsync):
+    intf_identifiers = {"device_name": "device1", "name": "eth1"}
+    intf = Interface(**intf_identifiers)
     generic_diffsync.add(intf)
 
-    obj, created = generic_diffsync.update_or_instantiate(Interface, intf_indentifiers)
+    obj, created = generic_diffsync.update_or_instantiate(Interface, intf_identifiers)
     assert obj is intf
     assert not created
     assert obj.interface_type == "ethernet"
     assert obj.description is None
 
 
-def test_diffsync_get_or_update_retrieve_existing_object_w_updated_attrs(generic_diffsync):
-    intf_indentifiers = {"device_name": "device1", "name": "eth1"}
+def test_diffsync_update_or_instantiate_retrieve_existing_object_w_updated_attrs(generic_diffsync):
+    intf_identifiers = {"device_name": "device1", "name": "eth1"}
     intf_attrs = {"interface_type": "1000base-t", "description": "Testing"}
-    intf = Interface(**intf_indentifiers)
+    intf = Interface(**intf_identifiers)
     generic_diffsync.add(intf)
 
-    obj, created = generic_diffsync.update_or_instantiate(Interface, intf_indentifiers, intf_attrs)
+    obj, created = generic_diffsync.update_or_instantiate(Interface, intf_identifiers, intf_attrs)
     assert obj is intf
     assert not created
     assert obj.interface_type == "1000base-t"
     assert obj.description == "Testing"
 
 
-def test_diffsync_get_or_update_create_object(generic_diffsync):
-    intf_indentifiers = {"device_name": "device1", "name": "eth1"}
+def test_diffsync_update_or_instantiate_create_object(generic_diffsync):
+    intf_identifiers = {"device_name": "device1", "name": "eth1"}
 
-    obj, created = generic_diffsync.update_or_instantiate(Interface, intf_indentifiers)
+    obj, created = generic_diffsync.update_or_instantiate(Interface, intf_identifiers)
     assert created
     assert obj.interface_type == "ethernet"
     assert obj.description is None
 
 
-def test_diffsync_get_or_update_create_object_w_attrs(generic_diffsync):
-    intf_indentifiers = {"device_name": "device1", "name": "eth1"}
+def test_diffsync_update_or_instantiate_create_object_w_attrs(generic_diffsync):
+    intf_identifiers = {"device_name": "device1", "name": "eth1"}
     intf_attrs = {"interface_type": "1000base-t", "description": "Testing"}
 
-    obj, created = generic_diffsync.update_or_instantiate(Interface, intf_indentifiers, intf_attrs)
+    obj, created = generic_diffsync.update_or_instantiate(Interface, intf_identifiers, intf_attrs)
     assert created
     assert obj.interface_type == "1000base-t"
     assert obj.description == "Testing"

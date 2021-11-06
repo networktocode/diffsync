@@ -39,7 +39,7 @@ def test_example_2():
 
 def test_example_4():
     """Test that the "example4" script runs successfully."""
-    example4_dir = join(EXAMPLES, "04-get-update-create")
+    example4_dir = join(EXAMPLES, "04-get-update-instantiate")
     example4_main = join(example4_dir, "main.py")
     # Run it and make sure it doesn't raise an exception or otherwise exit with a non-zero code.
     subprocess.run(example4_main, cwd=example4_dir, check=True)

@@ -716,6 +716,8 @@ class DiffSync:
             if not attrs:
                 attrs = {}
             obj = model(**ids, **attrs)
+            # Add the object to diffsync adapter
+            self.add(obj)
             created = True
 
         return obj, created
@@ -740,6 +742,8 @@ class DiffSync:
             if not attrs:
                 attrs = {}
             obj = model(**ids, **attrs)
+            # Add the object to diffsync adapter
+            self.add(obj)
             created = True
 
         # Update existing obj with attrs
