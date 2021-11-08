@@ -648,7 +648,7 @@ class DiffSync:
             obj (DiffSyncModel): Object to store
 
         Raises:
-            ObjectAlreadyExists: if an object with the same uid and different attributes is already present.
+            ObjectAlreadyExists: if a different object with the same uid is already present.
         """
         modelname = obj.get_type()
         uid = obj.get_unique_id()
