@@ -15,15 +15,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-# pylint: disable=wrong-import-order
 
 import argparse
 import pprint
 
-from diffsync.logging import enable_console_logging
-
 from backends import BackendA
 from backends import BackendB
+
+from diffsync.logging import enable_console_logging
 
 
 def main():

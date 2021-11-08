@@ -15,9 +15,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-# pylint: disable=wrong-import-order
+from models import Site, Device, Interface
 from diffsync import DiffSync
-from models import Site, Device, Interface  # pylint: disable=no-name-in-module
 
 BACKEND_DATA_A = [
     {

@@ -39,6 +39,11 @@ class ObjectStoreException(Exception):
 class ObjectAlreadyExists(ObjectStoreException):
     """Exception raised when trying to store a DiffSyncModel or DiffElement that is already being stored."""
 
+    def __init__(self, message, existing_object, *args, **kwargs):
+        """Add existing_object to the exception to provide user with existing object."""
+        self.existing_object = existing_object
+        super().__init__(message, existing_object, *args, **kwargs)
+
 
 class ObjectNotFound(ObjectStoreException):
     """Exception raised when trying to access a DiffSyncModel that isn't in storage."""

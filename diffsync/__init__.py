@@ -722,15 +722,13 @@ class DiffSync:
 
         return obj, created
 
-    def update_or_instantiate(
-        self, model: Type[DiffSyncModel], ids: Dict, attrs: Dict = None
-    ) -> Tuple[DiffSyncModel, bool]:
+    def update_or_instantiate(self, model: Type[DiffSyncModel], ids: Dict, attrs: Dict) -> Tuple[DiffSyncModel, bool]:
         """Attempt to update an existing object with provided ids/attrs or instantiate it with provided identifiers and attrs.
 
         Args:
             model (DiffSyncModel): The DiffSyncModel to get or create.
-            ids (Mapping): Identifiers for the DiffSyncModel to get or create with.
-            attrs (Mapping, optional): Attributes when creating an object if it doesn't exist. Defaults to None.
+            ids (Dict): Identifiers for the DiffSyncModel to get or create with.
+            attrs (Dict): Attributes when creating/updating an object if it doesn't exist. Pass in empty dict, if no specific attrs.
 
         Returns:
             Tuple[DiffSyncModel, bool]: Provides the existing or new object and whether it was created or not.
@@ -739,20 +737,15 @@ class DiffSync:
         try:
             obj = self.get(model, ids)
         except ObjectNotFound:
-            if not attrs:
-                attrs = {}
             obj = model(**ids, **attrs)
             # Add the object to diffsync adapter
             self.add(obj)
             created = True
 
         # Update existing obj with attrs
-        if attrs:
-            existing_attrs = obj.get_attrs()
-            mutual_attrs = set(existing_attrs).intersection(attrs)
-            for attr in mutual_attrs:
-                if existing_attrs[attr] != attrs[attr]:
-                    setattr(obj, attr, attrs[attr])
+        for attr, value in attrs.items():
+            if getattr(obj, attr) != value:
+                setattr(obj, attr, value)
 
         return obj, created
 
