@@ -95,8 +95,8 @@ def test_diffsync_add_no_raises_existing_same_object(generic_diffsync):
 
     # Attempt to add again and make sure it doesn't raise an exception
     generic_diffsync.add(person)
-    assert person == generic_diffsync._data[modelname][uid]  # pylint: disable=protected-access
-    assert person == generic_diffsync.get(PersonA, "Mikhail Yohman")
+    assert person is generic_diffsync._data[modelname][uid]  # pylint: disable=protected-access
+    assert person is generic_diffsync.get(PersonA, "Mikhail Yohman")
 
 
 def test_diffsync_add_raises_already_exists_with_updated_object(generic_diffsync):
