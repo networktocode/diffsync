@@ -329,7 +329,7 @@ class DiffSyncModel(BaseModel):
         attr_name = self._children[child_type]
         childs = getattr(self, attr_name)
         if child.get_unique_id() in childs:
-            raise ObjectAlreadyExists(f"Already storing a {child_type} with unique_id {child.get_unique_id()}")
+            raise ObjectAlreadyExists(f"Already storing a {child_type} with unique_id {child.get_unique_id()}", child)
         childs.append(child.get_unique_id())
 
     def remove_child(self, child: "DiffSyncModel"):
@@ -648,13 +648,17 @@ class DiffSync:
             obj (DiffSyncModel): Object to store
 
         Raises:
-            ObjectAlreadyExists: if an object with the same uid is already present
+            ObjectAlreadyExists: if a different object with the same uid is already present.
         """
         modelname = obj.get_type()
         uid = obj.get_unique_id()
 
-        if uid in self._data[modelname]:
-            raise ObjectAlreadyExists(f"Object {uid} already present")
+        existing_obj = self._data[modelname].get(uid)
+        if existing_obj:
+            if existing_obj is not obj:
+                raise ObjectAlreadyExists(f"Object {uid} already present", obj)
+            # Return so we don't have to change anything on the existing object and underlying data
+            return
 
         if not obj.diffsync:
             obj.diffsync = self
@@ -691,6 +695,59 @@ class DiffSync:
                     except ObjectNotFound:
                         # Since this is "cleanup" code, log an error and continue, instead of letting the exception raise
                         self._log.error(f"Unable to remove child {child_id} of {modelname} {uid} - not found!")
+
+    def get_or_instantiate(
+        self, model: Type[DiffSyncModel], ids: Dict, attrs: Dict = None
+    ) -> Tuple[DiffSyncModel, bool]:
+        """Attempt to get the object with provided identifiers or instantiate it with provided identifiers and attrs.
+
+        Args:
+            model (DiffSyncModel): The DiffSyncModel to get or create.
+            ids (Mapping): Identifiers for the DiffSyncModel to get or create with.
+            attrs (Mapping, optional): Attributes when creating an object if it doesn't exist. Defaults to None.
+
+        Returns:
+            Tuple[DiffSyncModel, bool]: Provides the existing or new object and whether it was created or not.
+        """
+        created = False
+        try:
+            obj = self.get(model, ids)
+        except ObjectNotFound:
+            if not attrs:
+                attrs = {}
+            obj = model(**ids, **attrs)
+            # Add the object to diffsync adapter
+            self.add(obj)
+            created = True
+
+        return obj, created
+
+    def update_or_instantiate(self, model: Type[DiffSyncModel], ids: Dict, attrs: Dict) -> Tuple[DiffSyncModel, bool]:
+        """Attempt to update an existing object with provided ids/attrs or instantiate it with provided identifiers and attrs.
+
+        Args:
+            model (DiffSyncModel): The DiffSyncModel to get or create.
+            ids (Dict): Identifiers for the DiffSyncModel to get or create with.
+            attrs (Dict): Attributes when creating/updating an object if it doesn't exist. Pass in empty dict, if no specific attrs.
+
+        Returns:
+            Tuple[DiffSyncModel, bool]: Provides the existing or new object and whether it was created or not.
+        """
+        created = False
+        try:
+            obj = self.get(model, ids)
+        except ObjectNotFound:
+            obj = model(**ids, **attrs)
+            # Add the object to diffsync adapter
+            self.add(obj)
+            created = True
+
+        # Update existing obj with attrs
+        for attr, value in attrs.items():
+            if getattr(obj, attr) != value:
+                setattr(obj, attr, value)
+
+        return obj, created
 
 
 # DiffSyncModel references DiffSync and DiffSync references DiffSyncModel. Break the typing loop:

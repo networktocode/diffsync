@@ -7,3 +7,4 @@ For each example, the complete source code is `available in Github <https://gith
 .. mdinclude:: ../../../examples/01-multiple-data-sources/README.md
 .. mdinclude:: ../../../examples/02-callback-function/README.md
 .. mdinclude:: ../../../examples/03-remote-system/README.md
+.. mdinclude:: ../../../examples/04-get-update-instantiate/README.md
