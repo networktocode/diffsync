@@ -223,7 +223,9 @@ def test_diffsync_model_subclass_crud(generic_diffsync):
     assert device1.role == "spine"
 
     device1_eth0 = Interface.create(
-        generic_diffsync, {"name": "eth0", "device_name": "device1"}, {"description": "some description"},
+        generic_diffsync,
+        {"name": "eth0", "device_name": "device1"},
+        {"description": "some description"},
     )
     assert isinstance(device1_eth0, Interface)
     assert device1_eth0.diffsync == generic_diffsync
