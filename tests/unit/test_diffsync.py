@@ -468,6 +468,26 @@ def test_diffsync_diff_with_callback(backend_a, backend_b):
     assert last_value == {"current": expected, "total": expected}
 
 
+def test_diffsync_sync_to_w_diff(backend_a, backend_b):
+    diff = backend_b.diff_to(backend_a)
+    assert diff.has_diffs()
+    # Mock diff_from to make sure it's not called when passing in an existing diff
+    backend_b.diff_from = mock.Mock()
+    # Perform full sync
+    backend_b.sync_to(backend_a, diff=diff)
+    assert not backend_b.diff_from.called
+
+
+def test_diffsync_sync_from_w_diff(backend_a, backend_b):
+    diff = backend_a.diff_from(backend_b)
+    assert diff.has_diffs()
+    # Mock diff_from to make sure it's not called when passing in an existing diff
+    backend_a.diff_from = mock.Mock()
+    # Perform full sync
+    backend_a.sync_from(backend_b, diff=diff)
+    assert not backend_a.diff_from.called
+
+
 def test_diffsync_sync_from(backend_a, backend_b):
     backend_a.sync_complete = mock.Mock()
     backend_b.sync_complete = mock.Mock()
@@ -542,7 +562,6 @@ def check_successful_sync_log_sanity(log, src, dst, flags):
 def check_sync_logs_against_diff(diffsync, diff, log, errors_permitted=False):
     """Given a Diff, make sure the captured structlogs correctly correspond to its contents/actions."""
     for element in diff.get_children():
-        print(element)
         # This is kinda gross, but needed since a DiffElement stores a shortname and keys, not a unique_id
         uid = getattr(diffsync, element.type).create_unique_id(**element.keys)
 

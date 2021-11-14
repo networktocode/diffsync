@@ -41,7 +41,7 @@ def main():
 
     if args.sync:
         print("Updating the list of countries in Nautobot ...")
-        nautobot.sync_from(local, flags=flags, diff_class=AlphabeticalOrderDiff)
+        nautobot.sync_from(local, flags=flags, diff_class=AlphabeticalOrderDiff, diff=diff)
 
 
 if __name__ == "__main__":
