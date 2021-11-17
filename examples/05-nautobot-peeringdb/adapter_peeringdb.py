@@ -1,18 +1,18 @@
 """Diffsync adapter class for PeeringDB."""
+# pylint: disable=import-error,no-name-in-module
 import requests
 from slugify import slugify
 import pycountry
-
+from models import RegionModel, SiteModel
 from diffsync import DiffSync
 from diffsync.exceptions import ObjectNotFound
 
-from .models import RegionModel, SiteModel
 
 PEERINGDB_URL = "https://peeringdb.com/"
 
 
 class PeeringDB(DiffSync):
-    """DiffSync adapter using pysnow to communicate with PeeringDB."""
+    """DiffSync adapter using requests to communicate with PeeringDB."""
 
     # Model classes used by this adapter class
     region = RegionModel
@@ -35,10 +35,21 @@ class PeeringDB(DiffSync):
             try:
                 self.get(self.region, fac["city"])
             except ObjectNotFound:
+                # Adding the parent region if necessary
+                parent_name = pycountry.countries.get(alpha_2=fac["country"]).name
+                try:
+                    self.get(self.region, parent_name)
+                except ObjectNotFound:
+                    parent_region = self.region(
+                        name=parent_name,
+                        slug=slugify(parent_name),
+                    )
+                    self.add(parent_region)
+
                 region = self.region(
                     name=fac["city"],
                     slug=slugify(fac["city"]),
-                    parent_name=pycountry.countries.get(alpha_2=fac["country"]).name,
+                    parent_name=parent_name,
                 )
                 self.add(region)
 

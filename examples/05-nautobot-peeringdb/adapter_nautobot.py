@@ -1,9 +1,10 @@
 """Diffsync adapter class for Nautobot."""
+# pylint: disable=import-error,no-name-in-module
 import os
 import requests
+from models import RegionModel, SiteModel
 from diffsync import DiffSync
 
-from .models import RegionModel, SiteModel
 
 NAUTOBOT_URL = os.getenv("NAUTOBOT_URL", "https://demo.nautobot.com")
 NAUTOBOT_TOKEN = os.getenv("NAUTOBOT_TOKEN", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
@@ -15,6 +16,7 @@ class RegionNautobotModel(RegionModel):
     @classmethod
     def create(cls, diffsync, ids, attrs):
         """Create a new Region record in remote Nautobot.
+
         Args:
             diffsync (NautobotRemote): DiffSync adapter owning this Region
             ids (dict): Initial values for this model's _identifiers
@@ -33,6 +35,7 @@ class RegionNautobotModel(RegionModel):
 
     def update(self, attrs):
         """Update an existing Region record in remote Nautobot.
+
         Args:
             attrs (dict): Updated values for this record's _attributes
         """
@@ -43,13 +46,13 @@ class RegionNautobotModel(RegionModel):
             data["description"] = attrs["description"]
         if "parent_name" in attrs:
             if attrs["parent_name"]:
-                data["parent"] = {"name": attrs["parent_name"]}
+                data["parent"] = str(self.get(self.region, attrs["parent_name"]).pk)
             else:
                 data["parent"] = None
         self.diffsync.patch(f"/api/dcim/regions/{self.pk}/", data)
         return super().update(attrs)
 
-    def delete(self):
+    def delete(self):  # pylint: disable= useless-super-delegation
         """Delete an existing Region record from remote Nautobot."""
         # self.diffsync.delete(f"/api/dcim/regions/{self.pk}/")
         return super().delete()
@@ -61,6 +64,7 @@ class SiteNautobotModel(SiteModel):
     @classmethod
     def create(cls, diffsync, ids, attrs):
         """Create a new Site in remote Nautobot.
+
         Args:
             diffsync (NautobotRemote): DiffSync adapter owning this Site
             ids (dict): Initial values for this model's _identifiers
@@ -82,6 +86,7 @@ class SiteNautobotModel(SiteModel):
 
     def update(self, attrs):
         """Update an existing Site record in remote Nautobot.
+
         Args:
             attrs (dict): Updated values for this record's _attributes
         """
@@ -104,17 +109,14 @@ class SiteNautobotModel(SiteModel):
         self.diffsync.patch(f"/api/dcim/sites/{self.pk}/", data)
         return super().update(attrs)
 
-    def delete(self):
+    def delete(self):  # pylint: disable= useless-super-delegation
         """Delete an existing Site record from remote Nautobot."""
         # self.diffsync.delete(f"/api/dcim/sites/{self.pk}/")
         return super().delete()
 
 
 class NautobotRemote(DiffSync):
-    """DiffSync adapter class for loading data from a remote Nautobot instance using Python requests.
-    In a more realistic example, you'd probably use PyNautobot here instead of raw requests,
-    but we didn't want to add PyNautobot as a dependency of this plugin just to make an example more realistic.
-    """
+    """DiffSync adapter class for loading data from a remote Nautobot instance using Python requests."""
 
     # Model classes used by this adapter class
     region = RegionNautobotModel
@@ -125,6 +127,7 @@ class NautobotRemote(DiffSync):
 
     def __init__(self, *args, url=NAUTOBOT_URL, token=NAUTOBOT_TOKEN, **kwargs):
         """Instantiate this class, but do not load data immediately from the remote system.
+
         Args:
             url (str): URL of the remote Nautobot system
             token (str): REST API authentication token
@@ -142,9 +145,6 @@ class NautobotRemote(DiffSync):
 
     def load(self):
         """Load Region and Site data from the remote Nautobot instance."""
-        # To keep the example simple, we disable REST API pagination of results.
-        # In a real job, especially when expecting a large number of results,
-        # we'd want to handle pagination, or use something like PyNautobot.
         region_data = requests.get(f"{self.url}/api/dcim/regions/", headers=self.headers, params={"limit": 0}).json()
         regions = region_data["results"]
         while region_data["next"]:
