@@ -1,16 +1,4 @@
-# playground-diffsync
-
-## Description
-
-This repository is just a set of examples around [diffsync](https://github.com/networktocode/diffsync) in order to understand how it works and how you could use it.
-
-## Install dependencies
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip3 install -r requirements.txt
-```
+# Example 5 - PeeringDB to Nautobot synchronisation
 
 ## Context
 
@@ -20,13 +8,23 @@ In Peering DB there is a model that defines a `Facility` and you can get informa
 
 Because of the nature of the demo, we will focus on syncing from PeeringDB to Nautobot (we can assume that PeeringDB is the authoritative System of Record) and we will skip the `delete` part of the `diffsync` library.
 
-## Show me the code
-
 We have 3 files:
 
 - `models.py`: defines the reference models that we will use: `RegionMode` and `SiteModel`
 - `adapter_peeringdb.py`: defines the PeeringDB adapter to translate via `load()` the data from PeeringDB into the reference models commented above. Notice that we don't define CRUD methods because we will sync from it (no to it)
 - `adapter_nautobot.py`: deifnes the Nautobot adapter with the `load()` and the CRUD methods
+
+> The source code for this example is in Github in the [examples/05-nautobot-peeringdb/](https://github.com/networktocode/diffsync/tree/main/examples/05-nautobot-peeringdb) directory.
+
+## Install dependencies
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip3 install -r requirements.txt
+```
+
+## Run it interactivelly
 
 ```python
 from IPython import embed
