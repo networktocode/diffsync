@@ -58,7 +58,7 @@ Synchronize A and B (update B with the contents of A):
 a.sync_to(b)
 print(a.diff_to(b).str())
 # Alternatively you can pass in the diff object from above to prevent another diff calculation
-a.sync_to(b, diff_a_b)
+# a.sync_to(b, diff=diff_a_b)
 ```
 
 Now A and B will show no differences:
