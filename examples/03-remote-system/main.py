@@ -40,6 +40,8 @@ def main():
         print(diff.str())
 
     if args.sync:
+        if not args.diff:
+            diff = None
         print("Updating the list of countries in Nautobot ...")
         nautobot.sync_from(local, flags=flags, diff_class=AlphabeticalOrderDiff, diff=diff)
 

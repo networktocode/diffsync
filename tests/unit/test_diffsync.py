@@ -20,7 +20,7 @@ from unittest import mock
 import pytest
 
 from diffsync import DiffSync, DiffSyncModel, DiffSyncFlags, DiffSyncModelFlags
-from diffsync.exceptions import ObjectAlreadyExists, ObjectNotFound, ObjectCrudException
+from diffsync.exceptions import DiffClassMismatch, ObjectAlreadyExists, ObjectNotFound, ObjectCrudException
 
 from .conftest import Site, Device, Interface, TrackedDiff, BackendA, PersonA
 
@@ -468,14 +468,38 @@ def test_diffsync_diff_with_callback(backend_a, backend_b):
     assert last_value == {"current": expected, "total": expected}
 
 
+def test_diffsync_sync_to_w_different_diff_class_raises(backend_a, backend_b):
+    diff = backend_b.diff_to(backend_a)
+    with pytest.raises(DiffClassMismatch) as failure:
+        backend_b.sync_to(backend_a, diff_class=TrackedDiff, diff=diff)
+    assert failure.value.args[0] == "The provided diff's class (Diff) does not match the diff_class: TrackedDiff"
+
+
+def test_diffsync_sync_to_w_diff_no_mocks(backend_a, backend_b):
+    diff = backend_b.diff_to(backend_a)
+    assert diff.has_diffs()
+    # Perform full sync
+    backend_b.sync_to(backend_a, diff=diff)
+    # Assert there are no diffs after synchronization
+    post_diff = backend_b.diff_to(backend_a)
+    assert not post_diff.has_diffs()
+
+
 def test_diffsync_sync_to_w_diff(backend_a, backend_b):
     diff = backend_b.diff_to(backend_a)
     assert diff.has_diffs()
     # Mock diff_from to make sure it's not called when passing in an existing diff
     backend_b.diff_from = mock.Mock()
+    backend_b.diff_to = mock.Mock()
+    backend_a.diff_from = mock.Mock()
+    backend_a.diff_to = mock.Mock()
     # Perform full sync
     backend_b.sync_to(backend_a, diff=diff)
+    # Assert none of the diff methods have been called
     assert not backend_b.diff_from.called
+    assert not backend_b.diff_to.called
+    assert not backend_a.diff_from.called
+    assert not backend_a.diff_to.called
 
 
 def test_diffsync_sync_from_w_diff(backend_a, backend_b):
@@ -483,9 +507,16 @@ def test_diffsync_sync_from_w_diff(backend_a, backend_b):
     assert diff.has_diffs()
     # Mock diff_from to make sure it's not called when passing in an existing diff
     backend_a.diff_from = mock.Mock()
+    backend_a.diff_to = mock.Mock()
+    backend_b.diff_from = mock.Mock()
+    backend_b.diff_to = mock.Mock()
     # Perform full sync
     backend_a.sync_from(backend_b, diff=diff)
+    # Assert none of the diff methods have been called
     assert not backend_a.diff_from.called
+    assert not backend_a.diff_to.called
+    assert not backend_b.diff_from.called
+    assert not backend_b.diff_to.called
 
 
 def test_diffsync_sync_from(backend_a, backend_b):

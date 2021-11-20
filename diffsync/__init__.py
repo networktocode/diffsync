@@ -23,7 +23,7 @@ import structlog  # type: ignore
 
 from .diff import Diff
 from .enum import DiffSyncModelFlags, DiffSyncFlags, DiffSyncStatus
-from .exceptions import ObjectAlreadyExists, ObjectStoreWrongType, ObjectNotFound
+from .exceptions import DiffClassMismatch, ObjectAlreadyExists, ObjectStoreWrongType, ObjectNotFound
 from .helpers import DiffSyncDiffer, DiffSyncSyncer
 
 
@@ -473,6 +473,13 @@ class DiffSync:
                 calculation of the diff and subsequent sync proceed.
             diff (Diff): An existing diff to be used rather than generating a completely new diff.
         """
+        if diff_class and diff:
+            if not isinstance(diff, diff_class):
+                raise DiffClassMismatch(
+                    f"The provided diff's class ({diff.__class__.__name__}) does not match the diff_class: {diff_class.__name__}",
+                )
+
+        # Generate the diff if an existing diff was not provided
         if not diff:
             diff = self.diff_from(source, diff_class=diff_class, flags=flags, callback=callback)
         syncer = DiffSyncSyncer(diff=diff, src_diffsync=source, dst_diffsync=self, flags=flags, callback=callback)
