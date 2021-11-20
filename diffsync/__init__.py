@@ -486,7 +486,7 @@ class DiffSync:
         diff_class: Type[Diff] = Diff,
         flags: DiffSyncFlags = DiffSyncFlags.NONE,
         callback: Optional[Callable[[Text, int, int], None]] = None,
-        diff: Diff = None,
+        diff: Optional[Diff] = None,
     ):  # pylint: disable=too-many-arguments
         """Synchronize data from the current DiffSync object into the given target DiffSync object.
 
