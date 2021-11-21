@@ -43,3 +43,11 @@ def test_example_4():
     example4_main = join(example4_dir, "main.py")
     # Run it and make sure it doesn't raise an exception or otherwise exit with a non-zero code.
     subprocess.run(example4_main, cwd=example4_dir, check=True)
+
+
+def test_example_5():
+    """Test that the "example5" script runs successfully."""
+    example5_dir = join(EXAMPLES, "05-nautobot-peeringdb")
+    example5_main = join(example5_dir, "main.py")
+    # Run it and make sure it doesn't raise an exception or otherwise exit with a non-zero code.
+    subprocess.run(example5_main, cwd=example5_dir, check=True)
