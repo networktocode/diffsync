@@ -23,7 +23,7 @@ import structlog  # type: ignore
 
 from .diff import Diff
 from .enum import DiffSyncModelFlags, DiffSyncFlags, DiffSyncStatus
-from .exceptions import ObjectAlreadyExists, ObjectStoreWrongType, ObjectNotFound
+from .exceptions import DiffClassMismatch, ObjectAlreadyExists, ObjectStoreWrongType, ObjectNotFound
 from .helpers import DiffSyncDiffer, DiffSyncSyncer
 
 
@@ -461,7 +461,8 @@ class DiffSync:
         diff_class: Type[Diff] = Diff,
         flags: DiffSyncFlags = DiffSyncFlags.NONE,
         callback: Optional[Callable[[Text, int, int], None]] = None,
-    ):
+        diff: Optional[Diff] = None,
+    ):  # pylint: disable=too-many-arguments:
         """Synchronize data from the given source DiffSync object into the current DiffSync object.
 
         Args:
@@ -470,8 +471,17 @@ class DiffSync:
             flags (DiffSyncFlags): Flags influencing the behavior of this sync.
             callback (function): Function with parameters (stage, current, total), to be called at intervals as the
                 calculation of the diff and subsequent sync proceed.
+            diff (Diff): An existing diff to be used rather than generating a completely new diff.
         """
-        diff = self.diff_from(source, diff_class=diff_class, flags=flags, callback=callback)
+        if diff_class and diff:
+            if not isinstance(diff, diff_class):
+                raise DiffClassMismatch(
+                    f"The provided diff's class ({diff.__class__.__name__}) does not match the diff_class: {diff_class.__name__}",
+                )
+
+        # Generate the diff if an existing diff was not provided
+        if not diff:
+            diff = self.diff_from(source, diff_class=diff_class, flags=flags, callback=callback)
         syncer = DiffSyncSyncer(diff=diff, src_diffsync=source, dst_diffsync=self, flags=flags, callback=callback)
         result = syncer.perform_sync()
         if result:
@@ -483,7 +493,8 @@ class DiffSync:
         diff_class: Type[Diff] = Diff,
         flags: DiffSyncFlags = DiffSyncFlags.NONE,
         callback: Optional[Callable[[Text, int, int], None]] = None,
-    ):
+        diff: Optional[Diff] = None,
+    ):  # pylint: disable=too-many-arguments
         """Synchronize data from the current DiffSync object into the given target DiffSync object.
 
         Args:
@@ -492,8 +503,9 @@ class DiffSync:
             flags (DiffSyncFlags): Flags influencing the behavior of this sync.
             callback (function): Function with parameters (stage, current, total), to be called at intervals as the
                 calculation of the diff and subsequent sync proceed.
+            diff (Diff): An existing diff that will be used when determining what needs to be synced.
         """
-        target.sync_from(self, diff_class=diff_class, flags=flags, callback=callback)
+        target.sync_from(self, diff_class=diff_class, flags=flags, callback=callback, diff=diff)
 
     def sync_complete(
         self,

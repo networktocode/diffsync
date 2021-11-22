@@ -51,3 +51,11 @@ class ObjectNotFound(ObjectStoreException):
 
 class ObjectStoreWrongType(ObjectStoreException):
     """Exception raised when trying to store a DiffSyncModel of the wrong type."""
+
+
+class DiffException(Exception):
+    """Base class for various failures related to Diff operations."""
+
+
+class DiffClassMismatch(DiffException):
+    """Exception raised when a diff object is not the same as the expected diff_class."""

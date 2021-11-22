@@ -69,7 +69,7 @@ def main():
     pprint.pprint(diff_a_b.dict(), width=120)
 
     print("Syncing changes from Backend A to Backend B...")
-    backend_a.sync_to(backend_b)
+    backend_a.sync_to(backend_b, diff=diff_a_b)
     print("Getting updated diffs from Backend A to Backend B...")
     print(backend_a.diff_to(backend_b).str())
 
