@@ -24,13 +24,15 @@ source .venv/bin/activate
 pip3 install -r requirements.txt
 ```
 
-## Run it interactivelly
+## Run it interactively
 
 ```python
 from IPython import embed
 embed(colors="neutral")
 
-# Import Adapaters
+# Import Adapters
+from diffsync.enum import DiffSyncFlags
+
 from adapter_nautobot import NautobotRemote
 from adapter_peeringdb import PeeringDB
 
@@ -59,5 +61,6 @@ diff = nautobot.diff_from(peeringdb)
 diff.summary()
 
 # Execute the synchronization
-nautobot.sync_from(peeringdb)
+nautobot.sync_from(peeringdb, flags=DiffSyncFlags.SKIP_UNMATCHED_DST)
+
 ```

@@ -35,8 +35,9 @@ class PeeringDB(DiffSync):
             try:
                 self.get(self.region, fac["city"])
             except ObjectNotFound:
-                # Adding the parent region if necessary
+                # Use pycountry to translate the country code (like "DE") to a country name (like "Germany")
                 parent_name = pycountry.countries.get(alpha_2=fac["country"]).name
+                # Add the country as a parent region if not already added
                 try:
                     self.get(self.region, parent_name)
                 except ObjectNotFound:

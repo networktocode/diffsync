@@ -160,7 +160,6 @@ class NautobotRemote(DiffSync):
                 pk=region_entry["id"],
             )
             self.add(region)
-            # self.job.log_debug(message=f"Loaded {region} from remote Nautobot instance")
 
         site_data = requests.get(f"{self.url}/api/dcim/sites/", headers=self.headers, params={"limit": 0}).json()
         sites = site_data["results"]
@@ -180,7 +179,6 @@ class NautobotRemote(DiffSync):
                 pk=site_entry["id"],
             )
             self.add(site)
-            # self.job.log_debug(message=f"Loaded {site} from remote Nautobot instance")
 
     def post(self, path, data):
         """Send an appropriately constructed HTTP POST request."""
