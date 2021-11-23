@@ -15,11 +15,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import importlib
 import logging
+from importlib.util import find_spec
 
 import structlog  # type: ignore
-
 from packaging import version
 
 
@@ -78,6 +77,6 @@ def _structlog_exception_formatter_required():
         return True
 
     # Determine if module is available for import, without importing it.
-    rich = importlib.util.find_spec("rich")
-    better_exceptions = importlib.util.find_spec("better_exceptions")
+    rich = find_spec("rich")
+    better_exceptions = find_spec("better_exceptions")
     return not (rich or better_exceptions)
