@@ -1,14 +1,17 @@
-# Import Adapters
-from diffsync.enum import DiffSyncFlags
+"""Main.py."""
 
+# Import Adapters
 from adapter_nautobot import NautobotRemote
 from adapter_peeringdb import PeeringDB
+
+from diffsync.enum import DiffSyncFlags
+
 
 # Initialize PeeringDB adapter, using CATNIX id for demonstration
 peeringdb = PeeringDB(ix_id=62)
 
 # Initialize Nautobot adapter, pointing to the demo instance (it's also the default settings)
-nautobot = NautobotRemote(url="https://demo.nautobot.com", token="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+nautobot = NautobotRemote(url="https://demo.nautobot.com", token="a" * 40)  # nosec
 
 # Load PeeringDB info into the adapter
 peeringdb.load()
