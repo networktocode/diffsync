@@ -58,7 +58,9 @@ def enable_console_logging(verbosity=0):
 
 
 def _structlog_exception_formatter_required():
-    """Return True if structlog exception formatter should be loaded
+    """Determine if structlog exception formatter is needed.
+
+    Return True if structlog exception formatter should be loaded
     into structlog processors.
 
     Structlog version 21.2.0 or higher will generate a warning
@@ -68,7 +70,6 @@ def _structlog_exception_formatter_required():
     This code snippet will determine if we need to add 'format_exc_info'
     to the processors.
     """
-
     structlog_float_version = float(".".join(structlog.__version__.split(".")[:2]))
     if structlog_float_version < 21.2:
         return True
