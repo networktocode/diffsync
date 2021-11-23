@@ -53,6 +53,7 @@ def enable_console_logging(verbosity=0):
     processors.append(structlog.dev.ConsoleRenderer())
 
     structlog.configure(
+        processors=processors,
         context_class=dict,
         logger_factory=structlog.stdlib.LoggerFactory(),
         wrapper_class=structlog.stdlib.BoundLogger,
