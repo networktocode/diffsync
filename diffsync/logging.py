@@ -73,7 +73,6 @@ def _structlog_exception_formatter_required():
     This code snippet will determine if we need to add 'format_exc_info'
     to the processors.
     """
-
     if version.parse(structlog.__version__) < version.Version("21.2.0"):
         return True
 
