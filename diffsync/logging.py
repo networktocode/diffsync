@@ -15,6 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import importlib
 import logging
 
 import structlog  # type: ignore
@@ -74,18 +75,7 @@ def _structlog_exception_formatter_required():
     if structlog_float_version < 21.2:
         return True
 
-    try:
-        # pylint: disable=import-outside-toplevel
-        # pylint: disable=import-error
-        import rich
-    except ModuleNotFoundError:
-        rich = False
-
-    try:
-        # pylint: disable=import-outside-toplevel
-        # pylint: disable=import-error
-        import better_exceptions
-    except ModuleNotFoundError:
-        better_exceptions = False
-
+    # Determine if module is available for import, without importing it.
+    rich = importlib.util.find_spec("rich")
+    better_exceptions = importlib.util.find_spec("better_exceptions")
     return not (rich or better_exceptions)
