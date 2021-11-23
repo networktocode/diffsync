@@ -55,7 +55,7 @@ class Diff:
         """
         # Note that element.name is usually a DiffSyncModel.shortname() -- i.e., NOT guaranteed globally unique!!
         if element.name in self.children[element.type]:
-            raise ObjectAlreadyExists(f"Already storing a {element.type} named {element.name}")
+            raise ObjectAlreadyExists(f"Already storing a {element.type} named {element.name}", element)
 
         self.children[element.type][element.name] = element
 

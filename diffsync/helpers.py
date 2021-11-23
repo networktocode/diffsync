@@ -85,7 +85,8 @@ class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
 
         for obj_type in intersection(self.dst_diffsync.top_level, self.src_diffsync.top_level):
             diff_elements = self.diff_object_list(
-                src=self.src_diffsync.get_all(obj_type), dst=self.dst_diffsync.get_all(obj_type),
+                src=self.src_diffsync.get_all(obj_type),
+                dst=self.dst_diffsync.get_all(obj_type),
             )
 
             for diff_element in diff_elements:
@@ -220,7 +221,10 @@ class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
         return diff_element
 
     def diff_child_objects(
-        self, diff_element: DiffElement, src_obj: Optional["DiffSyncModel"], dst_obj: Optional["DiffSyncModel"],
+        self,
+        diff_element: DiffElement,
+        src_obj: Optional["DiffSyncModel"],
+        dst_obj: Optional["DiffSyncModel"],
     ):
         """For all children of the given DiffSyncModel pair, diff recursively, adding diffs to the given diff_element.
 

@@ -20,9 +20,9 @@ from unittest import mock
 import pytest
 
 from diffsync import DiffSync, DiffSyncModel, DiffSyncFlags, DiffSyncModelFlags
-from diffsync.exceptions import ObjectAlreadyExists, ObjectNotFound, ObjectCrudException
+from diffsync.exceptions import DiffClassMismatch, ObjectAlreadyExists, ObjectNotFound, ObjectCrudException
 
-from .conftest import Site, Device, Interface, TrackedDiff, BackendA
+from .conftest import Site, Device, Interface, TrackedDiff, BackendA, PersonA
 
 
 def test_diffsync_default_name_type(generic_diffsync):
@@ -81,11 +81,125 @@ def test_diffsync_get_by_uids_with_no_data(generic_diffsync):
         generic_diffsync.get_by_uids(["any", "another"], DiffSyncModel)
 
 
-def test_diffsync_add(generic_diffsync, generic_diffsync_model):
+def test_diffsync_add_no_raises_existing_same_object(generic_diffsync):
+    person = PersonA(name="Mikhail Yohman")
+
+    modelname = person.get_type()
+    uid = person.get_unique_id()
+
+    # First attempt at adding object
+    generic_diffsync.add(person)
+    assert modelname in generic_diffsync._data  # pylint: disable=protected-access
+    assert uid in generic_diffsync._data[modelname]  # pylint: disable=protected-access
+    assert person == generic_diffsync._data[modelname][uid]  # pylint: disable=protected-access
+
+    # Attempt to add again and make sure it doesn't raise an exception
+    generic_diffsync.add(person)
+    assert person is generic_diffsync._data[modelname][uid]  # pylint: disable=protected-access
+    assert person is generic_diffsync.get(PersonA, "Mikhail Yohman")
+
+
+def test_diffsync_add_raises_already_exists_with_updated_object(generic_diffsync):
+    intf = Interface(device_name="device1", name="eth0")
     # A DiffSync can store arbitrary DiffSyncModel objects, even if it doesn't know about them at definition time.
-    generic_diffsync.add(generic_diffsync_model)
-    with pytest.raises(ObjectAlreadyExists):
-        generic_diffsync.add(generic_diffsync_model)
+    generic_diffsync.add(intf)
+    # Create new interface with same identifiers so it's technically the same object, but set additional attribute
+    new_intf = Interface(device_name="device1", name="eth0", interface_type="1000base-t")
+    with pytest.raises(ObjectAlreadyExists) as error:
+        generic_diffsync.add(new_intf)
+    error_model = error.value.existing_object
+    assert isinstance(error_model, DiffSyncModel)
+    assert new_intf is error_model
+
+
+def test_diffsync_get_or_instantiate_create_non_existent_object(generic_diffsync):
+    intf_identifiers = {"device_name": "device1", "name": "eth1"}
+
+    # Assert that the object does not currently exist.
+    with pytest.raises(ObjectNotFound):
+        generic_diffsync.get(Interface, intf_identifiers)
+
+    obj, created = generic_diffsync.get_or_instantiate(Interface, intf_identifiers)
+    assert created
+    assert obj is generic_diffsync.get(Interface, intf_identifiers)
+
+
+def test_diffsync_get_or_instantiate_retrieve_existing_object(generic_diffsync):
+    intf_identifiers = {"device_name": "device1", "name": "eth1"}
+    intf = Interface(**intf_identifiers)
+    generic_diffsync.add(intf)
+
+    obj, created = generic_diffsync.get_or_instantiate(Interface, intf_identifiers)
+    assert obj is intf
+    assert not created
+
+
+def test_diffsync_get_or_instantiate_retrieve_existing_object_w_attrs(generic_diffsync):
+    intf_identifiers = {"device_name": "device1", "name": "eth1"}
+    intf_attrs = {"interface_type": "1000base-t", "description": "Testing"}
+    intf = Interface(**intf_identifiers)
+    generic_diffsync.add(intf)
+
+    obj, created = generic_diffsync.get_or_instantiate(Interface, intf_identifiers, intf_attrs)
+    assert obj is intf
+    assert not created
+    assert obj.interface_type == "ethernet"
+    assert obj.description is None
+
+
+def test_diffsync_get_or_instantiate_retrieve_create_non_existent_w_attrs(generic_diffsync):
+    intf_identifiers = {"device_name": "device1", "name": "eth1"}
+    intf_attrs = {"interface_type": "1000base-t", "description": "Testing"}
+
+    obj, created = generic_diffsync.get_or_instantiate(Interface, intf_identifiers, intf_attrs)
+    assert created
+    assert obj.interface_type == "1000base-t"
+    assert obj.description == "Testing"
+    assert obj is generic_diffsync.get(Interface, intf_identifiers)
+
+
+def test_diffsync_get_or_instantiate_retrieve_existing_object_wo_attrs(generic_diffsync):
+    intf_identifiers = {"device_name": "device1", "name": "eth1"}
+    intf = Interface(**intf_identifiers)
+    generic_diffsync.add(intf)
+
+    obj, created = generic_diffsync.get_or_instantiate(Interface, intf_identifiers)
+    assert obj is intf
+    assert not created
+    assert obj.interface_type == "ethernet"
+    assert obj.description is None
+
+
+def test_diffsync_update_or_instantiate_retrieve_existing_object_w_updated_attrs(generic_diffsync):
+    intf_identifiers = {"device_name": "device1", "name": "eth1"}
+    intf_attrs = {"interface_type": "1000base-t", "description": "Testing"}
+    intf = Interface(**intf_identifiers)
+    generic_diffsync.add(intf)
+
+    obj, created = generic_diffsync.update_or_instantiate(Interface, intf_identifiers, intf_attrs)
+    assert obj is intf
+    assert not created
+    assert obj.interface_type == "1000base-t"
+    assert obj.description == "Testing"
+
+
+def test_diffsync_update_or_instantiate_create_object(generic_diffsync):
+    intf_identifiers = {"device_name": "device1", "name": "eth1"}
+
+    obj, created = generic_diffsync.update_or_instantiate(Interface, intf_identifiers, {})
+    assert created
+    assert obj.interface_type == "ethernet"
+    assert obj.description is None
+
+
+def test_diffsync_update_or_instantiate_create_object_w_attrs(generic_diffsync):
+    intf_identifiers = {"device_name": "device1", "name": "eth1"}
+    intf_attrs = {"interface_type": "1000base-t", "description": "Testing"}
+
+    obj, created = generic_diffsync.update_or_instantiate(Interface, intf_identifiers, intf_attrs)
+    assert created
+    assert obj.interface_type == "1000base-t"
+    assert obj.description == "Testing"
 
 
 def test_diffsync_get_with_generic_model(generic_diffsync, generic_diffsync_model):
@@ -354,6 +468,57 @@ def test_diffsync_diff_with_callback(backend_a, backend_b):
     assert last_value == {"current": expected, "total": expected}
 
 
+def test_diffsync_sync_to_w_different_diff_class_raises(backend_a, backend_b):
+    diff = backend_b.diff_to(backend_a)
+    with pytest.raises(DiffClassMismatch) as failure:
+        backend_b.sync_to(backend_a, diff_class=TrackedDiff, diff=diff)
+    assert failure.value.args[0] == "The provided diff's class (Diff) does not match the diff_class: TrackedDiff"
+
+
+def test_diffsync_sync_to_w_diff_no_mocks(backend_a, backend_b):
+    diff = backend_b.diff_to(backend_a)
+    assert diff.has_diffs()
+    # Perform full sync
+    backend_b.sync_to(backend_a, diff=diff)
+    # Assert there are no diffs after synchronization
+    post_diff = backend_b.diff_to(backend_a)
+    assert not post_diff.has_diffs()
+
+
+def test_diffsync_sync_to_w_diff(backend_a, backend_b):
+    diff = backend_b.diff_to(backend_a)
+    assert diff.has_diffs()
+    # Mock diff_from to make sure it's not called when passing in an existing diff
+    backend_b.diff_from = mock.Mock()
+    backend_b.diff_to = mock.Mock()
+    backend_a.diff_from = mock.Mock()
+    backend_a.diff_to = mock.Mock()
+    # Perform full sync
+    backend_b.sync_to(backend_a, diff=diff)
+    # Assert none of the diff methods have been called
+    assert not backend_b.diff_from.called
+    assert not backend_b.diff_to.called
+    assert not backend_a.diff_from.called
+    assert not backend_a.diff_to.called
+
+
+def test_diffsync_sync_from_w_diff(backend_a, backend_b):
+    diff = backend_a.diff_from(backend_b)
+    assert diff.has_diffs()
+    # Mock diff_from to make sure it's not called when passing in an existing diff
+    backend_a.diff_from = mock.Mock()
+    backend_a.diff_to = mock.Mock()
+    backend_b.diff_from = mock.Mock()
+    backend_b.diff_to = mock.Mock()
+    # Perform full sync
+    backend_a.sync_from(backend_b, diff=diff)
+    # Assert none of the diff methods have been called
+    assert not backend_a.diff_from.called
+    assert not backend_a.diff_to.called
+    assert not backend_b.diff_from.called
+    assert not backend_b.diff_to.called
+
+
 def test_diffsync_sync_from(backend_a, backend_b):
     backend_a.sync_complete = mock.Mock()
     backend_b.sync_complete = mock.Mock()
@@ -428,7 +593,6 @@ def check_successful_sync_log_sanity(log, src, dst, flags):
 def check_sync_logs_against_diff(diffsync, diff, log, errors_permitted=False):
     """Given a Diff, make sure the captured structlogs correctly correspond to its contents/actions."""
     for element in diff.get_children():
-        print(element)
         # This is kinda gross, but needed since a DiffElement stores a shortname and keys, not a unique_id
         uid = getattr(diffsync, element.type).create_unique_id(**element.keys)
 
@@ -550,8 +714,6 @@ def test_diffsync_add_get_remove_with_subclass_and_data(backend_a):
     site_rdu_a = backend_a.get(Site, "rdu")
     site_atl_a = Site(name="atl")
     backend_a.add(site_atl_a)
-    with pytest.raises(ObjectAlreadyExists):
-        backend_a.add(site_atl_a)
 
     assert backend_a.get(Site, "atl") == site_atl_a
     assert list(backend_a.get_all("site")) == [site_nyc_a, site_sfo_a, site_rdu_a, site_atl_a]
