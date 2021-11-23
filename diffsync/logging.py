@@ -35,18 +35,52 @@ def enable_console_logging(verbosity=0):
     else:
         logging.basicConfig(format="%(message)s", level=logging.DEBUG)
 
+    processors = [
+        structlog.stdlib.filter_by_level,  # <-- added
+        structlog.stdlib.add_logger_name,
+        structlog.stdlib.add_log_level,
+        structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M.%S"),
+        structlog.processors.StackInfoRenderer(),
+    ]
+
+    if _structlog_exception_formatter_required():
+        processors.append(structlog.processors.format_exc_info)
+
+    # ConsoleRenderer must be added after format_exc_info
+    processors.append(structlog.dev.ConsoleRenderer())
+
     structlog.configure(
-        processors=[
-            structlog.stdlib.filter_by_level,  # <-- added
-            structlog.stdlib.add_logger_name,
-            structlog.stdlib.add_log_level,
-            structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M.%S"),
-            structlog.processors.StackInfoRenderer(),
-            structlog.processors.format_exc_info,
-            structlog.dev.ConsoleRenderer(),
-        ],
         context_class=dict,
         logger_factory=structlog.stdlib.LoggerFactory(),
         wrapper_class=structlog.stdlib.BoundLogger,
         cache_logger_on_first_use=True,
     )
+
+
+def _structlog_exception_formatter_required():
+    """Return True if structlog exception formatter should be loaded
+    into structlog processors.
+
+    Structlog version 21.2.0 or higher will generate a warning
+    if either rich or better_exceptions packages are available to import
+    when the 'format_exc_info' processor is used.
+    
+    This code snippet will determine if we need to add 'format_exc_info'
+    to the processors.
+    """
+
+    structlog_float_version = float(".".join(structlog.__version__.split(".")[:2]))
+    if structlog_float_version < 21.2:
+        return True
+
+    try:
+        import rich
+    except ModuleNotFoundError:
+        rich = False
+
+    try:
+        import better_exceptions
+    except ModuleNotFoundError:
+        better_exceptions = False
+
+    return not (rich or better_exceptions)
