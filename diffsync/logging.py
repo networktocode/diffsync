@@ -64,7 +64,7 @@ def _structlog_exception_formatter_required():
     Structlog version 21.2.0 or higher will generate a warning
     if either rich or better_exceptions packages are available to import
     when the 'format_exc_info' processor is used.
-    
+
     This code snippet will determine if we need to add 'format_exc_info'
     to the processors.
     """
