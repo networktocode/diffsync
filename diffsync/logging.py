@@ -15,11 +15,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from packaging import version
 import importlib
 import logging
 
 import structlog  # type: ignore
+
+from packaging import version
 
 
 def enable_console_logging(verbosity=0):
