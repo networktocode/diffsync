@@ -74,11 +74,15 @@ def _structlog_exception_formatter_required():
         return True
 
     try:
+        # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-error
         import rich
     except ModuleNotFoundError:
         rich = False
 
     try:
+        # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-error
         import better_exceptions
     except ModuleNotFoundError:
         better_exceptions = False
