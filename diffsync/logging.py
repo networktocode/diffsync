@@ -15,6 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+from packaging import version
 import importlib
 import logging
 
@@ -71,8 +72,8 @@ def _structlog_exception_formatter_required():
     This code snippet will determine if we need to add 'format_exc_info'
     to the processors.
     """
-    structlog_float_version = float(".".join(structlog.__version__.split(".")[:2]))
-    if structlog_float_version < 21.2:
+
+    if version.parse(structlog.__version__) < version.Version("21.2.0"):
         return True
 
     # Determine if module is available for import, without importing it.
