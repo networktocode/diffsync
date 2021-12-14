@@ -47,10 +47,6 @@ coverage = {extras = ["toml"], version = "^5.3"}
 Sphinx = "^4.0.2"
 m2r2 = "^0.2.7"
 sphinx-rtd-theme = "^0.5.2"
-# dependencies for example 5
-python-slugify = "^5.0.2"
-pycountry = "^20.7.3"
-requests = "^2.26.0"
 
 [tool.poetry.extras]
 docs = [
@@ -105,7 +101,7 @@ notes = """,
     FIXME,
     XXX,
     """
-
+    
 [tool.pylint.similarities]
 # There's a lot of duplicate code in the examples/backend_*.py files - don't complain about it for now
 min-similarity-lines = 20
