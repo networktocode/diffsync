@@ -1,0 +1,5 @@
+diffsync
+python-slugify
+pycountry
+requests
+IPython
