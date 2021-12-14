@@ -29,7 +29,7 @@ class LocalAdapter(DiffSync):
 
     def load(self, filename=COUNTRIES_FILE):  # pylint: disable=arguments-differ
         """Load all regions and countries from a local JSON file."""
-        with open(filename, "r") as data_file:  # pylint: disable=unspecified-encoding
+        with open(filename, "r", encoding="UTF-8") as data_file:
             countries = json.load(data_file)
 
         # Load all regions first
