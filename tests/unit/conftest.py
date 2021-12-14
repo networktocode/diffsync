@@ -73,7 +73,7 @@ class Site(DiffSyncModel):
     _children = {"device": "devices"}
 
     name: str
-    devices: List = list()
+    devices: List = []
 
 
 @pytest.fixture
@@ -100,7 +100,7 @@ class Device(DiffSyncModel):
     name: str
     site_name: Optional[str]  # note this is not included in _attributes
     role: str
-    interfaces: List = list()
+    interfaces: List = []
 
 
 @pytest.fixture
@@ -189,7 +189,7 @@ class SiteA(Site):
 
     _children = {"device": "devices", "person": "people"}
 
-    people: List = list()
+    people: List = []
 
 
 class DeviceA(Device):
@@ -305,7 +305,7 @@ class SiteB(Site):
 
     _children = {"device": "devices", "place": "places"}
 
-    places: List = list()
+    places: List = []
 
 
 class DeviceB(Device):
@@ -313,7 +313,7 @@ class DeviceB(Device):
 
     _attributes = ("role", "vlans")
 
-    vlans: List = list()
+    vlans: List = []
 
 
 class PlaceB(DiffSyncModel):

@@ -16,7 +16,7 @@ class Region(DiffSyncModel):
 
     slug: str
     name: str
-    countries: List[str] = list()
+    countries: List[str] = []
 
 
 class Country(DiffSyncModel):

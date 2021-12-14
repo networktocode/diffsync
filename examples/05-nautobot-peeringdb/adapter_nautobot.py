@@ -46,7 +46,7 @@ class RegionNautobotModel(RegionModel):
             data["description"] = attrs["description"]
         if "parent_name" in attrs:
             if attrs["parent_name"]:
-                data["parent"] = str(self.get(self.region, attrs["parent_name"]).pk)
+                data["parent"] = str(self.diffsync.get(self.diffsync.region, attrs["parent_name"]).pk)
             else:
                 data["parent"] = None
         self.diffsync.patch(f"/api/dcim/regions/{self.pk}/", data)
