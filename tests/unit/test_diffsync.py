@@ -68,13 +68,13 @@ def test_diffsync_get_with_no_data_fails(generic_diffsync):
 
 
 def test_diffsync_get_all_with_no_data_is_empty_list(generic_diffsync):
-    assert list(generic_diffsync.get_all("anything")) == []
-    assert list(generic_diffsync.get_all(DiffSyncModel)) == []
+    assert not list(generic_diffsync.get_all("anything"))
+    assert not list(generic_diffsync.get_all(DiffSyncModel))
 
 
 def test_diffsync_get_by_uids_with_no_data(generic_diffsync):
-    assert generic_diffsync.get_by_uids([], "anything") == []
-    assert generic_diffsync.get_by_uids([], DiffSyncModel) == []
+    assert not generic_diffsync.get_by_uids([], "anything")
+    assert not generic_diffsync.get_by_uids([], DiffSyncModel)
     with pytest.raises(ObjectNotFound):
         generic_diffsync.get_by_uids(["any", "another"], "anything")
     with pytest.raises(ObjectNotFound):
@@ -223,7 +223,7 @@ def test_diffsync_get_all_with_generic_model(generic_diffsync, generic_diffsync_
     assert list(generic_diffsync.get_all(DiffSyncModel)) == [generic_diffsync_model]
     assert list(generic_diffsync.get_all(DiffSyncModel.get_type())) == [generic_diffsync_model]
     # Wrong object-type - no match
-    assert list(generic_diffsync.get_all("anything")) == []
+    assert not list(generic_diffsync.get_all("anything"))
 
 
 def test_diffsync_get_by_uids_with_generic_model(generic_diffsync, generic_diffsync_model):
@@ -246,7 +246,7 @@ def test_diffsync_remove_with_generic_model(generic_diffsync, generic_diffsync_m
 
     with pytest.raises(ObjectNotFound):
         generic_diffsync.get(DiffSyncModel, "")
-    assert list(generic_diffsync.get_all(DiffSyncModel)) == []
+    assert not list(generic_diffsync.get_all(DiffSyncModel))
     with pytest.raises(ObjectNotFound):
         generic_diffsync.get_by_uids([""], DiffSyncModel)
 
@@ -549,7 +549,7 @@ def test_diffsync_sync_from(backend_a, backend_b):
 
     assert list(backend_a.get_all(Site)) == [site_nyc_a, site_sfo_a, site_atl_a]
     assert list(backend_a.get_all("site")) == [site_nyc_a, site_sfo_a, site_atl_a]
-    assert list(backend_a.get_all("nothing")) == []
+    assert not list(backend_a.get_all("nothing"))
 
     assert backend_a.get_by_uids(["nyc", "sfo"], Site) == [site_nyc_a, site_sfo_a]
     assert backend_a.get_by_uids(["sfo", "nyc"], "site") == [site_sfo_a, site_nyc_a]

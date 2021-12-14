@@ -29,7 +29,7 @@ def test_diff_element_empty():
     assert element.dest_name == "dest"
     assert element.source_attrs is None
     assert element.dest_attrs is None
-    assert list(element.get_children()) == []
+    assert not list(element.get_children())
     assert not element.has_diffs()
     assert not element.has_diffs(include_children=True)
     assert not element.has_diffs(include_children=False)
@@ -54,7 +54,7 @@ def test_diff_element_str_with_no_diffs():
 
 def test_diff_element_dict_with_no_diffs():
     element = DiffElement("interface", "eth0", {"device_name": "device1", "name": "eth0"})
-    assert element.dict() == {}
+    assert not element.dict()
 
 
 def test_diff_element_len_with_no_diffs():
