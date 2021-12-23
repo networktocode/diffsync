@@ -20,7 +20,7 @@ from typing import Callable, Iterable, List, Mapping, Optional, Tuple, Type, TYP
 import structlog  # type: ignore
 
 from .diff import Diff, DiffElement
-from .enum import DiffSyncModelFlags, DiffSyncFlags, DiffSyncStatus
+from .enum import DiffSyncModelFlags, DiffSyncFlags, DiffSyncStatus, DiffSyncActions
 from .exceptions import ObjectNotFound, ObjectNotCreated, ObjectNotUpdated, ObjectNotDeleted, ObjectCrudException
 from .utils import intersection, symmetric_difference
 
@@ -353,11 +353,11 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
             self.logger.warning("No object resulted from sync, will not process child objects.")
             return changed
 
-        if self.action == "create":
+        if self.action == DiffSyncActions.CREATE:
             if parent_model:
                 parent_model.add_child(model)
             self.dst_diffsync.add(model)
-        elif self.action == "delete":
+        elif self.action == DiffSyncActions.DELETE:
             if parent_model:
                 parent_model.remove_child(model)
             if model.model_flags & DiffSyncModelFlags.SKIP_CHILDREN_ON_DELETE:
@@ -391,15 +391,15 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
 
         try:
             self.logger.debug(f"Attempting model {self.action}")
-            if self.action == "create":
+            if self.action == DiffSyncActions.CREATE:
                 if model is not None:
                     raise ObjectNotCreated(f"Failed to create {self.model_class.get_type()} {ids} - it already exists!")
                 model = self.model_class.create(diffsync=self.dst_diffsync, ids=ids, attrs=attrs)
-            elif self.action == "update":
+            elif self.action == DiffSyncActions.UPDATE:
                 if model is None:
                     raise ObjectNotUpdated(f"Failed to update {self.model_class.get_type()} {ids} - not found!")
                 model = model.update(attrs=attrs)
-            elif self.action == "delete":
+            elif self.action == DiffSyncActions.DELETE:
                 if model is None:
                     raise ObjectNotDeleted(f"Failed to delete {self.model_class.get_type()} {ids} - not found!")
                 model = model.delete()

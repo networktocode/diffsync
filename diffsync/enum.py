@@ -73,3 +73,12 @@ class DiffSyncStatus(enum.Enum):
     SUCCESS = "success"
     FAILURE = "failure"
     ERROR = "error"
+
+
+class DiffSyncActions:  # pylint: disable=too-few-public-methods
+    """List of valid Action for DiffSyncModel."""
+
+    CREATE = "create"
+    UPDATE = "update"
+    DELETE = "delete"
+    NO_CHANGE = None
