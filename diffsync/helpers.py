@@ -404,7 +404,7 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
                     raise ObjectNotDeleted(f"Failed to delete {self.model_class.get_type()} {ids} - not found!")
                 model = model.delete()
             else:
-                raise ObjectCrudException(f'Unknown action "{self.action.value}"!')
+                raise ObjectCrudException(f'Unknown action "{self.action}"!')
 
             if model is not None:
                 status, message = model.get_status()
