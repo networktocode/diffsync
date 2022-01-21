@@ -73,3 +73,12 @@ class DiffSyncStatus(enum.Enum):
     SUCCESS = "success"
     FAILURE = "failure"
     ERROR = "error"
+
+
+class DiffSyncActions(enum.Enum):
+    """List of valid Action for DiffSyncModel."""
+
+    CREATE = "create"
+    UPDATE = "update"
+    DELETE = "delete"
+    NO_CHANGE = None
