@@ -408,7 +408,7 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
             return (False, dst_model)
 
         try:
-            self.logger.debug(f"Attempting model {self.action}")
+            self.logger.debug(f"Attempting model {self.action.value}")
             if self.action == DiffSyncActions.CREATE:
                 if dst_model is not None:
                     raise ObjectNotCreated(f"Failed to create {self.model_class.get_type()} {ids} - it already exists!")
