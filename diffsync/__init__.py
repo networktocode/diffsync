@@ -176,10 +176,28 @@ class DiffSyncModel(BaseModel):
         self._status_message = message
 
     @classmethod
+    def create_base(cls, diffsync: "DiffSync", ids: Mapping, attrs: Mapping) -> Optional["DiffSyncModel"]:
+        """Instantiate this class, along with any platform-specific data creation.
+
+        This method is not meant to be subclassed, users should redefine create() instead.
+
+        Args:
+            diffsync: The master data store for other DiffSyncModel instances that we might need to reference
+            ids: Dictionary of unique-identifiers needed to create the new object
+            attrs: Dictionary of additional attributes to set on the new object
+
+        Returns:
+            DiffSyncModel: instance of this class.
+        """
+        model = cls(**ids, diffsync=diffsync, **attrs)
+        model.set_status(DiffSyncStatus.SUCCESS, "Created successfully")
+        return model
+
+    @classmethod
     def create(cls, diffsync: "DiffSync", ids: Mapping, attrs: Mapping) -> Optional["DiffSyncModel"]:
         """Instantiate this class, along with any platform-specific data creation.
 
-        Subclasses must call `super().create()`; they may wish to then override the default status information
+        Subclasses must call `super().create()` or `self.create_base()`; they may wish to then override the default status information
         by calling `set_status()` to provide more context (such as details of any interactions with underlying systems).
 
         Args:
@@ -194,14 +212,30 @@ class DiffSyncModel(BaseModel):
         Raises:
             ObjectNotCreated: if an error occurred.
         """
-        model = cls(**ids, diffsync=diffsync, **attrs)
-        model.set_status(DiffSyncStatus.SUCCESS, "Created successfully")
-        return model
+        return cls.create_base(diffsync=diffsync, ids=ids, attrs=attrs)
+
+    def update_base(self, attrs: Mapping) -> Optional["DiffSyncModel"]:
+        """Base Update method to update the attributes of this instance, along with any platform-specific data updates.
+
+        This method is not meant to be subclassed, users should redefine update() instead.
+
+        Args:
+            attrs: Dictionary of attributes to update on the object
+
+        Returns:
+            DiffSyncModel: this instance.
+        """
+        for attr, value in attrs.items():
+            # TODO: enforce that only attrs in self._attributes can be updated in this way?
+            setattr(self, attr, value)
+
+        self.set_status(DiffSyncStatus.SUCCESS, "Updated successfully")
+        return self
 
     def update(self, attrs: Mapping) -> Optional["DiffSyncModel"]:
         """Update the attributes of this instance, along with any platform-specific data updates.
 
-        Subclasses must call `super().update()`; they may wish to then override the default status information
+        Subclasses must call `super().update()` or `self.update_base()`; they may wish to then override the default status information
         by calling `set_status()` to provide more context (such as details of any interactions with underlying systems).
 
         Args:
@@ -214,17 +248,23 @@ class DiffSyncModel(BaseModel):
         Raises:
             ObjectNotUpdated: if an error occurred.
         """
-        for attr, value in attrs.items():
-            # TODO: enforce that only attrs in self._attributes can be updated in this way?
-            setattr(self, attr, value)
+        return self.update_base(attrs=attrs)
 
-        self.set_status(DiffSyncStatus.SUCCESS, "Updated successfully")
+    def delete_base(self) -> Optional["DiffSyncModel"]:
+        """Base delete method Delete any platform-specific data corresponding to this instance.
+
+        This method is not meant to be subclassed, users should redefine delete() instead.
+
+        Returns:
+            DiffSyncModel: this instance.
+        """
+        self.set_status(DiffSyncStatus.SUCCESS, "Deleted successfully")
         return self
 
     def delete(self) -> Optional["DiffSyncModel"]:
         """Delete any platform-specific data corresponding to this instance.
 
-        Subclasses must call `super().delete()`; they may wish to then override the default status information
+        Subclasses must call `super().delete()` or `self.delete_base()`; they may wish to then override the default status information
         by calling `set_status()` to provide more context (such as details of any interactions with underlying systems).
 
         Returns:
@@ -234,8 +274,7 @@ class DiffSyncModel(BaseModel):
         Raises:
             ObjectNotDeleted: if an error occurred.
         """
-        self.set_status(DiffSyncStatus.SUCCESS, "Deleted successfully")
-        return self
+        return self.delete_base()
 
     @classmethod
     def get_type(cls) -> Text:
