@@ -19,7 +19,8 @@ from unittest import mock
 
 import pytest
 
-from diffsync import DiffSync, DiffSyncModel, DiffSyncFlags, DiffSyncModelFlags
+from diffsync import DiffSync, DiffSyncModel
+from diffsync.enum import DiffSyncFlags, DiffSyncModelFlags
 from diffsync.exceptions import DiffClassMismatch, ObjectAlreadyExists, ObjectNotFound, ObjectCrudException
 
 from .conftest import Site, Device, Interface, TrackedDiff, BackendA, PersonA
@@ -796,30 +797,43 @@ def test_diffsync_sync_from_with_continue_on_failure_flag(log, error_prone_backe
 def test_diffsync_diff_with_skip_unmatched_src_flag(
     backend_a, backend_a_with_extra_models, backend_a_minus_some_models
 ):
-    assert backend_a.diff_from(backend_a_with_extra_models).has_diffs()
+    diff = backend_a.diff_from(backend_a_with_extra_models)
+    assert diff.summary() == {"create": 2, "update": 0, "delete": 0, "no-change": 23}
+
     # SKIP_UNMATCHED_SRC should mean that extra models in the src are not flagged for creation in the dest
-    assert not backend_a.diff_from(backend_a_with_extra_models, flags=DiffSyncFlags.SKIP_UNMATCHED_SRC).has_diffs()
+    diff = backend_a.diff_from(backend_a_with_extra_models, flags=DiffSyncFlags.SKIP_UNMATCHED_SRC)
+    assert diff.summary() == {"create": 0, "update": 0, "delete": 0, "no-change": 23}
+
     # SKIP_UNMATCHED_SRC should NOT mean that extra models in the dst are not flagged for deletion in the src
-    assert backend_a.diff_from(backend_a_minus_some_models, flags=DiffSyncFlags.SKIP_UNMATCHED_SRC).has_diffs()
+    diff = backend_a.diff_from(backend_a_minus_some_models, flags=DiffSyncFlags.SKIP_UNMATCHED_SRC)
+    assert diff.summary() == {"create": 0, "update": 0, "delete": 12, "no-change": 11}
 
 
 def test_diffsync_diff_with_skip_unmatched_dst_flag(
     backend_a, backend_a_with_extra_models, backend_a_minus_some_models
 ):
-    assert backend_a.diff_from(backend_a_minus_some_models).has_diffs()
+    diff = backend_a.diff_from(backend_a_minus_some_models)
+    assert diff.summary() == {"create": 0, "update": 0, "delete": 12, "no-change": 11}
+
     # SKIP_UNMATCHED_DST should mean that missing models in the src are not flagged for deletion from the dest
-    assert not backend_a.diff_from(backend_a_minus_some_models, flags=DiffSyncFlags.SKIP_UNMATCHED_DST).has_diffs()
+    diff = backend_a.diff_from(backend_a_minus_some_models, flags=DiffSyncFlags.SKIP_UNMATCHED_DST)
+    assert diff.summary() == {"create": 0, "update": 0, "delete": 0, "no-change": 11}
+
     # SKIP_UNMATCHED_DST should NOT mean that extra models in the src are not flagged for creation in the dest
-    assert backend_a.diff_from(backend_a_with_extra_models, flags=DiffSyncFlags.SKIP_UNMATCHED_DST).has_diffs()
+    diff = backend_a.diff_from(backend_a_with_extra_models, flags=DiffSyncFlags.SKIP_UNMATCHED_DST)
+    assert diff.summary() == {"create": 2, "update": 0, "delete": 0, "no-change": 23}
 
 
 def test_diffsync_diff_with_skip_unmatched_both_flag(
     backend_a, backend_a_with_extra_models, backend_a_minus_some_models
 ):
     # SKIP_UNMATCHED_BOTH should mean that extra models in the src are not flagged for creation in the dest
-    assert not backend_a.diff_from(backend_a_with_extra_models, flags=DiffSyncFlags.SKIP_UNMATCHED_BOTH).has_diffs()
+    diff = backend_a.diff_from(backend_a_with_extra_models, flags=DiffSyncFlags.SKIP_UNMATCHED_BOTH)
+    assert diff.summary() == {"create": 0, "update": 0, "delete": 0, "no-change": 23}
+
     # SKIP_UNMATCHED_BOTH should mean that missing models in the src are not flagged for deletion from the dest
-    assert not backend_a.diff_from(backend_a_minus_some_models, flags=DiffSyncFlags.SKIP_UNMATCHED_BOTH).has_diffs()
+    diff = backend_a.diff_from(backend_a_minus_some_models, flags=DiffSyncFlags.SKIP_UNMATCHED_BOTH)
+    assert diff.summary() == {"create": 0, "update": 0, "delete": 0, "no-change": 11}
 
 
 def test_diffsync_sync_with_skip_unmatched_src_flag(backend_a, backend_a_with_extra_models):
@@ -838,28 +852,6 @@ def test_diffsync_sync_with_skip_unmatched_dst_flag(backend_a, backend_a_minus_s
     assert backend_a.get(backend_a.site, "rdu") is not None
     assert backend_a.get(backend_a.device, "sfo-spine2") is not None
     assert "sfo-spine2" in backend_a.get(backend_a.site, "sfo").devices
-
-
-def test_diffsync_diff_with_ignore_flag_on_source_models(backend_a, backend_a_with_extra_models):
-    # Directly ignore the extra source site
-    backend_a_with_extra_models.get(backend_a_with_extra_models.site, "lax").model_flags |= DiffSyncModelFlags.IGNORE
-    # Ignore any diffs on source site NYC, which should extend to its child nyc-spine3 device
-    backend_a_with_extra_models.get(backend_a_with_extra_models.site, "nyc").model_flags |= DiffSyncModelFlags.IGNORE
-
-    diff = backend_a.diff_from(backend_a_with_extra_models)
-    print(diff.str())  # for debugging of any failure
-    assert not diff.has_diffs()
-
-
-def test_diffsync_diff_with_ignore_flag_on_target_models(backend_a, backend_a_minus_some_models):
-    # Directly ignore the extra target site
-    backend_a.get(backend_a.site, "rdu").model_flags |= DiffSyncModelFlags.IGNORE
-    # Ignore any diffs on target site SFO, which should extend to its child sfo-spine2 device
-    backend_a.get(backend_a.site, "sfo").model_flags |= DiffSyncModelFlags.IGNORE
-
-    diff = backend_a.diff_from(backend_a_minus_some_models)
-    print(diff.str())  # for debugging of any failure
-    assert not diff.has_diffs()
 
 
 def test_diffsync_sync_skip_children_on_delete(backend_a):

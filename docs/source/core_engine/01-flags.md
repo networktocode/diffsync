@@ -57,6 +57,9 @@ class MyAdapter(DiffSync):
 |---|---|---|
 | IGNORE | Do not render diffs containing this model; do not make any changes to this model when synchronizing.  Can be used to indicate a model instance that exists but should not be changed by DiffSync. | 0b1 |
 | SKIP_CHILDREN_ON_DELETE | When deleting this model, do not recursively delete its children. Can be used for the case where deletion of a model results in the automatic deletion of all its children. | 0b10 |
+| SKIP_UNMATCHED_SRC | Ignore the model if it only exists in the source/"from" DiffSync when determining diffs and syncing. If this flag is set, no new model will be created in the target/"to" DiffSync. | 0b100 |
+| SKIP_UNMATCHED_DST | Ignore the model if it only exists in the target/"to" DiffSync when determining diffs and syncing. If this flag is set, the model will not be deleted from the target/"to" DiffSync. | 0b1000 |
+| SKIP_UNMATCHED_BOTH | Convenience value combining both SKIP_UNMATCHED_SRC and SKIP_UNMATCHED_DST into a single flag | 0b1100 |
 
 ## Working with flags
 
