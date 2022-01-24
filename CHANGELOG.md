@@ -1,5 +1,29 @@
 # Changelog
 
+## v1.4.0 - 2022-01-24
+
+### Added
+
+- #83 - Add support for Python 3.10
+- #59 - Add proper documentation published in Read the doc
+- #70 - Add `add_or_update()` method to DiffSync class that requires a DiffSyncModel to be passed in and will attempt to add or update an existing object
+- #80 - Add support for an existing Diff object to be passed to `sync_to()` & `sync_from()` to prevent another diff from being calculated.
+- #87 - Add new model flags : `SKIP_UNMATCHED_BOTH`, `SKIP_UNMATCHED_SRC` & `SKIP_UNMATCHED_DST` to match the behavior of the global flags
+- #81 - Add a new example based on PeeringDB
+- #53 - Add a new example based on pynautobot and Nautobot REST API
+- #75 - Add support for Structlog v21 in addition to v20.
+
+### Changed
+
+- #69 - Replace Travis CI with Github Actions to run unit tests
+- #43 - `get()` and `get_by_uids()` now raises an `ObjectNotFound` exception, instead of silently skipping over unmatched uids
+- #90 - Convert list of actions (`create`, `update`, `delete`) to proper Enum
+- #82 - Update lock file with latest versions.
+
+### Fixed
+
+- #51 - Update minimum Pydantic version due to security advisory GHSA-5jqp-qgf6-3pvh
+
 ## v1.3.0 - 2021-04-07
 
 ### Added
