@@ -17,7 +17,6 @@
 
 ### Changed
 
-- #43 - `get()` and `get_by_uids()` now raises an `ObjectNotFound` exception, instead of silently skipping over unmatched uids
 - #62 - Update CI Token
 - #69 - Replace Travis CI with Github Actions to run unit tests
 - #82 - Update lock file with latest versions.
