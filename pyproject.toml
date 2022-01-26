@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "diffsync"
-version = "1.4.0"
+version = "1.4.1"
 description = "Library to easily sync/diff/update 2 different data sources"
 authors = ["Network to Code, LLC <info@networktocode.com>"]
 license = "Apache-2.0"
@@ -23,13 +23,6 @@ colorama = {version = "^0.4.3", optional = true}
 # For Pydantic
 dataclasses = {version = "^0.7", python = "~3.6"}
 
-# For RTD poetry integration
-sphinx = {version = "^4.0.2", optional = true}
-m2r2 = {version = "^0.2.7", optional = true}
-sphinx-rtd-theme = {version = "^0.5.2", optional = true}
-toml = {version = "^0.10.2", optional = true}
-
-
 [tool.poetry.dev-dependencies]
 pytest = "^6.1.0"
 pyyaml = "^5.3"
@@ -47,18 +40,7 @@ coverage = {extras = ["toml"], version = "^5.3"}
 Sphinx = "^4.0.2"
 m2r2 = "^0.2.7"
 sphinx-rtd-theme = "^0.5.2"
-
-[tool.poetry.extras]
-docs = [
-    "sphinx",
-    "m2r2",
-    "toml",
-    "sphinx-rtd-theme",
-    "pydantic",
-    "structlog",
-    "colorama",
-    "dataclasses"
-]
+toml = "^0.10.2"
 
 [tool.black]
 line-length = 120
