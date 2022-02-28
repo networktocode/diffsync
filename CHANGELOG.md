@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.4.2 - 2022-02-28
+
+### Fixed
+
+- #100 - Added explicit dependency on `packaging`.
+
+## v1.4.1 - 2022-01-26
+
+### Fixed
+
+- #95 - Removed optional dependencies on `sphinx`, `m2r2`, `sphinx-rtd-theme`, `toml`.
+
 ## v1.4.0 - 2022-01-24
 
 ### Added
