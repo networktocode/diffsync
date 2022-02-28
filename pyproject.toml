@@ -19,6 +19,7 @@ include = [
 python = "^3.6.2"
 pydantic = "^1.7.4,!=1.8,!=1.8.1"
 structlog = ">= 20.1.0, < 22.0.0"
+packaging = "^21.3"
 colorama = {version = "^0.4.3", optional = true}
 # For Pydantic
 dataclasses = {version = "^0.7", python = "~3.6"}
