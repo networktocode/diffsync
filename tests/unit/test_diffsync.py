@@ -620,7 +620,7 @@ def check_sync_logs_against_diff(diffsync, diff, log, errors_permitted=False):
 
             assert {
                 ("action", element.action),
-                ("event", f"Attempting model {element.action.value}"),
+                ("event", f"Attempting model {element.action}"),
                 ("level", "debug"),
             } <= begin_event.items()
             # attrs_diffs dict is unhashable so we can't include it in the above set comparison
@@ -633,7 +633,7 @@ def check_sync_logs_against_diff(diffsync, diff, log, errors_permitted=False):
             if complete_event["status"] == "success":
                 assert {
                     ("action", element.action),
-                    ("event", f"{element.action.value.title()}d successfully"),
+                    ("event", f"{element.action.title()}d successfully"),
                     ("level", "info"),
                     ("status", "success"),
                 } <= complete_event.items()

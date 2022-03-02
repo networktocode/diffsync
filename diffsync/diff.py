@@ -106,9 +106,9 @@ class Diff:
     def summary(self) -> Mapping[Text, int]:
         """Build a dict summary of this Diff and its child DiffElements."""
         summary = {
-            DiffSyncActions.CREATE.value: 0,
-            DiffSyncActions.UPDATE.value: 0,
-            DiffSyncActions.DELETE.value: 0,
+            DiffSyncActions.CREATE: 0,
+            DiffSyncActions.UPDATE: 0,
+            DiffSyncActions.DELETE: 0,
             "no-change": 0,
         }
         for child in self.get_children():
@@ -221,11 +221,11 @@ class DiffElement:  # pylint: disable=too-many-instance-attributes
         return total
 
     @property
-    def action(self) -> Optional[DiffSyncActions]:
+    def action(self) -> Optional[Text]:
         """Action, if any, that should be taken to remediate the diffs described by this element.
 
         Returns:
-            DiffSyncActions ("create", "update", "delete", or None)
+            str: DiffSyncActions ("create", "update", "delete", or None)
         """
         if self.source_attrs is not None and self.dest_attrs is None:
             return DiffSyncActions.CREATE
@@ -329,13 +329,13 @@ class DiffElement:  # pylint: disable=too-many-instance-attributes
     def summary(self) -> Mapping[Text, int]:
         """Build a summary of this DiffElement and its children."""
         summary = {
-            DiffSyncActions.CREATE.value: 0,
-            DiffSyncActions.UPDATE.value: 0,
-            DiffSyncActions.DELETE.value: 0,
+            DiffSyncActions.CREATE: 0,
+            DiffSyncActions.UPDATE: 0,
+            DiffSyncActions.DELETE: 0,
             "no-change": 0,
         }
         if self.action:
-            summary[self.action.value] += 1
+            summary[self.action] += 1
         else:
             summary["no-change"] += 1
         child_summary = self.child_diff.summary()

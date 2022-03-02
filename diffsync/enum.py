@@ -89,7 +89,7 @@ class DiffSyncStatus(enum.Enum):
     ERROR = "error"
 
 
-class DiffSyncActions(enum.Enum):
+class DiffSyncActions:  # pylint: disable=too-few-public-methods
     """List of valid Action for DiffSyncModel."""
 
     CREATE = "create"

@@ -305,7 +305,7 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
         # Local state maintained during synchronization
         self.logger: structlog.BoundLogger = self.base_logger
         self.model_class: Type["DiffSyncModel"]
-        self.action: Optional[DiffSyncActions] = None
+        self.action: Optional[str] = None
 
     def incr_elements_processed(self, delta: int = 1):
         """Increment self.elements_processed, then call self.callback if present."""
@@ -408,7 +408,7 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
             return (False, dst_model)
 
         try:
-            self.logger.debug(f"Attempting model {self.action.value}")
+            self.logger.debug(f"Attempting model {self.action}")
             if self.action == DiffSyncActions.CREATE:
                 if dst_model is not None:
                     raise ObjectNotCreated(f"Failed to create {self.model_class.get_type()} {ids} - it already exists!")
@@ -428,7 +428,7 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
                 status, message = dst_model.get_status()
             else:
                 status = DiffSyncStatus.FAILURE
-                message = f"{self.model_class.get_type()} {self.action.value} did not return the model object."
+                message = f"{self.model_class.get_type()} {self.action} did not return the model object."
 
         except ObjectCrudException as exception:
             status = DiffSyncStatus.ERROR
@@ -442,7 +442,7 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
 
         return (True, dst_model)
 
-    def log_sync_status(self, action: Optional[DiffSyncActions], status: DiffSyncStatus, message: str):
+    def log_sync_status(self, action: Optional[str], status: DiffSyncStatus, message: str):
         """Log the current sync status at the appropriate verbosity with appropriate context.
 
         Helper method to `sync_diff_element`/`sync_model`.
