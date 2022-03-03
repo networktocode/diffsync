@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "diffsync"
-version = "1.4.2"
+version = "1.4.3"
 description = "Library to easily sync/diff/update 2 different data sources"
 authors = ["Network to Code, LLC <info@networktocode.com>"]
 license = "Apache-2.0"
