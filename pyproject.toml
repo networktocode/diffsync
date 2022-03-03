@@ -25,23 +25,24 @@ colorama = {version = "^0.4.3", optional = true}
 dataclasses = {version = "^0.7", python = "~3.6"}
 
 [tool.poetry.dev-dependencies]
-pytest = "^6.1.0"
-pyyaml = "^5.3"
-black = "^21.10b0"
-pylint = "^2.4.4"
-pydocstyle = "^5.0.2"
-yamllint = "^1.20.0"
-bandit = "^1.6.2"
-invoke = "^1.4.1"
-flake8 = "^3.8.3"
-mypy = "^0.782"
-pytest-cov = "^2.10.1"
-pytest-structlog = "^0.3"
-coverage = {extras = ["toml"], version = "^5.3"}
-Sphinx = "^4.0.2"
-m2r2 = "^0.2.7"
-sphinx-rtd-theme = "^0.5.2"
-toml = "^0.10.2"
+pytest = "*"
+pyyaml = "*"
+black = "*"
+pylint = "*"
+pydocstyle = "*"
+yamllint = "*"
+bandit = "*"
+invoke = "*"
+flake8 = "*"
+mypy = "*"
+pytest-cov = "*"
+pytest-structlog = "*"
+coverage = {extras = ["toml"], version = "*"}
+Sphinx = "*"
+m2r2 = "*"
+sphinx-rtd-theme = "*"
+toml = "*"
+types-toml = "*"
 
 [tool.black]
 line-length = 120
