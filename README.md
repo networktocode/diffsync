@@ -46,7 +46,7 @@ Pull requests are welcomed and automatically built and tested against multiple v
 
 The project is following Network to Code software development guidelines and are leveraging the following:
 
-- Black, Pylint, Bandit, flake8, and pydocstyle for Python linting and formatting.
+- Black, Pylint, Bandit, flake8, and pydocstyle, mypy for Python linting, formatting and type hint checking.
 - pytest, coverage, and unittest for unit tests.
 
 # Questions
