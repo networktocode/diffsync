@@ -27,7 +27,7 @@ except ImportError:
 
 def project_ver():
     """Find version from pyproject.toml to use for docker image tagging."""
-    with open("pyproject.toml", encoding="utf-8") as file:
+    with open("pyproject.toml", encoding="UTF-8") as file:
         return toml.load(file)["tool"]["poetry"].get("version", "latest")
 
 

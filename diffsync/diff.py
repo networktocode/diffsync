@@ -20,6 +20,7 @@ from typing import Any, Iterator, Iterable, Mapping, Optional, Text, Type
 
 from .exceptions import ObjectAlreadyExists
 from .utils import intersection, OrderedDefaultDict
+from .enum import DiffSyncActions
 
 
 class Diff:
@@ -105,9 +106,9 @@ class Diff:
     def summary(self) -> Mapping[Text, int]:
         """Build a dict summary of this Diff and its child DiffElements."""
         summary = {
-            "create": 0,
-            "update": 0,
-            "delete": 0,
+            DiffSyncActions.CREATE: 0,
+            DiffSyncActions.UPDATE: 0,
+            DiffSyncActions.DELETE: 0,
             "no-change": 0,
         }
         for child in self.get_children():
@@ -224,18 +225,18 @@ class DiffElement:  # pylint: disable=too-many-instance-attributes
         """Action, if any, that should be taken to remediate the diffs described by this element.
 
         Returns:
-            str: "create", "update", "delete", or None
+            str: DiffSyncActions ("create", "update", "delete", or None)
         """
         if self.source_attrs is not None and self.dest_attrs is None:
-            return "create"
+            return DiffSyncActions.CREATE
         if self.source_attrs is None and self.dest_attrs is not None:
-            return "delete"
+            return DiffSyncActions.DELETE
         if (
             self.source_attrs is not None
             and self.dest_attrs is not None
             and any(self.source_attrs[attr_key] != self.dest_attrs[attr_key] for attr_key in self.get_attrs_keys())
         ):
-            return "update"
+            return DiffSyncActions.UPDATE
 
         return None
 
@@ -328,9 +329,9 @@ class DiffElement:  # pylint: disable=too-many-instance-attributes
     def summary(self) -> Mapping[Text, int]:
         """Build a summary of this DiffElement and its children."""
         summary = {
-            "create": 0,
-            "update": 0,
-            "delete": 0,
+            DiffSyncActions.CREATE: 0,
+            DiffSyncActions.UPDATE: 0,
+            DiffSyncActions.DELETE: 0,
             "no-change": 0,
         }
         if self.action:

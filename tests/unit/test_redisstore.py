@@ -1,7 +1,7 @@
 """Testing of RedisStore."""
 import pytest
 from diffsync.store.redis import RedisStore
-from diffsync.exceptions import ObjectStoreException, ObjectAlreadyExists
+from diffsync.exceptions import ObjectStoreException
 
 
 def test_redisstore_init(redis_url):

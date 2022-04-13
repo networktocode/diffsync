@@ -22,7 +22,7 @@ import structlog  # type: ignore
 
 from .diff import Diff
 from .enum import DiffSyncModelFlags, DiffSyncFlags, DiffSyncStatus
-from .exceptions import ObjectAlreadyExists, ObjectStoreWrongType, ObjectNotFound
+from .exceptions import DiffClassMismatch, ObjectAlreadyExists, ObjectStoreWrongType, ObjectNotFound
 from .helpers import DiffSyncDiffer, DiffSyncSyncer
 from .store import BaseStore
 from .store.local import LocalStore
@@ -177,10 +177,28 @@ class DiffSyncModel(BaseModel):
         self._status_message = message
 
     @classmethod
+    def create_base(cls, diffsync: "DiffSync", ids: Mapping, attrs: Mapping) -> Optional["DiffSyncModel"]:
+        """Instantiate this class, along with any platform-specific data creation.
+
+        This method is not meant to be subclassed, users should redefine create() instead.
+
+        Args:
+            diffsync: The master data store for other DiffSyncModel instances that we might need to reference
+            ids: Dictionary of unique-identifiers needed to create the new object
+            attrs: Dictionary of additional attributes to set on the new object
+
+        Returns:
+            DiffSyncModel: instance of this class.
+        """
+        model = cls(**ids, diffsync=diffsync, **attrs)
+        model.set_status(DiffSyncStatus.SUCCESS, "Created successfully")
+        return model
+
+    @classmethod
     def create(cls, diffsync: "DiffSync", ids: Mapping, attrs: Mapping) -> Optional["DiffSyncModel"]:
         """Instantiate this class, along with any platform-specific data creation.
 
-        Subclasses must call `super().create()`; they may wish to then override the default status information
+        Subclasses must call `super().create()` or `self.create_base()`; they may wish to then override the default status information
         by calling `set_status()` to provide more context (such as details of any interactions with underlying systems).
 
         Args:
@@ -195,14 +213,30 @@ class DiffSyncModel(BaseModel):
         Raises:
             ObjectNotCreated: if an error occurred.
         """
-        model = cls(**ids, diffsync=diffsync, **attrs)
-        model.set_status(DiffSyncStatus.SUCCESS, "Created successfully")
-        return model
+        return cls.create_base(diffsync=diffsync, ids=ids, attrs=attrs)
+
+    def update_base(self, attrs: Mapping) -> Optional["DiffSyncModel"]:
+        """Base Update method to update the attributes of this instance, along with any platform-specific data updates.
+
+        This method is not meant to be subclassed, users should redefine update() instead.
+
+        Args:
+            attrs: Dictionary of attributes to update on the object
+
+        Returns:
+            DiffSyncModel: this instance.
+        """
+        for attr, value in attrs.items():
+            # TODO: enforce that only attrs in self._attributes can be updated in this way?
+            setattr(self, attr, value)
+
+        self.set_status(DiffSyncStatus.SUCCESS, "Updated successfully")
+        return self
 
     def update(self, attrs: Mapping) -> Optional["DiffSyncModel"]:
         """Update the attributes of this instance, along with any platform-specific data updates.
 
-        Subclasses must call `super().update()`; they may wish to then override the default status information
+        Subclasses must call `super().update()` or `self.update_base()`; they may wish to then override the default status information
         by calling `set_status()` to provide more context (such as details of any interactions with underlying systems).
 
         Args:
@@ -215,17 +249,23 @@ class DiffSyncModel(BaseModel):
         Raises:
             ObjectNotUpdated: if an error occurred.
         """
-        for attr, value in attrs.items():
-            # TODO: enforce that only attrs in self._attributes can be updated in this way?
-            setattr(self, attr, value)
+        return self.update_base(attrs=attrs)
 
-        self.set_status(DiffSyncStatus.SUCCESS, "Updated successfully")
+    def delete_base(self) -> Optional["DiffSyncModel"]:
+        """Base delete method Delete any platform-specific data corresponding to this instance.
+
+        This method is not meant to be subclassed, users should redefine delete() instead.
+
+        Returns:
+            DiffSyncModel: this instance.
+        """
+        self.set_status(DiffSyncStatus.SUCCESS, "Deleted successfully")
         return self
 
     def delete(self) -> Optional["DiffSyncModel"]:
         """Delete any platform-specific data corresponding to this instance.
 
-        Subclasses must call `super().delete()`; they may wish to then override the default status information
+        Subclasses must call `super().delete()` or `self.delete_base()`; they may wish to then override the default status information
         by calling `set_status()` to provide more context (such as details of any interactions with underlying systems).
 
         Returns:
@@ -235,8 +275,7 @@ class DiffSyncModel(BaseModel):
         Raises:
             ObjectNotDeleted: if an error occurred.
         """
-        self.set_status(DiffSyncStatus.SUCCESS, "Deleted successfully")
-        return self
+        return self.delete_base()
 
     @classmethod
     def get_type(cls) -> Text:
@@ -460,7 +499,8 @@ class DiffSync:
         diff_class: Type[Diff] = Diff,
         flags: DiffSyncFlags = DiffSyncFlags.NONE,
         callback: Optional[Callable[[Text, int, int], None]] = None,
-    ):
+        diff: Optional[Diff] = None,
+    ):  # pylint: disable=too-many-arguments:
         """Synchronize data from the given source DiffSync object into the current DiffSync object.
 
         Args:
@@ -469,8 +509,17 @@ class DiffSync:
             flags (DiffSyncFlags): Flags influencing the behavior of this sync.
             callback (function): Function with parameters (stage, current, total), to be called at intervals as the
                 calculation of the diff and subsequent sync proceed.
+            diff (Diff): An existing diff to be used rather than generating a completely new diff.
         """
-        diff = self.diff_from(source, diff_class=diff_class, flags=flags, callback=callback)
+        if diff_class and diff:
+            if not isinstance(diff, diff_class):
+                raise DiffClassMismatch(
+                    f"The provided diff's class ({diff.__class__.__name__}) does not match the diff_class: {diff_class.__name__}",
+                )
+
+        # Generate the diff if an existing diff was not provided
+        if not diff:
+            diff = self.diff_from(source, diff_class=diff_class, flags=flags, callback=callback)
         syncer = DiffSyncSyncer(diff=diff, src_diffsync=source, dst_diffsync=self, flags=flags, callback=callback)
         result = syncer.perform_sync()
         if result:
@@ -482,7 +531,8 @@ class DiffSync:
         diff_class: Type[Diff] = Diff,
         flags: DiffSyncFlags = DiffSyncFlags.NONE,
         callback: Optional[Callable[[Text, int, int], None]] = None,
-    ):
+        diff: Optional[Diff] = None,
+    ):  # pylint: disable=too-many-arguments
         """Synchronize data from the current DiffSync object into the given target DiffSync object.
 
         Args:
@@ -491,8 +541,9 @@ class DiffSync:
             flags (DiffSyncFlags): Flags influencing the behavior of this sync.
             callback (function): Function with parameters (stage, current, total), to be called at intervals as the
                 calculation of the diff and subsequent sync proceed.
+            diff (Diff): An existing diff that will be used when determining what needs to be synced.
         """
-        target.sync_from(self, diff_class=diff_class, flags=flags, callback=callback)
+        target.sync_from(self, diff_class=diff_class, flags=flags, callback=callback, diff=diff)
 
     def sync_complete(
         self,

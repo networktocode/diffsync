@@ -16,8 +16,10 @@ limitations under the License.
 """
 
 import logging
+from importlib.util import find_spec
 
 import structlog  # type: ignore
+from packaging import version
 
 
 def enable_console_logging(verbosity=0):
@@ -35,18 +37,46 @@ def enable_console_logging(verbosity=0):
     else:
         logging.basicConfig(format="%(message)s", level=logging.DEBUG)
 
+    processors = [
+        structlog.stdlib.filter_by_level,  # <-- added
+        structlog.stdlib.add_logger_name,
+        structlog.stdlib.add_log_level,
+        structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M.%S"),
+        structlog.processors.StackInfoRenderer(),
+    ]
+
+    if _structlog_exception_formatter_required():
+        processors.append(structlog.processors.format_exc_info)
+
+    # ConsoleRenderer must be added after format_exc_info
+    processors.append(structlog.dev.ConsoleRenderer())
+
     structlog.configure(
-        processors=[
-            structlog.stdlib.filter_by_level,  # <-- added
-            structlog.stdlib.add_logger_name,
-            structlog.stdlib.add_log_level,
-            structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M.%S"),
-            structlog.processors.StackInfoRenderer(),
-            structlog.processors.format_exc_info,
-            structlog.dev.ConsoleRenderer(),
-        ],
+        processors=processors,
         context_class=dict,
         logger_factory=structlog.stdlib.LoggerFactory(),
         wrapper_class=structlog.stdlib.BoundLogger,
         cache_logger_on_first_use=True,
     )
+
+
+def _structlog_exception_formatter_required():
+    """Determine if structlog exception formatter is needed.
+
+    Return True if structlog exception formatter should be loaded
+    into structlog processors.
+
+    Structlog version 21.2.0 or higher will generate a warning
+    if either rich or better_exceptions packages are available to import
+    when the 'format_exc_info' processor is used.
+
+    This code snippet will determine if we need to add 'format_exc_info'
+    to the processors.
+    """
+    if version.parse(structlog.__version__) < version.Version("21.2.0"):
+        return True
+
+    # Determine if module is available for import, without importing it.
+    rich = find_spec("rich")
+    better_exceptions = find_spec("better_exceptions")
+    return not (rich or better_exceptions)

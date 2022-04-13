@@ -35,6 +35,20 @@ class DiffSyncModelFlags(enum.Flag):
     Can be used for the case where deletion of a model results in the automatic deletion of all its children.
     """
 
+    SKIP_UNMATCHED_SRC = 0b100
+    """Ignore the model if it only exists in the source/"from" DiffSync when determining diffs and syncing.
+
+    If this flag is set, no new model will be created in the target/"to" DiffSync.
+    """
+
+    SKIP_UNMATCHED_DST = 0b1000
+    """Ignore the model if it only exists in the target/"to" DiffSync when determining diffs and syncing.
+
+    If this flag is set, the model will not be deleted from the target/"to" DiffSync.
+    """
+
+    SKIP_UNMATCHED_BOTH = SKIP_UNMATCHED_SRC | SKIP_UNMATCHED_DST
+
 
 class DiffSyncFlags(enum.Flag):
     """Flags that can be passed to a sync_* or diff_* call to affect its behavior."""
@@ -73,3 +87,12 @@ class DiffSyncStatus(enum.Enum):
     SUCCESS = "success"
     FAILURE = "failure"
     ERROR = "error"
+
+
+class DiffSyncActions:  # pylint: disable=too-few-public-methods
+    """List of valid Action for DiffSyncModel."""
+
+    CREATE = "create"
+    UPDATE = "update"
+    DELETE = "delete"
+    NO_CHANGE = None

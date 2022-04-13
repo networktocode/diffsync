@@ -19,8 +19,9 @@ from unittest import mock
 
 import pytest
 
-from diffsync import DiffSync, DiffSyncModel, DiffSyncFlags, DiffSyncModelFlags
-from diffsync.exceptions import ObjectAlreadyExists, ObjectNotFound, ObjectCrudException
+from diffsync import DiffSync, DiffSyncModel
+from diffsync.enum import DiffSyncFlags, DiffSyncModelFlags
+from diffsync.exceptions import DiffClassMismatch, ObjectAlreadyExists, ObjectNotFound, ObjectCrudException
 
 from .conftest import Site, Device, Interface, TrackedDiff, BackendA, PersonA
 
@@ -73,8 +74,8 @@ def test_diffsync_get_all_with_no_data_is_empty_list(generic_diffsync):
 
 
 def test_diffsync_get_by_uids_with_no_data(generic_diffsync):
-    assert generic_diffsync.get_by_uids([], "anything") == []
-    assert generic_diffsync.get_by_uids([], DiffSyncModel) == []
+    assert not generic_diffsync.get_by_uids([], "anything")
+    assert not generic_diffsync.get_by_uids([], DiffSyncModel)
     with pytest.raises(ObjectNotFound):
         generic_diffsync.get_by_uids(["any", "another"], "anything")
     with pytest.raises(ObjectNotFound):
@@ -469,6 +470,57 @@ def test_diffsync_diff_with_callback(backend_a, backend_b):
     assert last_value == {"current": expected, "total": expected}
 
 
+def test_diffsync_sync_to_w_different_diff_class_raises(backend_a, backend_b):
+    diff = backend_b.diff_to(backend_a)
+    with pytest.raises(DiffClassMismatch) as failure:
+        backend_b.sync_to(backend_a, diff_class=TrackedDiff, diff=diff)
+    assert failure.value.args[0] == "The provided diff's class (Diff) does not match the diff_class: TrackedDiff"
+
+
+def test_diffsync_sync_to_w_diff_no_mocks(backend_a, backend_b):
+    diff = backend_b.diff_to(backend_a)
+    assert diff.has_diffs()
+    # Perform full sync
+    backend_b.sync_to(backend_a, diff=diff)
+    # Assert there are no diffs after synchronization
+    post_diff = backend_b.diff_to(backend_a)
+    assert not post_diff.has_diffs()
+
+
+def test_diffsync_sync_to_w_diff(backend_a, backend_b):
+    diff = backend_b.diff_to(backend_a)
+    assert diff.has_diffs()
+    # Mock diff_from to make sure it's not called when passing in an existing diff
+    backend_b.diff_from = mock.Mock()
+    backend_b.diff_to = mock.Mock()
+    backend_a.diff_from = mock.Mock()
+    backend_a.diff_to = mock.Mock()
+    # Perform full sync
+    backend_b.sync_to(backend_a, diff=diff)
+    # Assert none of the diff methods have been called
+    assert not backend_b.diff_from.called
+    assert not backend_b.diff_to.called
+    assert not backend_a.diff_from.called
+    assert not backend_a.diff_to.called
+
+
+def test_diffsync_sync_from_w_diff(backend_a, backend_b):
+    diff = backend_a.diff_from(backend_b)
+    assert diff.has_diffs()
+    # Mock diff_from to make sure it's not called when passing in an existing diff
+    backend_a.diff_from = mock.Mock()
+    backend_a.diff_to = mock.Mock()
+    backend_b.diff_from = mock.Mock()
+    backend_b.diff_to = mock.Mock()
+    # Perform full sync
+    backend_a.sync_from(backend_b, diff=diff)
+    # Assert none of the diff methods have been called
+    assert not backend_a.diff_from.called
+    assert not backend_a.diff_to.called
+    assert not backend_b.diff_from.called
+    assert not backend_b.diff_to.called
+
+
 def test_diffsync_sync_from(backend_a, backend_b):
     backend_a.sync_complete = mock.Mock()
     backend_b.sync_complete = mock.Mock()
@@ -543,7 +595,6 @@ def check_successful_sync_log_sanity(log, src, dst, flags):
 def check_sync_logs_against_diff(diffsync, diff, log, errors_permitted=False):
     """Given a Diff, make sure the captured structlogs correctly correspond to its contents/actions."""
     for element in diff.get_children():
-        print(element)
         # This is kinda gross, but needed since a DiffElement stores a shortname and keys, not a unique_id
         uid = getattr(diffsync, element.type).create_unique_id(**element.keys)
 
@@ -749,30 +800,43 @@ def test_diffsync_sync_from_with_continue_on_failure_flag(log, error_prone_backe
 def test_diffsync_diff_with_skip_unmatched_src_flag(
     backend_a, backend_a_with_extra_models, backend_a_minus_some_models
 ):
-    assert backend_a.diff_from(backend_a_with_extra_models).has_diffs()
+    diff = backend_a.diff_from(backend_a_with_extra_models)
+    assert diff.summary() == {"create": 2, "update": 0, "delete": 0, "no-change": 23}
+
     # SKIP_UNMATCHED_SRC should mean that extra models in the src are not flagged for creation in the dest
-    assert not backend_a.diff_from(backend_a_with_extra_models, flags=DiffSyncFlags.SKIP_UNMATCHED_SRC).has_diffs()
+    diff = backend_a.diff_from(backend_a_with_extra_models, flags=DiffSyncFlags.SKIP_UNMATCHED_SRC)
+    assert diff.summary() == {"create": 0, "update": 0, "delete": 0, "no-change": 23}
+
     # SKIP_UNMATCHED_SRC should NOT mean that extra models in the dst are not flagged for deletion in the src
-    assert backend_a.diff_from(backend_a_minus_some_models, flags=DiffSyncFlags.SKIP_UNMATCHED_SRC).has_diffs()
+    diff = backend_a.diff_from(backend_a_minus_some_models, flags=DiffSyncFlags.SKIP_UNMATCHED_SRC)
+    assert diff.summary() == {"create": 0, "update": 0, "delete": 12, "no-change": 11}
 
 
 def test_diffsync_diff_with_skip_unmatched_dst_flag(
     backend_a, backend_a_with_extra_models, backend_a_minus_some_models
 ):
-    assert backend_a.diff_from(backend_a_minus_some_models).has_diffs()
+    diff = backend_a.diff_from(backend_a_minus_some_models)
+    assert diff.summary() == {"create": 0, "update": 0, "delete": 12, "no-change": 11}
+
     # SKIP_UNMATCHED_DST should mean that missing models in the src are not flagged for deletion from the dest
-    assert not backend_a.diff_from(backend_a_minus_some_models, flags=DiffSyncFlags.SKIP_UNMATCHED_DST).has_diffs()
+    diff = backend_a.diff_from(backend_a_minus_some_models, flags=DiffSyncFlags.SKIP_UNMATCHED_DST)
+    assert diff.summary() == {"create": 0, "update": 0, "delete": 0, "no-change": 11}
+
     # SKIP_UNMATCHED_DST should NOT mean that extra models in the src are not flagged for creation in the dest
-    assert backend_a.diff_from(backend_a_with_extra_models, flags=DiffSyncFlags.SKIP_UNMATCHED_DST).has_diffs()
+    diff = backend_a.diff_from(backend_a_with_extra_models, flags=DiffSyncFlags.SKIP_UNMATCHED_DST)
+    assert diff.summary() == {"create": 2, "update": 0, "delete": 0, "no-change": 23}
 
 
 def test_diffsync_diff_with_skip_unmatched_both_flag(
     backend_a, backend_a_with_extra_models, backend_a_minus_some_models
 ):
     # SKIP_UNMATCHED_BOTH should mean that extra models in the src are not flagged for creation in the dest
-    assert not backend_a.diff_from(backend_a_with_extra_models, flags=DiffSyncFlags.SKIP_UNMATCHED_BOTH).has_diffs()
+    diff = backend_a.diff_from(backend_a_with_extra_models, flags=DiffSyncFlags.SKIP_UNMATCHED_BOTH)
+    assert diff.summary() == {"create": 0, "update": 0, "delete": 0, "no-change": 23}
+
     # SKIP_UNMATCHED_BOTH should mean that missing models in the src are not flagged for deletion from the dest
-    assert not backend_a.diff_from(backend_a_minus_some_models, flags=DiffSyncFlags.SKIP_UNMATCHED_BOTH).has_diffs()
+    diff = backend_a.diff_from(backend_a_minus_some_models, flags=DiffSyncFlags.SKIP_UNMATCHED_BOTH)
+    assert diff.summary() == {"create": 0, "update": 0, "delete": 0, "no-change": 11}
 
 
 def test_diffsync_sync_with_skip_unmatched_src_flag(backend_a, backend_a_with_extra_models):
@@ -791,28 +855,6 @@ def test_diffsync_sync_with_skip_unmatched_dst_flag(backend_a, backend_a_minus_s
     assert backend_a.get(backend_a.site, "rdu") is not None
     assert backend_a.get(backend_a.device, "sfo-spine2") is not None
     assert "sfo-spine2" in backend_a.get(backend_a.site, "sfo").devices
-
-
-def test_diffsync_diff_with_ignore_flag_on_source_models(backend_a, backend_a_with_extra_models):
-    # Directly ignore the extra source site
-    backend_a_with_extra_models.get(backend_a_with_extra_models.site, "lax").model_flags |= DiffSyncModelFlags.IGNORE
-    # Ignore any diffs on source site NYC, which should extend to its child nyc-spine3 device
-    backend_a_with_extra_models.get(backend_a_with_extra_models.site, "nyc").model_flags |= DiffSyncModelFlags.IGNORE
-
-    diff = backend_a.diff_from(backend_a_with_extra_models)
-    print(diff.str())  # for debugging of any failure
-    assert not diff.has_diffs()
-
-
-def test_diffsync_diff_with_ignore_flag_on_target_models(backend_a, backend_a_minus_some_models):
-    # Directly ignore the extra target site
-    backend_a.get(backend_a.site, "rdu").model_flags |= DiffSyncModelFlags.IGNORE
-    # Ignore any diffs on target site SFO, which should extend to its child sfo-spine2 device
-    backend_a.get(backend_a.site, "sfo").model_flags |= DiffSyncModelFlags.IGNORE
-
-    diff = backend_a.diff_from(backend_a_minus_some_models)
-    print(diff.str())  # for debugging of any failure
-    assert not diff.has_diffs()
 
 
 def test_diffsync_sync_skip_children_on_delete(backend_a):

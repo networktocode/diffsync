@@ -65,6 +65,23 @@ class ErrorProneModelMixin:
         return super().delete()  # type: ignore
 
 
+class ExceptionModelMixin:
+    """Test class that always throws exceptions when creating/updating/deleting instances."""
+
+    @classmethod
+    def create(cls, diffsync: DiffSync, ids: Mapping, attrs: Mapping):
+        """As DiffSyncModel.create(), but always throw exceptions."""
+        raise NotImplementedError
+
+    def update(self, attrs: Mapping):
+        """As DiffSyncModel.update(), but always throw exceptions."""
+        raise NotImplementedError
+
+    def delete(self):
+        """As DiffSyncModel.delete(), but always throw exceptions."""
+        raise NotImplementedError
+
+
 class Site(DiffSyncModel):
     """Concrete DiffSyncModel subclass representing a site or location that contains devices."""
 
@@ -296,6 +313,32 @@ class ErrorProneBackendA(BackendA):
 def error_prone_backend_a():
     """Provide an instance of ErrorProneBackendA subclass of DiffSync."""
     diffsync = ErrorProneBackendA()
+    diffsync.load()
+    return diffsync
+
+
+class ExceptionSiteA(ExceptionModelMixin, SiteA):  # pylint: disable=abstract-method
+    """A Site that always throws exceptions."""
+
+
+class ExceptionDeviceA(ExceptionModelMixin, DeviceA):  # pylint: disable=abstract-method
+    """A Device that always throws exceptions."""
+
+
+class ExceptionInterface(ExceptionModelMixin, Interface):  # pylint: disable=abstract-method
+    """An Interface that always throws exceptions."""
+
+
+class ExceptionDeviceBackendA(BackendA):
+    """A variant of BackendA that always fails to create/update/delete Device objects."""
+
+    device = ExceptionDeviceA
+
+
+@pytest.fixture
+def exception_backend_a():
+    """Provide an instance of ExceptionBackendA subclass of DiffSync."""
+    diffsync = ExceptionDeviceBackendA()
     diffsync.load()
     return diffsync
 
