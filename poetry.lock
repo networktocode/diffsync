@@ -857,6 +857,14 @@ optional = false
 python-versions = ">=3.6"
 
 [[package]]
+name = "types-redis"
+version = "4.1.19"
+description = "Typing stubs for redis"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "types-toml"
 version = "0.10.4"
 description = "Typing stubs for toml"
@@ -920,7 +928,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.6.2"
-content-hash = "cbc0e16a1e8f6c2df2ced42fc4da713107f875860788a35cc0d4806bba87f0a1"
+content-hash = "85311a5f39f99bf9a12cc2d900fe75d3c9b22bb73f3bb10a42aaa44b7ea32b6f"
 
 [metadata.files]
 alabaster = [
@@ -1491,6 +1499,10 @@ typed-ast = [
     {file = "typed_ast-1.5.2-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:f290617f74a610849bd8f5514e34ae3d09eafd521dceaa6cf68b3f4414266d4e"},
     {file = "typed_ast-1.5.2-cp39-cp39-win_amd64.whl", hash = "sha256:df05aa5b241e2e8045f5f4367a9f6187b09c4cdf8578bb219861c4e27c443db5"},
     {file = "typed_ast-1.5.2.tar.gz", hash = "sha256:525a2d4088e70a9f75b08b3f87a51acc9cde640e19cc523c7e41aa355564ae27"},
+]
+types-redis = [
+    {file = "types-redis-4.1.19.tar.gz", hash = "sha256:8e3c0aa3ebbe0b414f9232aaf27c59fe9ed9eafb5cb39f74420d479dc7a32a63"},
+    {file = "types_redis-4.1.19-py3-none-any.whl", hash = "sha256:f13af1ca7b115c727d552f97fd4ac056e5ba0001c29fafec3e2430574aef3651"},
 ]
 types-toml = [
     {file = "types-toml-0.10.4.tar.gz", hash = "sha256:9340e7c1587715581bb13905b3af30b79fe68afaccfca377665d5e63b694129a"},

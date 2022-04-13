@@ -24,6 +24,7 @@ colorama = {version = "^0.4.3", optional = true}
 # For Pydantic
 dataclasses = {version = "^0.7", python = "~3.6"}
 redis = "^4.2.2"
+types-redis = "^4.1.19"
 
 [tool.poetry.dev-dependencies]
 pytest = "*"
