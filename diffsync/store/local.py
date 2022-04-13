@@ -1,50 +1,32 @@
-"""RedisStore module."""
-import copy
-import uuid
-from pickle import loads, dumps
+"""LocalStore module."""
+
+from collections import defaultdict
 from typing import List, Mapping, Text, Type, Union, TYPE_CHECKING
 
-from redis import Redis
-
-from diffsync.exceptions import ObjectNotFound
+from diffsync.exceptions import ObjectNotFound, ObjectAlreadyExists
 from diffsync.store import BaseStore
+
 
 if TYPE_CHECKING:
     from diffsync import DiffSyncModel
 
-REDIS_DIFFSYNC_ROOT_LABEL = "diffsync"
 
+class LocalStore(BaseStore):
+    """LocalStore class."""
 
-class RedisStore(BaseStore):
-    """RedisStore class."""
-
-    def __init__(self, store_id=None, host="localhost", port=6379, url=None, db=0, *args, **kwargs):
-        """Init method for RedisStore."""
-
+    def __init__(self, *args, **kwargs) -> None:
+        """Init method for LocalStore."""
         super().__init__(*args, **kwargs)
 
-        if url:
-            self._store = Redis.from_url(url, db=db)
-        else:
-            self._store = Redis(host=host, port=port, db=db)
-
-        if not self._store.ping():
-            # TODO: find the proper exception
-            raise Exception
-
-        self._store_id = store_id if store_id else str(uuid.uuid4())[:8]
-
-        self._store_label = f"{REDIS_DIFFSYNC_ROOT_LABEL}:{self._store_id}"
-
-    def __str__(self):
-        return f"{self.name}({self._store_id})"
+        self._data = defaultdict(dict)
 
     def get_all_model_names(self):
-        # TODO:  implement
-        raise NotImplementedError
+        """Get all the model names stored.
 
-    def _get_key_for_object(self, modelname, uid):
-        return f"{self._store_label}:{modelname}:{uid}"
+        Return:
+            List[str]: List of all the model names.
+        """
+        return self._data.keys()
 
     def get(self, obj: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]], identifier: Union[Text, Mapping]):  #
         """Get one object from the data store based on its unique id.
@@ -77,13 +59,9 @@ class RedisStore(BaseStore):
                 f"either {obj} should be a class/instance or {identifier} should be a str"
             )
 
-        try:
-            obj = loads(self._store.get(self._get_key_for_object(modelname, uid)))
-            obj.diffsync = self.diffsync
-        except TypeError:
-            raise ObjectNotFound(f"{modelname} {uid} not present in Cache")
-
-        return obj
+        if uid not in self._data[modelname]:
+            raise ObjectNotFound(f"{modelname} {uid} not present in {str(self)}")
+        return self._data[modelname][uid]
 
     def get_all(self, obj: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]]) -> List["DiffSyncModel"]:  #
         """Get all objects of a given type.
@@ -99,16 +77,7 @@ class RedisStore(BaseStore):
         else:
             modelname = obj.get_type()
 
-        results = []
-        for key in self._store.scan_iter(f"{self._store_label}:{modelname}:*"):
-            try:
-                obj = loads(self._store.get(key))
-                obj.diffsync = self.diffsync
-                results.append(obj)
-            except TypeError:
-                raise ObjectNotFound(f"{key} not present in Cache")
-
-        return results
+        return list(self._data[modelname].values())
 
     def get_by_uids(
         self, uids: List[Text], obj: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]]  #
@@ -129,14 +98,9 @@ class RedisStore(BaseStore):
 
         results = []
         for uid in uids:
-
-            try:
-                obj = loads(self._store.get(self._get_key_for_object(modelname, uid)))
-                obj.diffsync = self.diffsync
-                results.append(obj)
-            except TypeError:
-                raise ObjectNotFound(f"{modelname} {uid} not present in Cache")
-
+            if uid not in self._data[modelname]:
+                raise ObjectNotFound(f"{modelname} {uid} not present in {str(self)}")
+            results.append(self._data[modelname][uid])
         return results
 
     def add(self, obj: "DiffSyncModel"):  #
@@ -151,24 +115,17 @@ class RedisStore(BaseStore):
         modelname = obj.get_type()
         uid = obj.get_unique_id()
 
-        # Get existing Object
-        object_key = self._get_key_for_object(modelname, uid)
+        existing_obj = self._data[modelname].get(uid)
+        if existing_obj:
+            if existing_obj is not obj:
+                raise ObjectAlreadyExists(f"Object {uid} already present", obj)
+            # Return so we don't have to change anything on the existing object and underlying data
+            return
 
-        # existing_obj_binary = self._store.get(object_key)
-        # if existing_obj_binary:
-        #     existing_obj = loads(existing_obj_binary)
-        #     existing_obj_dict = existing_obj.dict()
+        if not obj.diffsync:
+            obj.diffsync = self.diffsync
 
-        #     if existing_obj_dict != obj.dict():
-        #         raise ObjectAlreadyExists(f"Object {uid} already present", obj)
-
-        #     # Return so we don't have to change anything on the existing object and underlying data
-        #     return
-
-        # Remove the diffsync object before sending to Redis
-        obj_copy = copy.copy(obj)
-        obj_copy.diffsync = False
-        self._store.set(object_key, dumps(obj_copy))
+        self._data[modelname][uid] = obj
 
     def update(self, obj: "DiffSyncModel"):  #
         """Update a DiffSyncModel object to the store.
@@ -179,10 +136,11 @@ class RedisStore(BaseStore):
         modelname = obj.get_type()
         uid = obj.get_unique_id()
 
-        object_key = self._get_key_for_object(modelname, uid)
-        obj_copy = copy.copy(obj)
-        obj_copy.diffsync = False
-        self._store.set(object_key, dumps(obj_copy))
+        existing_obj = self._data[modelname].get(uid)
+        if existing_obj is obj:
+            return
+
+        self._data[modelname][uid] = obj
 
     def remove(self, obj: "DiffSyncModel", remove_children: bool = False):  #
         """Remove a DiffSyncModel object from the store.
@@ -197,15 +155,13 @@ class RedisStore(BaseStore):
         modelname = obj.get_type()
         uid = obj.get_unique_id()
 
-        object_key = self._get_key_for_object(modelname, uid)
-
-        if not self._store.exists(object_key):
-            raise ObjectNotFound(f"{modelname} {uid} not present in Cache")
+        if uid not in self._data[modelname]:
+            raise ObjectNotFound(f"{modelname} {uid} not present in {str(self)}")
 
         if obj.diffsync:
             obj.diffsync = None
 
-        self._store.delete(object_key)
+        del self._data[modelname][uid]
 
         if remove_children:
             for child_type, child_fieldname in obj.get_children_mapping().items():
@@ -214,14 +170,12 @@ class RedisStore(BaseStore):
                         child_obj = self.get(child_type, child_id)
                         self.remove(child_obj, remove_children=remove_children)
                     except ObjectNotFound:
-                        pass
                         # Since this is "cleanup" code, log an error and continue, instead of letting the exception raise
-                        # self._log.error(f"Unable to remove child {child_id} of {modelname} {uid} - not found!")
+                        self._log.error(f"Unable to remove child {child_id} of {modelname} {uid} - not found!")
 
     def count(self, modelname=None):
         """Returns the number of elements of an specific model name."""
-        search_pattern = f"{self._store_label}:*"
-        if modelname:
-            search_pattern = f"{self._store_label}:{modelname.lower()}:*"
+        if not modelname:
+            return sum(len(entries) for entries in self._data.values())
 
-        return sum([1 for _ in self._store.scan_iter(search_pattern)])
+        return len(self._data[modelname])

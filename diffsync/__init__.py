@@ -14,9 +14,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from collections import defaultdict
 from inspect import isclass
-from typing import Callable, ClassVar, Dict, List, Mapping, MutableMapping, Optional, Text, Tuple, Type, Union
+from typing import Callable, ClassVar, Dict, List, Mapping, Optional, Text, Tuple, Type, Union
 
 from pydantic import BaseModel, PrivateAttr
 import structlog  # type: ignore
@@ -25,7 +24,8 @@ from .diff import Diff
 from .enum import DiffSyncModelFlags, DiffSyncFlags, DiffSyncStatus
 from .exceptions import ObjectAlreadyExists, ObjectStoreWrongType, ObjectNotFound
 from .helpers import DiffSyncDiffer, DiffSyncSyncer
-from .store import BaseStore, LocalStore
+from .store import BaseStore
+from .store.local import LocalStore
 
 
 class DiffSyncModel(BaseModel):
@@ -370,20 +370,12 @@ class DiffSync:
     top_level: ClassVar[List[str]] = []
     """List of top-level modelnames to begin from when diffing or synchronizing."""
 
-    _data: MutableMapping[str, MutableMapping[str, DiffSyncModel]]
-    """Defaultdict storing model instances.
-
-    `self._data[modelname][unique_id] == model_instance`
-    """
-
     def __init__(self, name=None, internal_storage_engine=LocalStore):
         """Generic initialization function.
 
         Subclasses should be careful to call super().__init__() if they override this method.
         """
 
-        self._log = structlog.get_logger().new(diffsync=self)
-        
         if isinstance(internal_storage_engine, BaseStore):
             self.store = internal_storage_engine
             self.store.diffsync = self
@@ -436,10 +428,10 @@ class DiffSync:
     def dict(self, exclude_defaults: bool = True, **kwargs) -> Mapping:
         """Represent the DiffSync contents as a dict, as if it were a Pydantic model."""
         data: Dict[str, Dict[str, Dict]] = {}
-        for modelname in self._data:
+        for modelname in self.store.get_all_model_names():
             data[modelname] = {}
-            for unique_id, model in self._data[modelname].items():
-                data[modelname][unique_id] = model.dict(exclude_defaults=exclude_defaults, **kwargs)
+            for obj in self.store.get_all(modelname):
+                data[obj.get_type()][obj.get_unique_id()] = obj.dict(exclude_defaults=exclude_defaults, **kwargs)
         return data
 
     def str(self, indent: int = 0) -> str:
@@ -571,6 +563,14 @@ class DiffSync:
     # Object Storage Management
     # ------------------------------------------------------------------------------
 
+    def get_all_model_names(self):
+        """Get all model names.
+
+        Returns:
+            List[str]: List of model names
+        """
+        return self.store.get_all_model_names()
+
     def get(
         self, obj: Union[Text, DiffSyncModel, Type[DiffSyncModel]], identifier: Union[Text, Mapping]
     ) -> DiffSyncModel:
@@ -659,7 +659,7 @@ class DiffSync:
         Returns:
             Tuple[DiffSyncModel, bool]: Provides the existing or new object and whether it was created or not.
         """
-        return self.store.get_or_instantiate(modle=model, ids=ids, attrs=attrs)
+        return self.store.get_or_instantiate(model=model, ids=ids, attrs=attrs)
 
     def update_or_instantiate(self, model: Type[DiffSyncModel], ids: Dict, attrs: Dict) -> Tuple[DiffSyncModel, bool]:
         """Attempt to update an existing object with provided ids/attrs or instantiate it with provided identifiers and attrs.
@@ -672,7 +672,18 @@ class DiffSync:
         Returns:
             Tuple[DiffSyncModel, bool]: Provides the existing or new object and whether it was created or not.
         """
-        return self.store.update_or_instantiate(modle=model, ids=ids, attrs=attrs)
+        return self.store.update_or_instantiate(model=model, ids=ids, attrs=attrs)
+
+    def count(self, modelname=None):
+        """Count how many objects of one model type exist in the backend store.
+
+        Args:
+            modelname (str): The model name to check the number of elements. If not provided, default to all.
+
+        Returns:
+            Int: Number of elements of the model type
+        """
+        return self.store.count(modelname=modelname)
 
 
 # DiffSyncModel references DiffSync and DiffSync references DiffSyncModel. Break the typing loop:

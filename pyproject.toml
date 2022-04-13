@@ -28,6 +28,7 @@ sphinx = {version = "^4.0.2", optional = true}
 m2r2 = {version = "^0.2.7", optional = true}
 sphinx-rtd-theme = {version = "^0.5.2", optional = true}
 toml = {version = "^0.10.2", optional = true}
+redis = "^4.2.2"
 
 
 [tool.poetry.dev-dependencies]
@@ -47,6 +48,7 @@ coverage = {extras = ["toml"], version = "^5.3"}
 Sphinx = "^4.0.2"
 m2r2 = "^0.2.7"
 sphinx-rtd-theme = "^0.5.2"
+pytest-redislite = { version = "^0.1.0", python = "^3.7"}
 
 [tool.poetry.extras]
 docs = [
@@ -101,7 +103,7 @@ notes = """,
     FIXME,
     XXX,
     """
-    
+
 [tool.pylint.similarities]
 # There's a lot of duplicate code in the examples/backend_*.py files - don't complain about it for now
 min-similarity-lines = 20

@@ -32,7 +32,7 @@ def test_diffsync_default_name_type(generic_diffsync):
 
 def test_diffsync_generic_load_is_noop(generic_diffsync):
     generic_diffsync.load()
-    assert len(generic_diffsync._data) == 0  # pylint: disable=protected-access
+    assert generic_diffsync.count() == 0
 
 
 def test_diffsync_dict_with_no_data(generic_diffsync):
@@ -89,13 +89,14 @@ def test_diffsync_add_no_raises_existing_same_object(generic_diffsync):
 
     # First attempt at adding object
     generic_diffsync.add(person)
-    assert modelname in generic_diffsync._data  # pylint: disable=protected-access
-    assert uid in generic_diffsync._data[modelname]  # pylint: disable=protected-access
-    assert person == generic_diffsync._data[modelname][uid]  # pylint: disable=protected-access
+    assert modelname in generic_diffsync.get_all_model_names()
+    assert any(uid == obj.get_unique_id() for obj in generic_diffsync.get_all(modelname))
+
+    assert person == generic_diffsync.get(modelname, uid)
 
     # Attempt to add again and make sure it doesn't raise an exception
     generic_diffsync.add(person)
-    assert person is generic_diffsync._data[modelname][uid]  # pylint: disable=protected-access
+    assert person is generic_diffsync.get(modelname, uid)
     assert person is generic_diffsync.get(PersonA, "Mikhail Yohman")
 
 
@@ -686,7 +687,9 @@ def test_diffsync_remove_missing_child(log, backend_a):
     backend_a.remove(rdu_spine1_eth0)
     # Should log an error but continue removing other child objects
     backend_a.remove(rdu_spine1, remove_children=True)
-    assert log.has("Unable to remove child rdu-spine1__eth0 of device rdu-spine1 - not found!", diffsync=backend_a)
+    assert log.has(
+        "Unable to remove child rdu-spine1__eth0 of device rdu-spine1 - not found!", diffsync=backend_a.store
+    )
     with pytest.raises(ObjectNotFound):
         backend_a.get(Interface, "rdu-spine1__eth1")
 
