@@ -53,7 +53,7 @@ class RedisStore(BaseStore):
     def _get_key_for_object(self, modelname, uid):
         return f"{self._store_label}:{modelname}:{uid}"
 
-    def get(self, obj: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]], identifier: Union[Text, Mapping]):  #
+    def get(self, obj: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]], identifier: Union[Text, Mapping]):
         """Get one object from the data store based on its unique id.
 
         Args:
@@ -92,7 +92,7 @@ class RedisStore(BaseStore):
 
         return obj_result
 
-    def get_all(self, obj: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]]) -> List["DiffSyncModel"]:  #
+    def get_all(self, obj: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]]) -> List["DiffSyncModel"]:
         """Get all objects of a given type.
 
         Args:
@@ -118,8 +118,8 @@ class RedisStore(BaseStore):
         return results
 
     def get_by_uids(
-        self, uids: List[Text], obj: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]]  #
-    ) -> List["DiffSyncModel"]:  #
+        self, uids: List[Text], obj: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]]
+    ) -> List["DiffSyncModel"]:
         """Get multiple objects from the store by their unique IDs/Keys and type.
 
         Args:
@@ -146,7 +146,7 @@ class RedisStore(BaseStore):
 
         return results
 
-    def add(self, obj: "DiffSyncModel"):  #
+    def add(self, obj: "DiffSyncModel"):
         """Add a DiffSyncModel object to the store.
 
         Args:
@@ -174,13 +174,11 @@ class RedisStore(BaseStore):
 
         # Remove the diffsync object before sending to Redis
         obj_copy = copy.copy(obj)
-
-        # obj_copy.diffsync = False
         obj_copy.diffsync = None
 
         self._store.set(object_key, dumps(obj_copy))
 
-    def update(self, obj: "DiffSyncModel"):  #
+    def update(self, obj: "DiffSyncModel"):
         """Update a DiffSyncModel object to the store.
 
         Args:
@@ -191,13 +189,11 @@ class RedisStore(BaseStore):
 
         object_key = self._get_key_for_object(modelname, uid)
         obj_copy = copy.copy(obj)
-
-        # obj_copy.diffsync = False
         obj_copy.diffsync = None
 
         self._store.set(object_key, dumps(obj_copy))
 
-    def remove(self, obj: "DiffSyncModel", remove_children: bool = False):  #
+    def remove(self, obj: "DiffSyncModel", remove_children: bool = False):
         """Remove a DiffSyncModel object from the store.
 
         Args:

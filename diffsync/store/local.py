@@ -28,7 +28,7 @@ class LocalStore(BaseStore):
         """
         return self._data.keys()
 
-    def get(self, obj: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]], identifier: Union[Text, Mapping]):  #
+    def get(self, obj: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]], identifier: Union[Text, Mapping]):
         """Get one object from the data store based on its unique id.
 
         Args:
@@ -63,7 +63,7 @@ class LocalStore(BaseStore):
             raise ObjectNotFound(f"{modelname} {uid} not present in {str(self)}")
         return self._data[modelname][uid]
 
-    def get_all(self, obj: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]]) -> List["DiffSyncModel"]:  #
+    def get_all(self, obj: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]]) -> List["DiffSyncModel"]:
         """Get all objects of a given type.
 
         Args:
@@ -80,8 +80,8 @@ class LocalStore(BaseStore):
         return list(self._data[modelname].values())
 
     def get_by_uids(
-        self, uids: List[Text], obj: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]]  #
-    ) -> List["DiffSyncModel"]:  #
+        self, uids: List[Text], obj: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]]
+    ) -> List["DiffSyncModel"]:
         """Get multiple objects from the store by their unique IDs/Keys and type.
 
         Args:
@@ -103,7 +103,7 @@ class LocalStore(BaseStore):
             results.append(self._data[modelname][uid])
         return results
 
-    def add(self, obj: "DiffSyncModel"):  #
+    def add(self, obj: "DiffSyncModel"):
         """Add a DiffSyncModel object to the store.
 
         Args:
@@ -127,7 +127,7 @@ class LocalStore(BaseStore):
 
         self._data[modelname][uid] = obj
 
-    def update(self, obj: "DiffSyncModel"):  #
+    def update(self, obj: "DiffSyncModel"):
         """Update a DiffSyncModel object to the store.
 
         Args:
@@ -142,7 +142,7 @@ class LocalStore(BaseStore):
 
         self._data[modelname][uid] = obj
 
-    def remove(self, obj: "DiffSyncModel", remove_children: bool = False):  #
+    def remove(self, obj: "DiffSyncModel", remove_children: bool = False):
         """Remove a DiffSyncModel object from the store.
 
         Args:

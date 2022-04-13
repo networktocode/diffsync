@@ -42,7 +42,7 @@ class BaseStore:
         """
         raise NotImplementedError
 
-    def get_all(self, obj: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]]) -> List["DiffSyncModel"]:  #
+    def get_all(self, obj: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]]) -> List["DiffSyncModel"]:
         """Get all objects of a given type.
 
         Args:
@@ -54,8 +54,8 @@ class BaseStore:
         raise NotImplementedError
 
     def get_by_uids(
-        self, uids: List[Text], obj: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]]  #
-    ) -> List["DiffSyncModel"]:  #
+        self, uids: List[Text], obj: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]]
+    ) -> List["DiffSyncModel"]:
         """Get multiple objects from the store by their unique IDs/Keys and type.
 
         Args:
@@ -67,7 +67,7 @@ class BaseStore:
         """
         raise NotImplementedError
 
-    def remove(self, obj: "DiffSyncModel", remove_children: bool = False):  #
+    def remove(self, obj: "DiffSyncModel", remove_children: bool = False):
         """Remove a DiffSyncModel object from the store.
 
         Args:
@@ -79,7 +79,7 @@ class BaseStore:
         """
         raise NotImplementedError
 
-    def add(self, obj: "DiffSyncModel"):  #
+    def add(self, obj: "DiffSyncModel"):
         """Add a DiffSyncModel object to the store.
 
         Args:
@@ -90,7 +90,7 @@ class BaseStore:
         """
         raise NotImplementedError
 
-    def update(self, obj: "DiffSyncModel"):  #
+    def update(self, obj: "DiffSyncModel"):
         """Update a DiffSyncModel object to the store.
 
         Args:
@@ -103,8 +103,8 @@ class BaseStore:
         raise NotImplementedError
 
     def get_or_instantiate(
-        self, model: Type["DiffSyncModel"], ids: Dict, attrs: Dict = None  #
-    ) -> Tuple["DiffSyncModel", bool]:  #
+        self, model: Type["DiffSyncModel"], ids: Dict, attrs: Dict = None
+    ) -> Tuple["DiffSyncModel", bool]:
         """Attempt to get the object with provided identifiers or instantiate it with provided identifiers and attrs.
 
         Args:
@@ -129,8 +129,8 @@ class BaseStore:
         return obj, created
 
     def update_or_instantiate(
-        self, model: Type["DiffSyncModel"], ids: Dict, attrs: Dict  #
-    ) -> Tuple["DiffSyncModel", bool]:  #
+        self, model: Type["DiffSyncModel"], ids: Dict, attrs: Dict
+    ) -> Tuple["DiffSyncModel", bool]:
         """Attempt to update an existing object with provided ids/attrs or instantiate it with provided identifiers and attrs.
 
         Args:
