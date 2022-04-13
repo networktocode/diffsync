@@ -28,7 +28,7 @@ class Site(DiffSyncModel):
     _children = {"device": "devices"}
 
     name: str
-    devices: List = list()
+    devices: List = []
 
 
 class Device(DiffSyncModel):
@@ -42,7 +42,7 @@ class Device(DiffSyncModel):
     name: str
     site_name: Optional[str]  # note that this attribute is NOT included in _attributes
     role: Optional[str]  # note that this attribute is NOT included in _attributes
-    interfaces: List = list()
+    interfaces: List = []
 
 
 class Interface(DiffSyncModel):

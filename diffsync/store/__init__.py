@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 class BaseStore:
     """Reference store to be implemented in different backends."""
 
-    def __init__(self, diffsync=None, name=None, *args, **kwargs) -> None:  # pylint: disable=unused-argument
+    def __init__(self, *args, diffsync=None, name: str = "", **kwargs) -> None:  # pylint: disable=unused-argument
         """Init method for BaseStore."""
         self.diffsync = diffsync
         self.name = name if name else self.__class__.__name__

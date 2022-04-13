@@ -1,7 +1,7 @@
 """RedisStore module."""
 import copy
 import uuid
-from pickle import loads, dumps
+from pickle import loads, dumps  # nosec
 from typing import List, Mapping, Text, Type, Union, TYPE_CHECKING
 
 from redis import Redis
@@ -18,9 +18,8 @@ REDIS_DIFFSYNC_ROOT_LABEL = "diffsync"
 class RedisStore(BaseStore):
     """RedisStore class."""
 
-    def __init__(self, store_id=None, host="localhost", port=6379, url=None, db=0, *args, **kwargs):
+    def __init__(self, *args, store_id=None, host="localhost", port=6379, url=None, db=0, **kwargs):
         """Init method for RedisStore."""
-
         super().__init__(*args, **kwargs)
 
         if url:
@@ -37,9 +36,15 @@ class RedisStore(BaseStore):
         self._store_label = f"{REDIS_DIFFSYNC_ROOT_LABEL}:{self._store_id}"
 
     def __str__(self):
+        """Render store name."""
         return f"{self.name}({self._store_id})"
 
     def get_all_model_names(self):
+        """Get all the model names stored.
+
+        Return:
+            List[str]: List of all the model names.
+        """
         # TODO:  implement
         raise NotImplementedError
 
@@ -78,12 +83,12 @@ class RedisStore(BaseStore):
             )
 
         try:
-            obj = loads(self._store.get(self._get_key_for_object(modelname, uid)))
-            obj.diffsync = self.diffsync
+            obj_result = loads(self._store.get(self._get_key_for_object(modelname, uid)))  # nosec
+            obj_result.diffsync = self.diffsync
         except TypeError:
-            raise ObjectNotFound(f"{modelname} {uid} not present in Cache")
+            raise ObjectNotFound(f"{modelname} {uid} not present in Cache")  # pylint: disable=raise-missing-from
 
-        return obj
+        return obj_result
 
     def get_all(self, obj: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]]) -> List["DiffSyncModel"]:  #
         """Get all objects of a given type.
@@ -102,11 +107,11 @@ class RedisStore(BaseStore):
         results = []
         for key in self._store.scan_iter(f"{self._store_label}:{modelname}:*"):
             try:
-                obj = loads(self._store.get(key))
-                obj.diffsync = self.diffsync
-                results.append(obj)
+                obj_result = loads(self._store.get(key))  # nosec
+                obj_result.diffsync = self.diffsync
+                results.append(obj_result)
             except TypeError:
-                raise ObjectNotFound(f"{key} not present in Cache")
+                raise ObjectNotFound(f"{key} not present in Cache")  # pylint: disable=raise-missing-from
 
         return results
 
@@ -131,11 +136,11 @@ class RedisStore(BaseStore):
         for uid in uids:
 
             try:
-                obj = loads(self._store.get(self._get_key_for_object(modelname, uid)))
-                obj.diffsync = self.diffsync
-                results.append(obj)
+                obj_result = loads(self._store.get(self._get_key_for_object(modelname, uid)))  # nosec
+                obj_result.diffsync = self.diffsync
+                results.append(obj_result)
             except TypeError:
-                raise ObjectNotFound(f"{modelname} {uid} not present in Cache")
+                raise ObjectNotFound(f"{modelname} {uid} not present in Cache")  # pylint: disable=raise-missing-from
 
         return results
 
@@ -167,7 +172,10 @@ class RedisStore(BaseStore):
 
         # Remove the diffsync object before sending to Redis
         obj_copy = copy.copy(obj)
-        obj_copy.diffsync = False
+
+        # obj_copy.diffsync = False
+        obj_copy.diffsync = None
+
         self._store.set(object_key, dumps(obj_copy))
 
     def update(self, obj: "DiffSyncModel"):  #
@@ -181,7 +189,10 @@ class RedisStore(BaseStore):
 
         object_key = self._get_key_for_object(modelname, uid)
         obj_copy = copy.copy(obj)
-        obj_copy.diffsync = False
+
+        # obj_copy.diffsync = False
+        obj_copy.diffsync = None
+
         self._store.set(object_key, dumps(obj_copy))
 
     def remove(self, obj: "DiffSyncModel", remove_children: bool = False):  #

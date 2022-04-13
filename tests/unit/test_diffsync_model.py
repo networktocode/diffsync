@@ -370,7 +370,7 @@ def test_diffsync_model_subclass_inheritance():
 
         name: str
         letter: str
-        numbers: List = list()
+        numbers: List = []
 
     class Beta(Alpha):
         """A model class representing a single Greek letter in both English and Spanish."""

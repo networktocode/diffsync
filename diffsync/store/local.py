@@ -1,7 +1,7 @@
 """LocalStore module."""
 
 from collections import defaultdict
-from typing import List, Mapping, Text, Type, Union, TYPE_CHECKING
+from typing import List, Mapping, Text, Type, Union, TYPE_CHECKING, Dict
 
 from diffsync.exceptions import ObjectNotFound, ObjectAlreadyExists
 from diffsync.store import BaseStore
@@ -18,7 +18,7 @@ class LocalStore(BaseStore):
         """Init method for LocalStore."""
         super().__init__(*args, **kwargs)
 
-        self._data = defaultdict(dict)
+        self._data: Dict = defaultdict(dict)
 
     def get_all_model_names(self):
         """Get all the model names stored.

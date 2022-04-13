@@ -40,8 +40,8 @@ class Device(DiffSyncModel):
     name: str
     site_name: Optional[str]  # note that this attribute is NOT included in _attributes
     role: Optional[str]  # note that this attribute is NOT included in _attributes
-    interfaces: List = list()
-    sites: List = list()
+    interfaces: List = []
+    sites: List = []
 
 
 class Interface(DiffSyncModel):

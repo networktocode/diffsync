@@ -25,10 +25,10 @@ def test_diff_empty():
     """Test the basic functionality of the Diff class when initialized and empty."""
     diff = Diff()
 
-    assert diff.children == {}
-    assert list(diff.groups()) == []
+    assert not diff.children
+    assert not list(diff.groups())
     assert not diff.has_diffs()
-    assert list(diff.get_children()) == []
+    assert not list(diff.get_children())
 
 
 def test_diff_summary_with_no_diffs():
@@ -46,7 +46,7 @@ def test_diff_str_with_no_diffs():
 def test_diff_dict_with_no_diffs():
     diff = Diff()
 
-    assert diff.dict() == {}
+    assert not diff.dict()
 
 
 def test_diff_len_with_no_diffs():
