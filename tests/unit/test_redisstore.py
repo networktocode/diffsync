@@ -1,6 +1,7 @@
 """Testing of RedisStore."""
 import pytest
 from diffsync.store.redis import RedisStore
+from diffsync.exceptions import ObjectStoreException
 
 
 def test_redisstore_init(redis_url):
@@ -9,8 +10,8 @@ def test_redisstore_init(redis_url):
 
 
 def test_redisstore_init_wrong():
-    with pytest.raises(Exception):
-        RedisStore(name="mystore", store_id="123", url="wrong")
+    with pytest.raises(ObjectStoreException):
+        RedisStore(name="mystore", store_id="123", url="redis://wrong")
 
 
 def test_redisstore_add_obj(redis_url, make_site):

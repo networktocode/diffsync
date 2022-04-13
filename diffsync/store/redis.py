@@ -5,8 +5,8 @@ from pickle import loads, dumps  # nosec
 from typing import List, Mapping, Text, Type, Union, TYPE_CHECKING
 
 from redis import Redis
-
-from diffsync.exceptions import ObjectNotFound
+from redis.exceptions import ConnectionError as RedisConnectionError
+from diffsync.exceptions import ObjectNotFound, ObjectStoreException
 from diffsync.store import BaseStore
 
 if TYPE_CHECKING:
@@ -22,14 +22,16 @@ class RedisStore(BaseStore):
         """Init method for RedisStore."""
         super().__init__(*args, **kwargs)
 
-        if url:
-            self._store = Redis.from_url(url, db=db)
-        else:
-            self._store = Redis(host=host, port=port, db=db)
+        try:
+            if url:
+                self._store = Redis.from_url(url, db=db)
+            else:
+                self._store = Redis(host=host, port=port, db=db)
 
-        if not self._store.ping():
-            # TODO: find the proper exception
-            raise Exception
+            if not self._store.ping():
+                raise RedisConnectionError
+        except RedisConnectionError:
+            raise ObjectStoreException("Redis store is unavailable.") from RedisConnectionError
 
         self._store_id = store_id if store_id else str(uuid.uuid4())[:8]
 
