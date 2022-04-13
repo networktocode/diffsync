@@ -6,7 +6,7 @@ from typing import List, Mapping, Text, Type, Union, TYPE_CHECKING
 
 from redis import Redis
 from redis.exceptions import ConnectionError as RedisConnectionError
-from diffsync.exceptions import ObjectNotFound, ObjectStoreException
+from diffsync.exceptions import ObjectNotFound, ObjectStoreException, ObjectAlreadyExists
 from diffsync.store import BaseStore
 
 if TYPE_CHECKING:
@@ -47,8 +47,14 @@ class RedisStore(BaseStore):
         Return:
             List[str]: List of all the model names.
         """
-        # TODO:  implement
-        raise NotImplementedError
+        # TODO: optimize it
+        all_model_names = []
+        for item in self._store.scan_iter(f"{self._store_label}:*"):
+            model_name = item.split(b":")[2].decode()
+            if model_name not in all_model_names:
+                all_model_names.append(model_name)
+
+        return all_model_names
 
     def _get_key_for_object(self, modelname, uid):
         return f"{self._store_label}:{modelname}:{uid}"
@@ -161,16 +167,16 @@ class RedisStore(BaseStore):
         # Get existing Object
         object_key = self._get_key_for_object(modelname, uid)
 
-        # existing_obj_binary = self._store.get(object_key)
-        # if existing_obj_binary:
-        #     existing_obj = loads(existing_obj_binary)
-        #     existing_obj_dict = existing_obj.dict()
+        existing_obj_binary = self._store.get(object_key)
+        if existing_obj_binary:
+            existing_obj = loads(existing_obj_binary)
+            existing_obj_dict = existing_obj.dict()
 
-        #     if existing_obj_dict != obj.dict():
-        #         raise ObjectAlreadyExists(f"Object {uid} already present", obj)
+            if existing_obj_dict != obj.dict():
+                raise ObjectAlreadyExists(f"Object {uid} already present", obj)
 
-        #     # Return so we don't have to change anything on the existing object and underlying data
-        #     return
+            # Return so we don't have to change anything on the existing object and underlying data
+            return
 
         # Remove the diffsync object before sending to Redis
         obj_copy = copy.copy(obj)
