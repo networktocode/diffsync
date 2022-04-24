@@ -6,7 +6,7 @@ The goal of this example is to synchronize some data from [PeeringDB](https://ww
 
 In Peering DB there is a model that defines a `Facility` and you can get information about the actual data center and the city where it is placed. In Nautobot, this information could be mapped to the `Region` and `Site` models, where `Region` can define hierarchy. For instance, Barcelona is in Spain and Spain is in Europe, and all of them are `Regions`. And, finally, the actual datacenter will refer to the `Region` where it is placed.
 
-Because of the nature of the demo, we will focus on syncing from PeeringDB to Nautobot (we can assume that PeeringDB is the authoritative System of Record) and we will skip the `delete` part of the `diffsync` library.
+Because of the nature of the demo, we will focus on syncing from PeeringDB to Nautobot (we can assume that PeeringDB is the authoritative System of Record) and we will skip the `delete` part of the `diffsync` library, using diffsync flags.
 
 We have 3 files:
 
@@ -16,12 +16,14 @@ We have 3 files:
 
 > The source code for this example is in Github in the [examples/05-nautobot-peeringdb/](https://github.com/networktocode/diffsync/tree/main/examples/05-nautobot-peeringdb) directory.
 
-## Install dependencies
+## Set up local docker environment
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip3 install -r requirements.txt
+$ git clone https://github.com/networktocode/diffsync.git
+
+$ docker-compose -f examples/05-nautobot-peeringdb/docker-compose.yml up -d
+
+$ docker exec -it 05-nautobot-peeringdb_example_1 bash
 ```
 
 ## Run it interactively
@@ -30,20 +32,28 @@ pip3 install -r requirements.txt
 from IPython import embed
 embed(colors="neutral")
 
-# Import Adapters
-from diffsync.enum import DiffSyncFlags
+import uuid
 
+# Import Adapters
 from adapter_nautobot import NautobotRemote
 from adapter_peeringdb import PeeringDB
 
+from diffsync.enum import DiffSyncFlags
+from diffsync.store.redis import RedisStore
+
+REDIS_HOST = "redis"
+PEERING_DB_IX_ID = 62
+NAUTOBOT_URL = "https://demo.nautobot.com"
+NAUTOBOT_TOKEN = "a" * 40
+
+store_one = RedisStore(host=REDIS_HOST, id=uuid.uuid4())
+store_two = RedisStore(host=REDIS_HOST, id=uuid.uuid4())
+
 # Initialize PeeringDB adapter, using CATNIX id for demonstration
-peeringdb = PeeringDB(ix_id=62)
+peeringdb = PeeringDB(ix_id=PEERING_DB_IX_ID, internal_storage_engine=store_one)
 
 # Initialize Nautobot adapter, pointing to the demo instance (it's also the default settings)
-nautobot = NautobotRemote(
-    url="https://demo.nautobot.com",
-    token="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-)
+nautobot = NautobotRemote(url=NAUTOBOT_URL, token=NAUTOBOT_TOKEN, internal_storage_engine=store_two)  # nosec
 
 # Load PeeringDB info into the adapter
 peeringdb.load()
@@ -55,9 +65,9 @@ peeringdb.dict()
 nautobot.load()
 
 # Let's diffsync do it's magic
-diff = nautobot.diff_from(peeringdb)
+diff = nautobot.diff_from(peeringdb, flags=DiffSyncFlags.SKIP_UNMATCHED_DST)
 
-# Quick summary of the expected changes (remember that delete ones are dry-run)
+# Quick summary of the expected changes
 diff.summary()
 
 # Execute the synchronization

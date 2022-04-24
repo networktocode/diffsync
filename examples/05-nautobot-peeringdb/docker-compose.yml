@@ -1,0 +1,14 @@
+version: "3.8"
+services:
+  example:
+    build:
+      context: "./"
+      dockerfile: "Dockerfile"
+    tty: true
+    depends_on:
+      redis:
+        condition: "service_started"
+    volumes:
+      - "./:/local"
+  redis:
+    image: "redis:6-alpine"

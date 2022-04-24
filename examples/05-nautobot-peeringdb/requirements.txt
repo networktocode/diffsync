@@ -3,3 +3,4 @@ python-slugify
 pycountry
 requests
 IPython
+pynautobot
