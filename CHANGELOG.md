@@ -1,6 +1,20 @@
 # Changelog
 
+## v1.4.3 - 2022-03-03
+
+### Fixed
+
+- #101 - Revert changed introduced in #90 that affected `DiffElement.action`
+
+**NOTE**: this change is a breaking change against DiffSync 1.4.0 through 1.4.2, but was necessary to restore backward compatibility with DiffSync 1.3.x and earlier. Apologies for any inconvenience this causes.
+
+### Changed
+
+- #103 Update development dependencies
+
 ## v1.4.2 - 2022-02-28
+
+**WARNING** - #90 inadvertently introduced a breaking API change in DiffSync 1.4.0 through 1.4.2 (#101); this change was reverted in #102 for DiffSync 1.4.3 and later. We recommend not using this release, and moving to 1.4.3 instead.
 
 ### Fixed
 
@@ -8,11 +22,15 @@
 
 ## v1.4.1 - 2022-01-26
 
+**WARNING** - #90 inadvertently introduced a breaking API change in DiffSync 1.4.0 through 1.4.2 (#101); this change was reverted in #102 for DiffSync 1.4.3 and later. We recommend not using this release, and moving to 1.4.3 instead.
+
 ### Fixed
 
 - #95 - Removed optional dependencies on `sphinx`, `m2r2`, `sphinx-rtd-theme`, `toml`.
 
 ## v1.4.0 - 2022-01-24
+
+**WARNING** - #90 inadvertently introduced a breaking API change in DiffSync 1.4.0 through 1.4.2 (#101); this change was reverted in #102 for DiffSync 1.4.3 and later. We recommend not using this release, and moving to 1.4.3 instead.
 
 ### Added
 
