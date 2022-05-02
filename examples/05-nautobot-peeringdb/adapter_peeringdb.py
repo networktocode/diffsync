@@ -66,3 +66,4 @@ class PeeringDB(DiffSync):
             )
             self.add(site)
             region.add_child(site)
+            self.update(region)
