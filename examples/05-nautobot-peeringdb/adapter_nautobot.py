@@ -173,4 +173,4 @@ class NautobotRemote(DiffSync):
             if site_entry["region"]:
                 region = self.get(self.region, site_entry["region"]["name"])
                 region.add_child(site)
-                self.update(region)
+                self.update(region)  # pylint: disable=no-member
