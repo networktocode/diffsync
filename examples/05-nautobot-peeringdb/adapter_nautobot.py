@@ -129,7 +129,7 @@ class NautobotRemote(DiffSync):
     site = SiteNautobotModel
 
     # Top-level class labels, i.e. those classes that are handled directly rather than as children of other models
-    top_level = ("region", "site")
+    top_level = ["region"]
 
     def __init__(self, *args, url=NAUTOBOT_URL, token=NAUTOBOT_TOKEN, **kwargs):
         """Instantiate this class, but do not load data immediately from the remote system.
@@ -170,3 +170,6 @@ class NautobotRemote(DiffSync):
                 pk=site_entry["id"],
             )
             self.add(site)
+            if site_entry["region"]:
+                region = self.get(self.region, site_entry["region"]["name"])
+                region.add_child(site)

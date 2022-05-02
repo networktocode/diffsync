@@ -19,7 +19,7 @@ class PeeringDB(DiffSync):
     site = SiteModel
 
     # Top-level class labels, i.e. those classes that are handled directly rather than as children of other models
-    top_level = ("region", "site")
+    top_level = ["region"]
 
     def __init__(self, *args, ix_id, **kwargs):
         """Initialize the PeeringDB adapter."""
@@ -33,7 +33,7 @@ class PeeringDB(DiffSync):
         for fac in ix_data["data"][0]["fac_set"]:
             # PeeringDB has no Region entity, so we must avoid duplicates
             try:
-                self.get(self.region, fac["city"])
+                region = self.get(self.region, fac["city"])
             except ObjectNotFound:
                 # Use pycountry to translate the country code (like "DE") to a country name (like "Germany")
                 parent_name = pycountry.countries.get(alpha_2=fac["country"]).name
@@ -65,3 +65,4 @@ class PeeringDB(DiffSync):
                 pk=fac["id"],
             )
             self.add(site)
+            region.add_child(site)
