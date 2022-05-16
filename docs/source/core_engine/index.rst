@@ -8,4 +8,4 @@ The core engine of DiffSync is meant to be transparent for most users but in som
 
 .. mdinclude:: 01-flags.md
 .. mdinclude:: 02-customize-diff-class.md
-
+.. mdinclude:: 03-store.md
