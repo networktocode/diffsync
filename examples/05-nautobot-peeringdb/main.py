@@ -1,5 +1,4 @@
 """Main.py."""
-from uuid import uuid4
 
 # Import Adapters
 from adapter_nautobot import NautobotRemote
@@ -13,8 +12,8 @@ PEERING_DB_IX_ID = 62  # CATNIX ID
 NAUTOBOT_URL = "https://demo.nautobot.com"
 NAUTOBOT_TOKEN = "a" * 40
 
-store_one = RedisStore(host=REDIS_HOST, id=uuid4())
-store_two = RedisStore(host=REDIS_HOST, id=uuid4())
+store_one = RedisStore(host=REDIS_HOST)
+store_two = RedisStore(host=REDIS_HOST)
 
 # Initialize PeeringDB adapter
 peeringdb = PeeringDB(ix_id=PEERING_DB_IX_ID, internal_storage_engine=store_one)
