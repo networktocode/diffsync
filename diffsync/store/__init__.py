@@ -72,6 +72,10 @@ class BaseStore:
         """
         raise NotImplementedError
 
+    def _remove_item(self, modelname: str, uid: str):
+        """Remove one item from store."""
+        raise NotImplementedError
+
     def remove(self, *, obj: "DiffSyncModel", remove_children: bool = False):
         """Remove a DiffSyncModel object from the store.
 
@@ -82,7 +86,23 @@ class BaseStore:
         Raises:
             ObjectNotFound: if the object is not present
         """
-        raise NotImplementedError
+        modelname = obj.get_type()
+        uid = obj.get_unique_id()
+
+        self._remove_item(modelname, uid)
+
+        if obj.diffsync:
+            obj.diffsync = None
+
+        if remove_children:
+            for child_type, child_fieldname in obj.get_children_mapping().items():
+                for child_id in getattr(obj, child_fieldname):
+                    try:
+                        child_obj = self.get(model=child_type, identifier=child_id)
+                        self.remove(obj=child_obj, remove_children=remove_children)
+                    except ObjectNotFound:
+                        # Since this is "cleanup" code, log an error and continue, instead of letting the exception raise
+                        self._log.error(f"Unable to remove child {child_id} of {modelname} {uid} - not found!")
 
     def add(self, *, obj: "DiffSyncModel"):
         """Add a DiffSyncModel object to the store.

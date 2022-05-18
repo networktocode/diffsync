@@ -45,7 +45,7 @@ class RedisStore(BaseStore):
         return f"{self.name} ({self._store_id})"
 
     def _get_object_from_redis_key(self, key):
-        """Get the object from Redis key"""
+        """Get the object from Redis key."""
         try:
             obj_result = loads(self._store.get(key))  # nosec
             obj_result.diffsync = self.diffsync
@@ -181,39 +181,14 @@ class RedisStore(BaseStore):
 
         self._store.set(object_key, dumps(obj_copy))
 
-    def remove(self, *, obj: "DiffSyncModel", remove_children: bool = False):
-        """Remove a DiffSyncModel object from the store.
-
-        Args:
-            obj (DiffSyncModel): object to remove
-            remove_children (bool): If True, also recursively remove any children of this object
-
-        Raises:
-            ObjectNotFound: if the object is not present
-        """
-        modelname = obj.get_type()
-        uid = obj.get_unique_id()
-
+    def _remove_item(self, modelname: str, uid: str):
+        """Remove one item from store."""
         object_key = self._get_key_for_object(modelname, uid)
 
         if not self._store.exists(object_key):
             raise ObjectNotFound(f"{modelname} {uid} not present in Cache")
 
-        if obj.diffsync:
-            obj.diffsync = None
-
         self._store.delete(object_key)
-
-        if remove_children:
-            for child_type, child_fieldname in obj.get_children_mapping().items():
-                for child_id in getattr(obj, child_fieldname):
-                    try:
-                        child_obj = self.get(model=child_type, identifier=child_id)
-                        self.remove(obj=child_obj, remove_children=remove_children)
-                    except ObjectNotFound:
-                        pass
-                        # Since this is "cleanup" code, log an error and continue, instead of letting the exception raise
-                        # self._log.error(f"Unable to remove child {child_id} of {modelname} {uid} - not found!")
 
     def count(self, *, model: Union[Text, "DiffSyncModel", Type["DiffSyncModel"], None] = None) -> int:
         """Returns the number of elements of a specific model, or all elements in the store if unspecified."""

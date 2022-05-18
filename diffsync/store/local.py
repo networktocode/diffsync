@@ -128,36 +128,11 @@ class LocalStore(BaseStore):
 
         self._data[modelname][uid] = obj
 
-    def remove(self, *, obj: "DiffSyncModel", remove_children: bool = False):
-        """Remove a DiffSyncModel object from the store.
-
-        Args:
-            obj (DiffSyncModel): object to remove
-            remove_children (bool): If True, also recursively remove any children of this object
-
-        Raises:
-            ObjectNotFound: if the object is not present
-        """
-        modelname = obj.get_type()
-        uid = obj.get_unique_id()
-
+    def _remove_item(self, modelname: str, uid: str):
+        """Remove one item from store."""
         if uid not in self._data[modelname]:
             raise ObjectNotFound(f"{modelname} {uid} not present in {str(self)}")
-
-        if obj.diffsync:
-            obj.diffsync = None
-
         del self._data[modelname][uid]
-
-        if remove_children:
-            for child_type, child_fieldname in obj.get_children_mapping().items():
-                for child_id in getattr(obj, child_fieldname):
-                    try:
-                        child_obj = self.get(model=child_type, identifier=child_id)
-                        self.remove(obj=child_obj, remove_children=remove_children)
-                    except ObjectNotFound:
-                        # Since this is "cleanup" code, log an error and continue, instead of letting the exception raise
-                        self._log.error(f"Unable to remove child {child_id} of {modelname} {uid} - not found!")
 
     def count(self, *, model: Union[Text, "DiffSyncModel", Type["DiffSyncModel"], None] = None) -> int:
         """Returns the number of elements of a specific model, or all elements in the store if unspecified."""
