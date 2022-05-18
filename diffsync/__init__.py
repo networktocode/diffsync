@@ -725,16 +725,16 @@ class DiffSync:
         """
         return self.store.update_or_instantiate(model=model, ids=ids, attrs=attrs)
 
-    def count(self, modelname=None):
+    def count(self, model: Union[Text, "DiffSyncModel", Type["DiffSyncModel"], None] = None):
         """Count how many objects of one model type exist in the backend store.
 
         Args:
-            modelname (str): The model name to check the number of elements. If not provided, default to all.
+            model (DiffSyncModel): The DiffSyncModel to check the number of elements. If not provided, default to all.
 
         Returns:
             Int: Number of elements of the model type
         """
-        return self.store.count(modelname=modelname)
+        return self.store.count(model=model)
 
 
 # DiffSyncModel references DiffSync and DiffSync references DiffSyncModel. Break the typing loop:

@@ -47,9 +47,9 @@ def test_redisstore_remove_obj(redis_url, make_site):
     store = RedisStore(name="mystore", store_id="123", url=redis_url)
     site = make_site()
     store.add(obj=site)
-    assert store.count(modelname=site.__class__.__name__) == store.count() == 1
+    assert store.count(model=site.__class__) == store.count() == 1
     store.remove(obj=site)
-    assert store.count(modelname=site.__class__.__name__) == store.count() == 0
+    assert store.count(model=site.__class__) == store.count() == 0
 
 
 def test_redisstore_get_all_model_names(redis_url, make_site, make_device):

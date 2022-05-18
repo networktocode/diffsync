@@ -175,9 +175,13 @@ class LocalStore(BaseStore):
                         # Since this is "cleanup" code, log an error and continue, instead of letting the exception raise
                         self._log.error(f"Unable to remove child {child_id} of {modelname} {uid} - not found!")
 
-    def count(self, *, modelname=None) -> int:
+    def count(self, *, model: Union[Text, "DiffSyncModel", Type["DiffSyncModel"], None] = None) -> int:
         """Returns the number of elements of a specific model, or all elements in the store if unspecified."""
-        if not modelname:
+        if not model:
             return sum(len(entries) for entries in self._data.values())
 
+        if isinstance(model, str):
+            modelname = model
+        else:
+            modelname = model.get_type()
         return len(self._data[modelname])

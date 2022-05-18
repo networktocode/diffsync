@@ -103,7 +103,7 @@ class BaseStore:
         """
         raise NotImplementedError
 
-    def count(self, *, modelname=None) -> int:
+    def count(self, *, model: Union[Text, "DiffSyncModel", Type["DiffSyncModel"], None] = None) -> int:
         """Returns the number of elements of a specific model, or all elements in the store if not specified."""
         raise NotImplementedError
 
