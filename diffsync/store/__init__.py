@@ -1,5 +1,5 @@
 """BaseStore module."""
-from typing import Dict, List, Mapping, Text, Tuple, Type, Union, TYPE_CHECKING, Optional
+from typing import Dict, List, Mapping, Text, Tuple, Type, Union, TYPE_CHECKING, Optional, Set
 import structlog  # type: ignore
 
 from diffsync.exceptions import ObjectNotFound
@@ -24,11 +24,11 @@ class BaseStore:
         """Render store name."""
         return self.name
 
-    def get_all_model_names(self) -> List[str]:
+    def get_all_model_names(self) -> Set[str]:
         """Get all the model names stored.
 
         Return:
-            List[str]: List of all the model names.
+            Set[str]: Set of all the model names.
         """
         raise NotImplementedError
 

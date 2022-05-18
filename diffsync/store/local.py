@@ -1,7 +1,7 @@
 """LocalStore module."""
 
 from collections import defaultdict
-from typing import List, Mapping, Text, Type, Union, TYPE_CHECKING, Dict
+from typing import List, Mapping, Text, Type, Union, TYPE_CHECKING, Dict, Set
 
 from diffsync.exceptions import ObjectNotFound, ObjectAlreadyExists
 from diffsync.store import BaseStore
@@ -20,13 +20,13 @@ class LocalStore(BaseStore):
 
         self._data: Dict = defaultdict(dict)
 
-    def get_all_model_names(self) -> List[str]:
+    def get_all_model_names(self) -> Set[str]:
         """Get all the model names stored.
 
         Return:
-            List[str]: List of all the model names.
+            Set[str]: Set of all the model names.
         """
-        return list(self._data.keys())
+        return set(self._data.keys())
 
     def get(
         self, *, model: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]], identifier: Union[Text, Mapping]

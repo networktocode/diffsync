@@ -2,7 +2,7 @@
 import copy
 import uuid
 from pickle import loads, dumps  # nosec
-from typing import List, Mapping, Text, Type, Union, TYPE_CHECKING
+from typing import List, Mapping, Text, Type, Union, TYPE_CHECKING, Set
 
 from redis import Redis
 from redis.exceptions import ConnectionError as RedisConnectionError
@@ -18,9 +18,12 @@ REDIS_DIFFSYNC_ROOT_LABEL = "diffsync"
 class RedisStore(BaseStore):
     """RedisStore class."""
 
-    def __init__(self, *args, store_id=None, host="localhost", port=6379, url=None, db=0, **kwargs):
+    def __init__(self, *args, store_id=None, host=None, port=6379, url=None, db=0, **kwargs):
         """Init method for RedisStore."""
         super().__init__(*args, **kwargs)
+
+        if url and host and port:
+            raise ValueError("'url' argument can't be specified together with 'host' and 'port' ones.")
 
         try:
             if url:
@@ -33,7 +36,7 @@ class RedisStore(BaseStore):
         except RedisConnectionError:
             raise ObjectStoreException("Redis store is unavailable.") from RedisConnectionError
 
-        self._store_id = store_id if store_id else str(uuid.uuid4())[:8]
+        self._store_id = store_id if store_id else str(uuid.uuid4())
 
         self._store_label = f"{REDIS_DIFFSYNC_ROOT_LABEL}:{self._store_id}"
 
@@ -41,18 +44,19 @@ class RedisStore(BaseStore):
         """Render store name."""
         return f"{self.name} ({self._store_id})"
 
-    def get_all_model_names(self) -> List[str]:
+    def get_all_model_names(self) -> Set[str]:
         """Get all the model names stored.
 
         Return:
-            List[str]: List of all the model names.
+            Set[str]: Set of all the model names.
         """
         # TODO: optimize it
-        all_model_names = []
+        all_model_names = set()
         for item in self._store.scan_iter(f"{self._store_label}:*"):
+            # Model Name is the third item in the Redis key
+            # b'diffsync:123:device:device1' -> Model name b'device'
             model_name = item.split(b":")[2].decode()
-            if model_name not in all_model_names:
-                all_model_names.append(model_name)
+            all_model_names.add(model_name)
 
         return all_model_names
 
