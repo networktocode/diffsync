@@ -60,27 +60,27 @@ class RedisStore(BaseStore):
         return f"{self._store_label}:{modelname}:{uid}"
 
     def get(
-        self, obj: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]], identifier: Union[Text, Mapping]
+        self, *, model: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]], identifier: Union[Text, Mapping]
     ) -> "DiffSyncModel":
         """Get one object from the data store based on its unique id.
 
         Args:
-            obj: DiffSyncModel class or instance, or modelname string, that defines the type of the object to retrieve
+            model: DiffSyncModel class or instance, or modelname string, that defines the type of the object to retrieve
             identifier: Unique ID of the object to retrieve, or dict of unique identifier keys/values
 
         Raises:
             ValueError: if obj is a str and identifier is a dict (can't convert dict into a uid str without a model class)
             ObjectNotFound: if the requested object is not present
         """
-        if isinstance(obj, str):
-            modelname = obj
-            if not hasattr(self, obj):
+        if isinstance(model, str):
+            modelname = model
+            if not hasattr(self, model):
                 object_class = None
             else:
-                object_class = getattr(self, obj)
+                object_class = getattr(self, model)
         else:
-            object_class = obj
-            modelname = obj.get_type()
+            object_class = model
+            modelname = model.get_type()
 
         if isinstance(identifier, str):
             uid = identifier
@@ -88,8 +88,8 @@ class RedisStore(BaseStore):
             uid = object_class.create_unique_id(**identifier)
         else:
             raise ValueError(
-                f"Invalid args: ({obj}, {identifier}): "
-                f"either {obj} should be a class/instance or {identifier} should be a str"
+                f"Invalid args: ({model}, {identifier}): "
+                f"either {model} should be a class/instance or {identifier} should be a str"
             )
 
         try:
@@ -100,19 +100,19 @@ class RedisStore(BaseStore):
 
         return obj_result
 
-    def get_all(self, obj: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]]) -> List["DiffSyncModel"]:
+    def get_all(self, *, model: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]]) -> List["DiffSyncModel"]:
         """Get all objects of a given type.
 
         Args:
-            obj: DiffSyncModel class or instance, or modelname string, that defines the type of the objects to retrieve
+            model: DiffSyncModel class or instance, or modelname string, that defines the type of the objects to retrieve
 
         Returns:
             List[DiffSyncModel]: List of Object
         """
-        if isinstance(obj, str):
-            modelname = obj
+        if isinstance(model, str):
+            modelname = model
         else:
-            modelname = obj.get_type()
+            modelname = model.get_type()
 
         results = []
         for key in self._store.scan_iter(f"{self._store_label}:{modelname}:*"):
@@ -126,21 +126,21 @@ class RedisStore(BaseStore):
         return results
 
     def get_by_uids(
-        self, uids: List[Text], obj: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]]
+        self, *, uids: List[Text], model: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]]
     ) -> List["DiffSyncModel"]:
         """Get multiple objects from the store by their unique IDs/Keys and type.
 
         Args:
             uids: List of unique id / key identifying object in the database.
-            obj: DiffSyncModel class or instance, or modelname string, that defines the type of the objects to retrieve
+            model: DiffSyncModel class or instance, or modelname string, that defines the type of the objects to retrieve
 
         Raises:
             ObjectNotFound: if any of the requested UIDs are not found in the store
         """
-        if isinstance(obj, str):
-            modelname = obj
+        if isinstance(model, str):
+            modelname = model
         else:
-            modelname = obj.get_type()
+            modelname = model.get_type()
 
         results = []
         for uid in uids:
@@ -154,7 +154,7 @@ class RedisStore(BaseStore):
 
         return results
 
-    def add(self, obj: "DiffSyncModel"):
+    def add(self, *, obj: "DiffSyncModel"):
         """Add a DiffSyncModel object to the store.
 
         Args:
@@ -186,7 +186,7 @@ class RedisStore(BaseStore):
 
         self._store.set(object_key, dumps(obj_copy))
 
-    def update(self, obj: "DiffSyncModel"):
+    def update(self, *, obj: "DiffSyncModel"):
         """Update a DiffSyncModel object to the store.
 
         Args:
@@ -201,7 +201,7 @@ class RedisStore(BaseStore):
 
         self._store.set(object_key, dumps(obj_copy))
 
-    def remove(self, obj: "DiffSyncModel", remove_children: bool = False):
+    def remove(self, *, obj: "DiffSyncModel", remove_children: bool = False):
         """Remove a DiffSyncModel object from the store.
 
         Args:
@@ -228,17 +228,17 @@ class RedisStore(BaseStore):
             for child_type, child_fieldname in obj.get_children_mapping().items():
                 for child_id in getattr(obj, child_fieldname):
                     try:
-                        child_obj = self.get(child_type, child_id)
-                        self.remove(child_obj, remove_children=remove_children)
+                        child_obj = self.get(model=child_type, identifier=child_id)
+                        self.remove(obj=child_obj, remove_children=remove_children)
                     except ObjectNotFound:
                         pass
                         # Since this is "cleanup" code, log an error and continue, instead of letting the exception raise
                         # self._log.error(f"Unable to remove child {child_id} of {modelname} {uid} - not found!")
 
-    def count(self, modelname=None) -> int:
+    def count(self, *, modelname=None) -> int:
         """Returns the number of elements of an specific model name."""
         search_pattern = f"{self._store_label}:*"
         if modelname:
             search_pattern = f"{self._store_label}:{modelname.lower()}:*"
 
-        return len(self._store.scan_iter(search_pattern))
+        return len(list(self._store.scan_iter(search_pattern)))

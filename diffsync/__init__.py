@@ -469,7 +469,7 @@ class DiffSync:
         data: Dict[str, Dict[str, Dict]] = {}
         for modelname in self.store.get_all_model_names():
             data[modelname] = {}
-            for obj in self.store.get_all(modelname):
+            for obj in self.store.get_all(model=modelname):
                 data[obj.get_type()][obj.get_unique_id()] = obj.dict(exclude_defaults=exclude_defaults, **kwargs)
         return data
 
@@ -636,7 +636,7 @@ class DiffSync:
             ValueError: if obj is a str and identifier is a dict (can't convert dict into a uid str without a model class)
             ObjectNotFound: if the requested object is not present
         """
-        return self.store.get(obj=obj, identifier=identifier)
+        return self.store.get(model=obj, identifier=identifier)
 
     def get_all(self, obj: Union[Text, DiffSyncModel, Type[DiffSyncModel]]) -> List[DiffSyncModel]:
         """Get all objects of a given type.
@@ -647,7 +647,7 @@ class DiffSync:
         Returns:
             List[DiffSyncModel]: List of Object
         """
-        return self.store.get_all(obj=obj)
+        return self.store.get_all(model=obj)
 
     def get_by_uids(
         self, uids: List[Text], obj: Union[Text, DiffSyncModel, Type[DiffSyncModel]]
@@ -661,7 +661,7 @@ class DiffSync:
         Raises:
             ObjectNotFound: if any of the requested UIDs are not found in the store
         """
-        return self.store.get_by_uids(uids=uids, obj=obj)
+        return self.store.get_by_uids(uids=uids, model=obj)
 
     def add(self, obj: DiffSyncModel):
         """Add a DiffSyncModel object to the store.

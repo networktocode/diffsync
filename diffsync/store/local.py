@@ -26,30 +26,30 @@ class LocalStore(BaseStore):
         Return:
             List[str]: List of all the model names.
         """
-        return self._data.keys()
+        return list(self._data.keys())
 
     def get(
-        self, obj: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]], identifier: Union[Text, Mapping]
+        self, *, model: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]], identifier: Union[Text, Mapping]
     ) -> "DiffSyncModel":
         """Get one object from the data store based on its unique id.
 
         Args:
-            obj: DiffSyncModel class or instance, or modelname string, that defines the type of the object to retrieve
+            model: DiffSyncModel class or instance, or modelname string, that defines the type of the object to retrieve
             identifier: Unique ID of the object to retrieve, or dict of unique identifier keys/values
 
         Raises:
             ValueError: if obj is a str and identifier is a dict (can't convert dict into a uid str without a model class)
             ObjectNotFound: if the requested object is not present
         """
-        if isinstance(obj, str):
-            modelname = obj
-            if not hasattr(self, obj):
+        if isinstance(model, str):
+            modelname = model
+            if not hasattr(self, model):
                 object_class = None
             else:
-                object_class = getattr(self, obj)
+                object_class = getattr(self, model)
         else:
-            object_class = obj
-            modelname = obj.get_type()
+            object_class = model
+            modelname = model.get_type()
 
         if isinstance(identifier, str):
             uid = identifier
@@ -57,46 +57,46 @@ class LocalStore(BaseStore):
             uid = object_class.create_unique_id(**identifier)
         else:
             raise ValueError(
-                f"Invalid args: ({obj}, {identifier}): "
-                f"either {obj} should be a class/instance or {identifier} should be a str"
+                f"Invalid args: ({model}, {identifier}): "
+                f"either {model} should be a class/instance or {identifier} should be a str"
             )
 
         if uid not in self._data[modelname]:
             raise ObjectNotFound(f"{modelname} {uid} not present in {str(self)}")
         return self._data[modelname][uid]
 
-    def get_all(self, obj: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]]) -> List["DiffSyncModel"]:
+    def get_all(self, *, model: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]]) -> List["DiffSyncModel"]:
         """Get all objects of a given type.
 
         Args:
-            obj: DiffSyncModel class or instance, or modelname string, that defines the type of the objects to retrieve
+            model: DiffSyncModel class or instance, or modelname string, that defines the type of the objects to retrieve
 
         Returns:
             List[DiffSyncModel]: List of Object
         """
-        if isinstance(obj, str):
-            modelname = obj
+        if isinstance(model, str):
+            modelname = model
         else:
-            modelname = obj.get_type()
+            modelname = model.get_type()
 
         return list(self._data[modelname].values())
 
     def get_by_uids(
-        self, uids: List[Text], obj: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]]
+        self, *, uids: List[Text], model: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]]
     ) -> List["DiffSyncModel"]:
         """Get multiple objects from the store by their unique IDs/Keys and type.
 
         Args:
             uids: List of unique id / key identifying object in the database.
-            obj: DiffSyncModel class or instance, or modelname string, that defines the type of the objects to retrieve
+            model: DiffSyncModel class or instance, or modelname string, that defines the type of the objects to retrieve
 
         Raises:
             ObjectNotFound: if any of the requested UIDs are not found in the store
         """
-        if isinstance(obj, str):
-            modelname = obj
+        if isinstance(model, str):
+            modelname = model
         else:
-            modelname = obj.get_type()
+            modelname = model.get_type()
 
         results = []
         for uid in uids:
@@ -105,7 +105,7 @@ class LocalStore(BaseStore):
             results.append(self._data[modelname][uid])
         return results
 
-    def add(self, obj: "DiffSyncModel"):
+    def add(self, *, obj: "DiffSyncModel"):
         """Add a DiffSyncModel object to the store.
 
         Args:
@@ -129,7 +129,7 @@ class LocalStore(BaseStore):
 
         self._data[modelname][uid] = obj
 
-    def update(self, obj: "DiffSyncModel"):
+    def update(self, *, obj: "DiffSyncModel"):
         """Update a DiffSyncModel object to the store.
 
         Args:
@@ -144,7 +144,7 @@ class LocalStore(BaseStore):
 
         self._data[modelname][uid] = obj
 
-    def remove(self, obj: "DiffSyncModel", remove_children: bool = False):
+    def remove(self, *, obj: "DiffSyncModel", remove_children: bool = False):
         """Remove a DiffSyncModel object from the store.
 
         Args:
@@ -169,13 +169,13 @@ class LocalStore(BaseStore):
             for child_type, child_fieldname in obj.get_children_mapping().items():
                 for child_id in getattr(obj, child_fieldname):
                     try:
-                        child_obj = self.get(child_type, child_id)
-                        self.remove(child_obj, remove_children=remove_children)
+                        child_obj = self.get(model=child_type, identifier=child_id)
+                        self.remove(obj=child_obj, remove_children=remove_children)
                     except ObjectNotFound:
                         # Since this is "cleanup" code, log an error and continue, instead of letting the exception raise
                         self._log.error(f"Unable to remove child {child_id} of {modelname} {uid} - not found!")
 
-    def count(self, modelname=None) -> int:
+    def count(self, *, modelname=None) -> int:
         """Returns the number of elements of a specific model, or all elements in the store if unspecified."""
         if not modelname:
             return sum(len(entries) for entries in self._data.values())

@@ -1,17 +1,20 @@
 """BaseStore module."""
-from typing import Dict, List, Mapping, Text, Tuple, Type, Union, TYPE_CHECKING
+from typing import Dict, List, Mapping, Text, Tuple, Type, Union, TYPE_CHECKING, Optional
 import structlog  # type: ignore
 
 from diffsync.exceptions import ObjectNotFound
 
 if TYPE_CHECKING:
     from diffsync import DiffSyncModel
+    from diffsync import DiffSync
 
 
 class BaseStore:
     """Reference store to be implemented in different backends."""
 
-    def __init__(self, *args, diffsync: Optional["DiffSync"] = None, name: str = "", **kwargs) -> None:  # pylint: disable=unused-argument
+    def __init__(
+        self, *args, diffsync: Optional["DiffSync"] = None, name: str = "", **kwargs  # pylint: disable=unused-argument
+    ) -> None:
         """Init method for BaseStore."""
         self.diffsync = diffsync
         self.name = name or self.__class__.__name__
@@ -30,12 +33,12 @@ class BaseStore:
         raise NotImplementedError
 
     def get(
-        self, obj: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]], identifier: Union[Text, Mapping]
+        self, *, model: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]], identifier: Union[Text, Mapping]
     ) -> "DiffSyncModel":
         """Get one object from the data store based on its unique id.
 
         Args:
-            obj: DiffSyncModel class or instance, or modelname string, that defines the type of the object to retrieve
+            model: DiffSyncModel class or instance, or modelname string, that defines the type of the object to retrieve
             identifier: Unique ID of the object to retrieve, or dict of unique identifier keys/values
 
         Raises:
@@ -44,11 +47,11 @@ class BaseStore:
         """
         raise NotImplementedError
 
-    def get_all(self, obj: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]]) -> List["DiffSyncModel"]:
+    def get_all(self, *, model: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]]) -> List["DiffSyncModel"]:
         """Get all objects of a given type.
 
         Args:
-            obj: DiffSyncModel class or instance, or modelname string, that defines the type of the objects to retrieve
+            model: DiffSyncModel class or instance, or modelname string, that defines the type of the objects to retrieve
 
         Returns:
             List[DiffSyncModel]: List of Object
@@ -56,20 +59,20 @@ class BaseStore:
         raise NotImplementedError
 
     def get_by_uids(
-        self, uids: List[Text], obj: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]]
+        self, *, uids: List[Text], model: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]]
     ) -> List["DiffSyncModel"]:
         """Get multiple objects from the store by their unique IDs/Keys and type.
 
         Args:
             uids: List of unique id / key identifying object in the database.
-            obj: DiffSyncModel class or instance, or modelname string, that defines the type of the objects to retrieve
+            model: DiffSyncModel class or instance, or modelname string, that defines the type of the objects to retrieve
 
         Raises:
             ObjectNotFound: if any of the requested UIDs are not found in the store
         """
         raise NotImplementedError
 
-    def remove(self, obj: "DiffSyncModel", remove_children: bool = False):
+    def remove(self, *, obj: "DiffSyncModel", remove_children: bool = False):
         """Remove a DiffSyncModel object from the store.
 
         Args:
@@ -81,7 +84,7 @@ class BaseStore:
         """
         raise NotImplementedError
 
-    def add(self, obj: "DiffSyncModel"):
+    def add(self, *, obj: "DiffSyncModel"):
         """Add a DiffSyncModel object to the store.
 
         Args:
@@ -92,7 +95,7 @@ class BaseStore:
         """
         raise NotImplementedError
 
-    def update(self, obj: "DiffSyncModel"):
+    def update(self, *, obj: "DiffSyncModel"):
         """Update a DiffSyncModel object to the store.
 
         Args:
@@ -100,12 +103,12 @@ class BaseStore:
         """
         raise NotImplementedError
 
-    def count(self, modelname=None) -> int:
+    def count(self, *, modelname=None) -> int:
         """Returns the number of elements of a specific model, or all elements in the store if not specified."""
         raise NotImplementedError
 
     def get_or_instantiate(
-        self, model: Type["DiffSyncModel"], ids: Dict, attrs: Dict = None
+        self, *, model: Type["DiffSyncModel"], ids: Dict, attrs: Dict = None
     ) -> Tuple["DiffSyncModel", bool]:
         """Attempt to get the object with provided identifiers or instantiate it with provided identifiers and attrs.
 
@@ -119,19 +122,19 @@ class BaseStore:
         """
         created = False
         try:
-            obj = self.get(model, ids)
+            obj = self.get(model=model, identifier=ids)
         except ObjectNotFound:
             if not attrs:
                 attrs = {}
             obj = model(**ids, **attrs)
             # Add the object to diffsync adapter
-            self.add(obj)
+            self.add(obj=obj)
             created = True
 
         return obj, created
 
     def update_or_instantiate(
-        self, model: Type["DiffSyncModel"], ids: Dict, attrs: Dict
+        self, *, model: Type["DiffSyncModel"], ids: Dict, attrs: Dict
     ) -> Tuple["DiffSyncModel", bool]:
         """Attempt to update an existing object with provided ids/attrs or instantiate it with provided identifiers and attrs.
 
@@ -145,11 +148,11 @@ class BaseStore:
         """
         created = False
         try:
-            obj = self.get(model, ids)
+            obj = self.get(model=model, identifier=ids)
         except ObjectNotFound:
             obj = model(**ids, **attrs)
             # Add the object to diffsync adapter
-            self.add(obj)
+            self.add(obj=obj)
             created = True
 
         # Update existing obj with attrs
