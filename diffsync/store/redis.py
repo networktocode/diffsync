@@ -44,6 +44,15 @@ class RedisStore(BaseStore):
         """Render store name."""
         return f"{self.name} ({self._store_id})"
 
+    def _get_object_from_redis_key(self, key):
+        """Get the object from Redis key"""
+        try:
+            obj_result = loads(self._store.get(key))  # nosec
+            obj_result.diffsync = self.diffsync
+            return obj_result
+        except TypeError as exc:
+            raise ObjectNotFound(f"{key} not present in Cache") from exc
+
     def get_all_model_names(self) -> Set[str]:
         """Get all the model names stored.
 
@@ -76,33 +85,11 @@ class RedisStore(BaseStore):
             ValueError: if obj is a str and identifier is a dict (can't convert dict into a uid str without a model class)
             ObjectNotFound: if the requested object is not present
         """
-        if isinstance(model, str):
-            modelname = model
-            if not hasattr(self, model):
-                object_class = None
-            else:
-                object_class = getattr(self, model)
-        else:
-            object_class = model
-            modelname = model.get_type()
+        object_class, modelname = self._get_object_class_and_model(model)
 
-        if isinstance(identifier, str):
-            uid = identifier
-        elif object_class:
-            uid = object_class.create_unique_id(**identifier)
-        else:
-            raise ValueError(
-                f"Invalid args: ({model}, {identifier}): "
-                f"either {model} should be a class/instance or {identifier} should be a str"
-            )
+        uid = self._get_uid(model, object_class, identifier)
 
-        try:
-            obj_result = loads(self._store.get(self._get_key_for_object(modelname, uid)))  # nosec
-            obj_result.diffsync = self.diffsync
-        except TypeError:
-            raise ObjectNotFound(f"{modelname} {uid} not present in Cache")  # pylint: disable=raise-missing-from
-
-        return obj_result
+        return self._get_object_from_redis_key(self._get_key_for_object(modelname, uid))
 
     def get_all(self, *, model: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]]) -> List["DiffSyncModel"]:
         """Get all objects of a given type.
@@ -120,12 +107,7 @@ class RedisStore(BaseStore):
 
         results = []
         for key in self._store.scan_iter(f"{self._store_label}:{modelname}:*"):
-            try:
-                obj_result = loads(self._store.get(key))  # nosec
-                obj_result.diffsync = self.diffsync
-                results.append(obj_result)
-            except TypeError:
-                raise ObjectNotFound(f"{key} not present in Cache")  # pylint: disable=raise-missing-from
+            results.append(self._get_object_from_redis_key(key))
 
         return results
 
@@ -148,13 +130,7 @@ class RedisStore(BaseStore):
 
         results = []
         for uid in uids:
-
-            try:
-                obj_result = loads(self._store.get(self._get_key_for_object(modelname, uid)))  # nosec
-                obj_result.diffsync = self.diffsync
-                results.append(obj_result)
-            except TypeError:
-                raise ObjectNotFound(f"{modelname} {uid} not present in Cache")  # pylint: disable=raise-missing-from
+            results.append(self._get_object_from_redis_key(self._get_key_for_object(modelname, uid)))
 
         return results
 

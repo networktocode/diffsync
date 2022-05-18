@@ -161,3 +161,36 @@ class BaseStore:
                 setattr(obj, attr, value)
 
         return obj, created
+
+    def _get_object_class_and_model(
+        self, model: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]]
+    ) -> Tuple[Union["DiffSyncModel", Type["DiffSyncModel"], None], str]:
+        """Get object class and model name for a model."""
+        if isinstance(model, str):
+            modelname = model
+            if not hasattr(self, model):
+                return None, modelname
+            object_class = getattr(self, model)
+        else:
+            object_class = model
+            modelname = model.get_type()
+
+        return object_class, modelname
+
+    @staticmethod
+    def _get_uid(
+        model: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]],
+        object_class: Union["DiffSyncModel", Type["DiffSyncModel"], None],
+        identifier: Union[Text, Mapping],
+    ) -> str:
+        """Get the related uid for a model and an identifier."""
+        if isinstance(identifier, str):
+            uid = identifier
+        elif object_class:
+            uid = object_class.create_unique_id(**identifier)
+        else:
+            raise ValueError(
+                f"Invalid args: ({model}, {identifier}): "
+                f"either {model} should be a class/instance or {identifier} should be a str"
+            )
+        return uid

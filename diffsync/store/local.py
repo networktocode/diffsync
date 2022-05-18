@@ -41,25 +41,9 @@ class LocalStore(BaseStore):
             ValueError: if obj is a str and identifier is a dict (can't convert dict into a uid str without a model class)
             ObjectNotFound: if the requested object is not present
         """
-        if isinstance(model, str):
-            modelname = model
-            if not hasattr(self, model):
-                object_class = None
-            else:
-                object_class = getattr(self, model)
-        else:
-            object_class = model
-            modelname = model.get_type()
+        object_class, modelname = self._get_object_class_and_model(model)
 
-        if isinstance(identifier, str):
-            uid = identifier
-        elif object_class:
-            uid = object_class.create_unique_id(**identifier)
-        else:
-            raise ValueError(
-                f"Invalid args: ({model}, {identifier}): "
-                f"either {model} should be a class/instance or {identifier} should be a str"
-            )
+        uid = self._get_uid(model, object_class, identifier)
 
         if uid not in self._data[modelname]:
             raise ObjectNotFound(f"{modelname} {uid} not present in {str(self)}")
