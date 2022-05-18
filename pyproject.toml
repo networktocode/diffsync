@@ -23,8 +23,10 @@ packaging = "^21.3"
 colorama = {version = "^0.4.3", optional = true}
 # For Pydantic
 dataclasses = {version = "^0.7", python = "~3.6"}
-redis = "*"
-types-redis = "*"
+redis = {version = "^4.3", optional = true}
+
+[tool.poetry.extras]
+redis = ["redis"]
 
 [tool.poetry.dev-dependencies]
 pytest = "*"
@@ -45,6 +47,7 @@ m2r2 = "*"
 sphinx-rtd-theme = "*"
 toml = "*"
 types-toml = "*"
+types-redis = "*"
 pytest-redislite = { version = "^0.1.0", python = "^3.7"}
 
 [tool.black]

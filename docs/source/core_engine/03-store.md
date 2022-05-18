@@ -17,6 +17,8 @@ When you initialize the `Diffsync` Adapter class, there is an optional keyed-arg
 
 ## Use the `RedisStore` Backend
 
+To get it, you have to install diffsync package with the "redis" extra option: `pip install diffsync[redis]`
+
 The `RedisStore` backend, as the name suggests, connects to an external Redis service, to store data loaded by the `DiffSync` tasks. The biggest change is that it requires to initialize the Redis store class, before using it in the `DiffSync` adapter class.
 
 ```python

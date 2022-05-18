@@ -33,7 +33,7 @@ def test_diff_element_empty():
     assert not element.has_diffs()
     assert not element.has_diffs(include_children=True)
     assert not element.has_diffs(include_children=False)
-    assert not element.get_attrs_keys()
+    assert element.get_attrs_keys() == []
 
     element2 = DiffElement(
         "interface", "eth0", {"device_name": "device1", "name": "eth0"}, source_name="S1", dest_name="D1"
