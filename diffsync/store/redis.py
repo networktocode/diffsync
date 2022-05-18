@@ -39,9 +39,9 @@ class RedisStore(BaseStore):
 
     def __str__(self):
         """Render store name."""
-        return f"{self.name}({self._store_id})"
+        return f"{self.name} ({self._store_id})"
 
-    def get_all_model_names(self):
+    def get_all_model_names(self) -> List[str]:
         """Get all the model names stored.
 
         Return:
@@ -59,7 +59,9 @@ class RedisStore(BaseStore):
     def _get_key_for_object(self, modelname, uid):
         return f"{self._store_label}:{modelname}:{uid}"
 
-    def get(self, obj: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]], identifier: Union[Text, Mapping]):
+    def get(
+        self, obj: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]], identifier: Union[Text, Mapping]
+    ) -> "DiffSyncModel":
         """Get one object from the data store based on its unique id.
 
         Args:
@@ -233,10 +235,10 @@ class RedisStore(BaseStore):
                         # Since this is "cleanup" code, log an error and continue, instead of letting the exception raise
                         # self._log.error(f"Unable to remove child {child_id} of {modelname} {uid} - not found!")
 
-    def count(self, modelname=None):
+    def count(self, modelname=None) -> int:
         """Returns the number of elements of an specific model name."""
         search_pattern = f"{self._store_label}:*"
         if modelname:
             search_pattern = f"{self._store_label}:{modelname.lower()}:*"
 
-        return sum([1 for _ in self._store.scan_iter(search_pattern)])
+        return len(self._store.scan_iter(search_pattern))

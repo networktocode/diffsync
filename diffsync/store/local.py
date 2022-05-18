@@ -20,7 +20,7 @@ class LocalStore(BaseStore):
 
         self._data: Dict = defaultdict(dict)
 
-    def get_all_model_names(self):
+    def get_all_model_names(self) -> List[str]:
         """Get all the model names stored.
 
         Return:
@@ -28,7 +28,9 @@ class LocalStore(BaseStore):
         """
         return self._data.keys()
 
-    def get(self, obj: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]], identifier: Union[Text, Mapping]):
+    def get(
+        self, obj: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]], identifier: Union[Text, Mapping]
+    ) -> "DiffSyncModel":
         """Get one object from the data store based on its unique id.
 
         Args:
@@ -173,8 +175,8 @@ class LocalStore(BaseStore):
                         # Since this is "cleanup" code, log an error and continue, instead of letting the exception raise
                         self._log.error(f"Unable to remove child {child_id} of {modelname} {uid} - not found!")
 
-    def count(self, modelname=None):
-        """Returns the number of elements of an specific model name."""
+    def count(self, modelname=None) -> int:
+        """Returns the number of elements of a specific model, or all elements in the store if unspecified."""
         if not modelname:
             return sum(len(entries) for entries in self._data.values())
 

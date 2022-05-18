@@ -11,17 +11,17 @@ if TYPE_CHECKING:
 class BaseStore:
     """Reference store to be implemented in different backends."""
 
-    def __init__(self, *args, diffsync=None, name: str = "", **kwargs) -> None:  # pylint: disable=unused-argument
+    def __init__(self, *args, diffsync: Optional["DiffSync"] = None, name: str = "", **kwargs) -> None:  # pylint: disable=unused-argument
         """Init method for BaseStore."""
         self.diffsync = diffsync
-        self.name = name if name else self.__class__.__name__
+        self.name = name or self.__class__.__name__
         self._log = structlog.get_logger().new(diffsync=self)
 
     def __str__(self):
         """Render store name."""
         return self.name
 
-    def get_all_model_names(self):
+    def get_all_model_names(self) -> List[str]:
         """Get all the model names stored.
 
         Return:
@@ -29,7 +29,9 @@ class BaseStore:
         """
         raise NotImplementedError
 
-    def get(self, obj: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]], identifier: Union[Text, Mapping]):
+    def get(
+        self, obj: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]], identifier: Union[Text, Mapping]
+    ) -> "DiffSyncModel":
         """Get one object from the data store based on its unique id.
 
         Args:
@@ -98,8 +100,8 @@ class BaseStore:
         """
         raise NotImplementedError
 
-    def count(self, modelname):
-        """Returns the number of elements of an specific model name."""
+    def count(self, modelname=None) -> int:
+        """Returns the number of elements of a specific model, or all elements in the store if not specified."""
         raise NotImplementedError
 
     def get_or_instantiate(
