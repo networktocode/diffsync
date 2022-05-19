@@ -193,7 +193,7 @@ class RedisStore(BaseStore):
     def count(self, *, model: Union[Text, "DiffSyncModel", Type["DiffSyncModel"], None] = None) -> int:
         """Returns the number of elements of a specific model, or all elements in the store if unspecified."""
         search_pattern = f"{self._store_label}:*"
-        if model:
+        if model is not None:
             if isinstance(model, str):
                 modelname = model
             else:

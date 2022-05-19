@@ -738,9 +738,7 @@ def test_diffsync_remove_missing_child(log, backend_a):
     backend_a.remove(rdu_spine1_eth0)
     # Should log an error but continue removing other child objects
     backend_a.remove(rdu_spine1, remove_children=True)
-    assert log.has(
-        "Unable to remove child rdu-spine1__eth0 of device rdu-spine1 - not found!", diffsync=backend_a.store
-    )
+    assert log.has("Unable to remove child rdu-spine1__eth0 of device rdu-spine1 - not found!", store=backend_a.store)
     with pytest.raises(ObjectNotFound):
         backend_a.get(Interface, "rdu-spine1__eth1")
 

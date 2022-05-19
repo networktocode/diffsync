@@ -18,7 +18,7 @@ class BaseStore:
         """Init method for BaseStore."""
         self.diffsync = diffsync
         self.name = name or self.__class__.__name__
-        self._log = structlog.get_logger().new(diffsync=self)
+        self._log = structlog.get_logger().new(store=self)
 
     def __str__(self):
         """Render store name."""
