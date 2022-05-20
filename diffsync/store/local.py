@@ -128,7 +128,7 @@ class LocalStore(BaseStore):
 
         self._data[modelname][uid] = obj
 
-    def _remove_item(self, modelname: str, uid: str):
+    def remove_item(self, modelname: str, uid: str):
         """Remove one item from store."""
         if uid not in self._data[modelname]:
             raise ObjectNotFound(f"{modelname} {uid} not present in {str(self)}")

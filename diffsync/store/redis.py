@@ -4,8 +4,13 @@ import uuid
 from pickle import loads, dumps  # nosec
 from typing import List, Mapping, Text, Type, Union, TYPE_CHECKING, Set
 
-from redis import Redis
-from redis.exceptions import ConnectionError as RedisConnectionError
+try:
+    from redis import Redis
+    from redis.exceptions import ConnectionError as RedisConnectionError
+except ImportError as ierr:
+    print("Redis is not installed. Have you installed diffsync with redis extra? `pip install diffsync[redis]`")
+    raise ierr
+
 from diffsync.exceptions import ObjectNotFound, ObjectStoreException, ObjectAlreadyExists
 from diffsync.store import BaseStore
 
@@ -23,7 +28,7 @@ class RedisStore(BaseStore):
         super().__init__(*args, **kwargs)
 
         if url and host and port:
-            raise ValueError("'url' argument can't be specified together with 'host' and 'port' ones.")
+            raise ValueError("'url' and 'host' arguments can't be specified together.")
 
         try:
             if url:
@@ -181,7 +186,7 @@ class RedisStore(BaseStore):
 
         self._store.set(object_key, dumps(obj_copy))
 
-    def _remove_item(self, modelname: str, uid: str):
+    def remove_item(self, modelname: str, uid: str):
         """Remove one item from store."""
         object_key = self._get_key_for_object(modelname, uid)
 
