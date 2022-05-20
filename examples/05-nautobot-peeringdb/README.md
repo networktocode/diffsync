@@ -21,7 +21,7 @@ We have 3 files:
 ```bash
 $ git clone https://github.com/networktocode/diffsync.git
 
-$ docker-compose -f examples/05-nautobot-peeringdb/docker-compose.yml up -d
+$ docker-compose -f examples/05-nautobot-peeringdb/docker-compose.yml up -d --build
 
 $ docker exec -it 05-nautobot-peeringdb_example_1 bash
 ```
