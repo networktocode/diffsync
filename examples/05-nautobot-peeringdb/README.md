@@ -16,6 +16,19 @@ We have 3 files:
 
 > The source code for this example is in Github in the [examples/05-nautobot-peeringdb/](https://github.com/networktocode/diffsync/tree/main/examples/05-nautobot-peeringdb) directory.
 
+## Get PeeringDB API Key
+
+To ensure a good performance from PeeringDB API, you should request a provide an API Key: https://docs.peeringdb.com/howto/api_keys/
+
+Then, copy the example `creds.example.env` into `creds.env`, and place your new API Key.
+
+```bash
+$ cp examples/05-nautobot-peeringdb/creds.example.env examples/05-nautobot-peeringdb/creds.env
+
+```
+
+> Without API Key it could also work, but it could fail due API rate limiting.
+
 ## Set up local docker environment
 
 ```bash

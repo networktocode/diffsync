@@ -11,5 +11,5 @@ WORKDIR /local
 COPY . /local
 
 RUN pip install --upgrade pip \
-    && python -m pip install git+https://github.com/networktocode/diffsync.git@redis#egg=diffsync[redis] \
+    && python -m pip install git+https://github.com/networktocode/diffsync.git#egg=diffsync[redis] \
     && pip install -r requirements.txt

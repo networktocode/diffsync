@@ -1,6 +1,7 @@
 """Diffsync adapter class for PeeringDB."""
 # pylint: disable=import-error,no-name-in-module
 import requests
+import os
 from slugify import slugify
 import pycountry
 from models import RegionModel, SiteModel
@@ -9,6 +10,7 @@ from diffsync.exceptions import ObjectNotFound
 
 
 PEERINGDB_URL = "https://peeringdb.com/"
+peeringdb_api_key = os.environ.get("PEERINGDB_API_KEY", "").strip()
 
 
 class PeeringDB(DiffSync):
@@ -28,7 +30,11 @@ class PeeringDB(DiffSync):
 
     def load(self):
         """Load data via from PeeringDB."""
-        ix_data = requests.get(f"{PEERINGDB_URL}/api/ix/{self.ix_id}").json()
+        headers = {}
+        if peeringdb_api_key:
+            headers["Authorization"] = f"Api-Key {peeringdb_api_key}"
+
+        ix_data = requests.get(f"{PEERINGDB_URL}/api/ix/{self.ix_id}", headers=headers).json()
 
         for fac in ix_data["data"][0]["fac_set"]:
             # PeeringDB has no Region entity, so we must avoid duplicates
