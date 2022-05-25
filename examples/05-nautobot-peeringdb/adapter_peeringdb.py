@@ -1,7 +1,7 @@
 """Diffsync adapter class for PeeringDB."""
 # pylint: disable=import-error,no-name-in-module
-import requests
 import os
+import requests
 from slugify import slugify
 import pycountry
 from models import RegionModel, SiteModel
