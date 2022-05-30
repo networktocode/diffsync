@@ -16,9 +16,9 @@ We have 3 files:
 
 > The source code for this example is in Github in the [examples/05-nautobot-peeringdb/](https://github.com/networktocode/diffsync/tree/main/examples/05-nautobot-peeringdb) directory.
 
-## Get PeeringDB API Key
+## Get PeeringDB API Key (optional)
 
-To ensure a good performance from PeeringDB API, you should request a provide an API Key: https://docs.peeringdb.com/howto/api_keys/
+To ensure a good performance from PeeringDB API, you should provide an API Key: https://docs.peeringdb.com/howto/api_keys/
 
 Then, copy the example `creds.example.env` into `creds.env`, and place your new API Key.
 
@@ -37,4 +37,39 @@ $ git clone https://github.com/networktocode/diffsync.git
 $ docker-compose -f examples/05-nautobot-peeringdb/docker-compose.yml up -d --build
 
 $ docker exec -it 05-nautobot-peeringdb_example_1 bash
+```
+
+## Interactive execution
+
+```python
+from adapter_nautobot import NautobotRemote
+from adapter_peeringdb import PeeringDB
+from diffsync.enum import DiffSyncFlags
+from diffsync.store.redis import RedisStore
+
+store_one = RedisStore(host="redis")
+store_two = RedisStore(host="redis")
+
+peeringdb = PeeringDB(
+    ix_id=62,
+    internal_storage_engine=store_one
+)
+
+nautobot = NautobotRemote(
+    url="https://demo.nautobot.com",
+    token="a" * 40,
+    internal_storage_engine=store_two
+)
+
+peeringdb.load()
+
+peeringdb.dict()
+
+nautobot.load()
+
+diff = nautobot.diff_from(peeringdb, flags=DiffSyncFlags.SKIP_UNMATCHED_DST)
+
+diff.summary()
+
+nautobot.sync_from(peeringdb, flags=DiffSyncFlags.SKIP_UNMATCHED_DST)
 ```
