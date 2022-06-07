@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.5.0 - 2022-06-07
+
+### Added
+
+- #106 - Add a new, optional, backend store based in Redis
+
 ## v1.4.3 - 2022-03-03
 
 ### Fixed
@@ -86,7 +92,6 @@
 ### Fixed
 
 - #44 - On CRUD failure, do not generate an extraneous "success" log message in addition to the "failed" message
-
 
 ## v1.0.0 - 2020-10-23
 
