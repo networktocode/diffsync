@@ -1,0 +1,16 @@
+---
+- cidr: "10.10.10.10/24"
+  family: 4
+  vrf: "data"
+  vlan: "VLAN10"
+  customer_id: null
+- cidr: "10.20.20.20/24"
+  family: 4
+  vrf: "voice"
+  vlan: "VLAN20"
+  customer_id: "ABC corp"
+- cidr: "172.18.0.0/16"
+  family: 4
+  vrf: null
+  vlan: "VLAN18"
+  customer_id: null
