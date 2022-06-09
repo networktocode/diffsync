@@ -1,8 +1,10 @@
 """IPAM B adapter."""
-from pathlib import Path
+import os
 import yaml
 from models import Prefix  # pylint: disable=no-name-in-module
 from diffsync import DiffSync
+
+dirname = os.path.dirname(os.path.realpath(__file__))
 
 
 class IpamBPrefix(Prefix):
@@ -76,13 +78,13 @@ class IpamB(DiffSync):
     @staticmethod
     def load_yaml_data():
         """Read data from a YAML file."""
-        with open(Path.joinpath(Path().resolve(), "data", "ipam_b.yml"), encoding="utf-8") as data_file:
+        with open(os.path.join(dirname, "data", "ipam_b.yml"), encoding="utf-8") as data_file:
             return yaml.safe_load(data_file)
 
     @staticmethod
     def write_yaml_data(data):
         """Write data to a YAML file."""
-        with open(Path.joinpath(Path().resolve(), "data", "ipam_b.yml"), encoding="utf-8", mode="w") as data_file:
+        with open(os.path.join(dirname, "data", "ipam_b.yml"), encoding="utf-8", mode="w") as data_file:
             return yaml.safe_dump(data, data_file)
 
     def load(self):
