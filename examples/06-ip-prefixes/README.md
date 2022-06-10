@@ -115,8 +115,9 @@ Simply transforming the `diff_to` to `sync_to`, we are going to change the state
 Now, if we reload the IPAM B, and try to check the difference, we should see no differences.
 
 ```py
->>> new_ipam_b = IpamB().load()
->>> diff = ipam_a.diff_to(ipam_b)
+>>> new_ipam_b = IpamB()
+>>> new_ipam_b.load()
+>>> diff = ipam_a.diff_to(new_ipam_b)
 >>> diff.summary()
 {'create': 0, 'update': 0, 'delete': 0, 'no-change': 3}
 ```

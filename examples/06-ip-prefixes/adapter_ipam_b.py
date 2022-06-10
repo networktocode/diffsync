@@ -13,9 +13,7 @@ class IpamBPrefix(Prefix):
     @classmethod
     def create(cls, diffsync, ids, attrs):
         """Create a Prefix record in IPAM B."""
-        data = diffsync.load_yaml_data()
-
-        data.append(
+        diffsync.data.append(
             {
                 "network": ids["prefix"].split("/")[0],
                 "prefix_length": int(ids["prefix"].split("/")[1]),
@@ -25,18 +23,14 @@ class IpamBPrefix(Prefix):
             }
         )
 
-        diffsync.write_yaml_data(data)
-
         return super().create(diffsync, ids=ids, attrs=attrs)
 
     def update(self, attrs):
         """Update a Prefix record in IPAM B."""
-        data = self.diffsync.load_yaml_data()
-
         network = self.prefix.split("/")[0]
         prefix_length = int(self.prefix.split("/")[1])
 
-        for elem in data:
+        for elem in self.diffsync.data:
             if elem["network"] == network and elem["prefix_length"] == prefix_length:
                 if "vrf" in attrs:
                     elem["vrf"] = attrs["vrf"]
@@ -44,26 +38,19 @@ class IpamBPrefix(Prefix):
                     elem["vlan_id"] = attrs["vlan_id"]
                 if "tenant" in attrs:
                     elem["tenant"] = attrs["tenant"]
-
                 break
-
-        self.diffsync.write_yaml_data(data)
 
         return super().update(attrs)
 
     def delete(self):
         """Update a Prefix record in IPAM B."""
-        data = self.diffsync.load_yaml_data()
-
         network = self.prefix.split("/")[0]
         prefix_length = int(self.prefix.split("/")[1])
 
-        for index, elem in enumerate(data):
+        for index, elem in enumerate(self.diffsync.data):
             if elem["network"] == network and elem["prefix_length"] == prefix_length:
-                del data[index]
+                del self.diffsync.data[index]
                 break
-
-        self.diffsync.write_yaml_data(data)
 
         return super().delete()
 
@@ -75,21 +62,16 @@ class IpamB(DiffSync):
 
     top_level = ["prefix"]
 
-    @staticmethod
-    def load_yaml_data():
-        """Read data from a YAML file."""
-        with open(os.path.join(dirname, "data", "ipam_b.yml"), encoding="utf-8") as data_file:
-            return yaml.safe_load(data_file)
+    def __init__(self, *args, **kwargs):
+        """Initialize the IPAM B Adapter."""
+        super().__init__(*args, **kwargs)
 
-    @staticmethod
-    def write_yaml_data(data):
-        """Write data to a YAML file."""
-        with open(os.path.join(dirname, "data", "ipam_b.yml"), encoding="utf-8", mode="w") as data_file:
-            return yaml.safe_dump(data, data_file)
+        with open(os.path.join(dirname, "data", "ipam_b.yml"), encoding="utf-8") as data_file:
+            self.data = yaml.safe_load(data_file)
 
     def load(self):
         """Initialize the Ipam B Object by loading from DATA."""
-        for prefix_data in self.load_yaml_data():
+        for prefix_data in self.data:
             prefix = self.prefix(
                 prefix=f"{prefix_data['network']}/{prefix_data['prefix_length']}",
                 vrf=prefix_data["vrf"],
@@ -97,3 +79,10 @@ class IpamB(DiffSync):
                 tenant=prefix_data["tenant"],
             )
             self.add(prefix)
+
+    def sync_complete(self, source, *args, **kwargs):
+        """Clean up function for DiffSync sync."""
+        with open(os.path.join(dirname, "data", "ipam_b.yml"), encoding="utf-8", mode="w") as data_file:
+            yaml.safe_dump(self.data, data_file)
+
+        return super().sync_complete(source, *args, **kwargs)

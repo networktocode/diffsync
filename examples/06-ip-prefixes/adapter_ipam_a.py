@@ -14,9 +14,7 @@ class IpamAPrefix(Prefix):
     @classmethod
     def create(cls, diffsync, ids, attrs):
         """Create a Prefix record in IPAM A."""
-        data = diffsync.load_yaml_data()
-
-        data.append(
+        diffsync.data.append(
             {
                 "cidr": ids["prefix"],
                 "family": ipaddress.ip_address(ids["prefix"].split("/")[0]).version,
@@ -26,15 +24,11 @@ class IpamAPrefix(Prefix):
             }
         )
 
-        diffsync.write_yaml_data(data)
-
         return super().create(diffsync, ids=ids, attrs=attrs)
 
     def update(self, attrs):
         """Update a Prefix record in IPAM A."""
-        data = self.diffsync.load_yaml_data()
-
-        for elem in data:
+        for elem in self.diffsync.data:
             if elem["cidr"] == self.prefix:
                 if "vrf" in attrs:
                     elem["vrf"] = attrs["vrf"]
@@ -42,23 +36,16 @@ class IpamAPrefix(Prefix):
                     elem["vlan_id"] = f'VLAN{attrs["vlan_id"]}'
                 if "tenant" in attrs:
                     elem["customer_id"] = attrs["tenant"]
-
                 break
-
-        self.diffsync.write_yaml_data(data)
 
         return super().update(attrs)
 
     def delete(self):
         """Delete a Prefix record in IPAM A."""
-        data = self.diffsync.load_yaml_data()
-
-        for index, elem in enumerate(data):
+        for index, elem in enumerate(self.diffsync.data):
             if elem["cidr"] == self.prefix:
-                del data[index]
+                del self.diffsync.data[index]
                 break
-
-        self.diffsync.write_yaml_data(data)
 
         return super().delete()
 
@@ -70,21 +57,16 @@ class IpamA(DiffSync):
 
     top_level = ["prefix"]
 
-    @staticmethod
-    def load_yaml_data():
-        """Read data from a YAML file."""
-        with open(os.path.join(dirname, "data", "ipam_a.yml"), encoding="utf-8") as data_file:
-            return yaml.safe_load(data_file)
+    def __init__(self, *args, **kwargs):
+        """Initialize the IPAM A Adapter."""
+        super().__init__(*args, **kwargs)
 
-    @staticmethod
-    def write_yaml_data(data):
-        """Write data to a YAML file."""
-        with open(os.path.join(dirname, "data", "ipam_a.yml"), encoding="utf-8", mode="w") as data_file:
-            return yaml.safe_dump(data, data_file)
+        with open(os.path.join(dirname, "data", "ipam_a.yml"), encoding="utf-8") as data_file:
+            self.data = yaml.safe_load(data_file)
 
     def load(self):
         """Load prefixes from IPAM A."""
-        for subnet in self.load_yaml_data():
+        for subnet in self.data:
             prefix = self.prefix(
                 prefix=subnet["cidr"],
                 vrf=subnet["vrf"],
@@ -92,3 +74,10 @@ class IpamA(DiffSync):
                 tenant=subnet["customer_id"],
             )
             self.add(prefix)
+
+    def sync_complete(self, source, *args, **kwargs):
+        """Clean up function for DiffSync sync."""
+        with open(os.path.join(dirname, "data", "ipam_a.yml"), encoding="utf-8", mode="w") as data_file:
+            yaml.safe_dump(self.data, data_file)
+
+        return super().sync_complete(source, *args, **kwargs)
