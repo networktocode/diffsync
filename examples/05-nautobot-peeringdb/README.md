@@ -27,7 +27,7 @@ $ cp examples/05-nautobot-peeringdb/creds.example.env examples/05-nautobot-peeri
 
 ```
 
-> Without API Key it could also work, but it could fail due API rate limiting.
+> Without API Key it might also work, but it could fail due to API rate limiting.
 
 ## Set up local docker environment
 
