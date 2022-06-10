@@ -14,9 +14,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from collections import defaultdict
 from inspect import isclass
-from typing import Callable, ClassVar, Dict, List, Mapping, MutableMapping, Optional, Text, Tuple, Type, Union
+from typing import Callable, ClassVar, Dict, List, Mapping, Optional, Text, Tuple, Type, Union
 
 from pydantic import BaseModel, PrivateAttr
 import structlog  # type: ignore
@@ -25,6 +24,8 @@ from .diff import Diff
 from .enum import DiffSyncModelFlags, DiffSyncFlags, DiffSyncStatus
 from .exceptions import DiffClassMismatch, ObjectAlreadyExists, ObjectStoreWrongType, ObjectNotFound
 from .helpers import DiffSyncDiffer, DiffSyncSyncer
+from .store import BaseStore
+from .store.local import LocalStore
 
 
 class DiffSyncModel(BaseModel):
@@ -408,19 +409,17 @@ class DiffSync:
     top_level: ClassVar[List[str]] = []
     """List of top-level modelnames to begin from when diffing or synchronizing."""
 
-    _data: MutableMapping[str, MutableMapping[str, DiffSyncModel]]
-    """Defaultdict storing model instances.
-
-    `self._data[modelname][unique_id] == model_instance`
-    """
-
-    def __init__(self, name=None):
+    def __init__(self, name=None, internal_storage_engine=LocalStore):
         """Generic initialization function.
 
         Subclasses should be careful to call super().__init__() if they override this method.
         """
-        self._data = defaultdict(dict)
-        self._log = structlog.get_logger().new(diffsync=self)
+
+        if isinstance(internal_storage_engine, BaseStore):
+            self.store = internal_storage_engine
+            self.store.diffsync = self
+        else:
+            self.store = internal_storage_engine(diffsync=self)
 
         # If the type is not defined, use the name of the class as the default value
         if self.type is None:
@@ -458,8 +457,8 @@ class DiffSync:
         return f"<{str(self)}>"
 
     def __len__(self):
-        """Total number of elements stored in self._data."""
-        return sum(len(entries) for entries in self._data.values())
+        """Total number of elements stored."""
+        return self.store.count()
 
     def load(self):
         """Load all desired data from whatever backend data source into this instance."""
@@ -468,10 +467,10 @@ class DiffSync:
     def dict(self, exclude_defaults: bool = True, **kwargs) -> Mapping:
         """Represent the DiffSync contents as a dict, as if it were a Pydantic model."""
         data: Dict[str, Dict[str, Dict]] = {}
-        for modelname in self._data:
+        for modelname in self.store.get_all_model_names():
             data[modelname] = {}
-            for unique_id, model in self._data[modelname].items():
-                data[modelname][unique_id] = model.dict(exclude_defaults=exclude_defaults, **kwargs)
+            for obj in self.store.get_all(model=modelname):
+                data[obj.get_type()][obj.get_unique_id()] = obj.dict(exclude_defaults=exclude_defaults, **kwargs)
         return data
 
     def str(self, indent: int = 0) -> str:
@@ -615,9 +614,18 @@ class DiffSync:
     # Object Storage Management
     # ------------------------------------------------------------------------------
 
+    def get_all_model_names(self):
+        """Get all model names.
+
+        Returns:
+            List[str]: List of model names
+        """
+        return self.store.get_all_model_names()
+
     def get(
         self, obj: Union[Text, DiffSyncModel, Type[DiffSyncModel]], identifier: Union[Text, Mapping]
     ) -> DiffSyncModel:
+
         """Get one object from the data store based on its unique id.
 
         Args:
@@ -628,29 +636,7 @@ class DiffSync:
             ValueError: if obj is a str and identifier is a dict (can't convert dict into a uid str without a model class)
             ObjectNotFound: if the requested object is not present
         """
-        if isinstance(obj, str):
-            modelname = obj
-            if not hasattr(self, obj):
-                object_class = None
-            else:
-                object_class = getattr(self, obj)
-        else:
-            object_class = obj
-            modelname = obj.get_type()
-
-        if isinstance(identifier, str):
-            uid = identifier
-        elif object_class:
-            uid = object_class.create_unique_id(**identifier)
-        else:
-            raise ValueError(
-                f"Invalid args: ({obj}, {identifier}): "
-                f"either {obj} should be a class/instance or {identifier} should be a str"
-            )
-
-        if uid not in self._data[modelname]:
-            raise ObjectNotFound(f"{modelname} {uid} not present in {self.name}")
-        return self._data[modelname][uid]
+        return self.store.get(model=obj, identifier=identifier)
 
     def get_all(self, obj: Union[Text, DiffSyncModel, Type[DiffSyncModel]]) -> List[DiffSyncModel]:
         """Get all objects of a given type.
@@ -661,12 +647,7 @@ class DiffSync:
         Returns:
             List[DiffSyncModel]: List of Object
         """
-        if isinstance(obj, str):
-            modelname = obj
-        else:
-            modelname = obj.get_type()
-
-        return list(self._data[modelname].values())
+        return self.store.get_all(model=obj)
 
     def get_by_uids(
         self, uids: List[Text], obj: Union[Text, DiffSyncModel, Type[DiffSyncModel]]
@@ -680,17 +661,7 @@ class DiffSync:
         Raises:
             ObjectNotFound: if any of the requested UIDs are not found in the store
         """
-        if isinstance(obj, str):
-            modelname = obj
-        else:
-            modelname = obj.get_type()
-
-        results = []
-        for uid in uids:
-            if uid not in self._data[modelname]:
-                raise ObjectNotFound(f"{modelname} {uid} not present in {self.name}")
-            results.append(self._data[modelname][uid])
-        return results
+        return self.store.get_by_uids(uids=uids, model=obj)
 
     def add(self, obj: DiffSyncModel):
         """Add a DiffSyncModel object to the store.
@@ -701,20 +672,18 @@ class DiffSync:
         Raises:
             ObjectAlreadyExists: if a different object with the same uid is already present.
         """
-        modelname = obj.get_type()
-        uid = obj.get_unique_id()
+        return self.store.add(obj=obj)
 
-        existing_obj = self._data[modelname].get(uid)
-        if existing_obj:
-            if existing_obj is not obj:
-                raise ObjectAlreadyExists(f"Object {uid} already present", obj)
-            # Return so we don't have to change anything on the existing object and underlying data
-            return
+    def update(self, obj: DiffSyncModel):
+        """Update a DiffSyncModel object to the store.
 
-        if not obj.diffsync:
-            obj.diffsync = self
+        Args:
+            obj (DiffSyncModel): Object to store
 
-        self._data[modelname][uid] = obj
+        Raises:
+            ObjectAlreadyExists: if a different object with the same uid is already present.
+        """
+        return self.store.update(obj=obj)
 
     def remove(self, obj: DiffSyncModel, remove_children: bool = False):
         """Remove a DiffSyncModel object from the store.
@@ -726,26 +695,7 @@ class DiffSync:
         Raises:
             ObjectNotFound: if the object is not present
         """
-        modelname = obj.get_type()
-        uid = obj.get_unique_id()
-
-        if uid not in self._data[modelname]:
-            raise ObjectNotFound(f"{modelname} {uid} not present in {self.name}")
-
-        if obj.diffsync is self:
-            obj.diffsync = None
-
-        del self._data[modelname][uid]
-
-        if remove_children:
-            for child_type, child_fieldname in obj.get_children_mapping().items():
-                for child_id in getattr(obj, child_fieldname):
-                    try:
-                        child_obj = self.get(child_type, child_id)
-                        self.remove(child_obj, remove_children=remove_children)
-                    except ObjectNotFound:
-                        # Since this is "cleanup" code, log an error and continue, instead of letting the exception raise
-                        self._log.error(f"Unable to remove child {child_id} of {modelname} {uid} - not found!")
+        return self.store.remove(obj=obj, remove_children=remove_children)
 
     def get_or_instantiate(
         self, model: Type[DiffSyncModel], ids: Dict, attrs: Dict = None
@@ -760,18 +710,7 @@ class DiffSync:
         Returns:
             Tuple[DiffSyncModel, bool]: Provides the existing or new object and whether it was created or not.
         """
-        created = False
-        try:
-            obj = self.get(model, ids)
-        except ObjectNotFound:
-            if not attrs:
-                attrs = {}
-            obj = model(**ids, **attrs)
-            # Add the object to diffsync adapter
-            self.add(obj)
-            created = True
-
-        return obj, created
+        return self.store.get_or_instantiate(model=model, ids=ids, attrs=attrs)
 
     def update_or_instantiate(self, model: Type[DiffSyncModel], ids: Dict, attrs: Dict) -> Tuple[DiffSyncModel, bool]:
         """Attempt to update an existing object with provided ids/attrs or instantiate it with provided identifiers and attrs.
@@ -784,21 +723,18 @@ class DiffSync:
         Returns:
             Tuple[DiffSyncModel, bool]: Provides the existing or new object and whether it was created or not.
         """
-        created = False
-        try:
-            obj = self.get(model, ids)
-        except ObjectNotFound:
-            obj = model(**ids, **attrs)
-            # Add the object to diffsync adapter
-            self.add(obj)
-            created = True
+        return self.store.update_or_instantiate(model=model, ids=ids, attrs=attrs)
 
-        # Update existing obj with attrs
-        for attr, value in attrs.items():
-            if getattr(obj, attr) != value:
-                setattr(obj, attr, value)
+    def count(self, model: Union[Text, "DiffSyncModel", Type["DiffSyncModel"], None] = None):
+        """Count how many objects of one model type exist in the backend store.
 
-        return obj, created
+        Args:
+            model (DiffSyncModel): The DiffSyncModel to check the number of elements. If not provided, default to all.
+
+        Returns:
+            Int: Number of elements of the model type
+        """
+        return self.store.count(model=model)
 
 
 # DiffSyncModel references DiffSync and DiffSync references DiffSyncModel. Break the typing loop:

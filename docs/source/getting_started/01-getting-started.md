@@ -1,5 +1,3 @@
-
-
 To be able to properly compare different datasets, DiffSync relies on a shared data model that both systems must use.
 Specifically, each system or dataset must provide a `DiffSync` "adapter" subclass, which in turn represents its dataset as instances of one or more `DiffSyncModel` data model classes.
 
@@ -9,6 +7,7 @@ When comparing two systems, DiffSync detects the intersection between the two sy
 
 `DiffSyncModel` is based on [Pydantic](https://pydantic-docs.helpmanual.io/) and is using Python typing to define the format of each attribute.
 Each `DiffSyncModel` subclass supports the following class-level attributes:
+
 - `_modelname` - Defines the type of the model; used to identify common models between different systems (Mandatory)
 - `_identifiers` - List of instance field names used as primary keys for this object (Mandatory)
 - `_shortname` - List of instance field names to use for a shorter name (Optional)
@@ -74,6 +73,7 @@ class BackendA(DiffSync):
         device = self.device(name="rtr-nyc", role="router", site_name="nyc")
         self.add(device)
         site.add_child(device)
+        site.update()
 ```
 
 # Update remote system on sync

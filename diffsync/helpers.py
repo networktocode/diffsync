@@ -125,8 +125,8 @@ class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
 
         self.validate_objects_for_diff(combined_dict.values())
 
-        for uid, value in combined_dict.items():
-            src_obj, dst_obj = value
+        for _, item in combined_dict.items():
+            src_obj, dst_obj = item
             diff_element = self.diff_object_pair(src_obj, dst_obj)
 
             if diff_element:
