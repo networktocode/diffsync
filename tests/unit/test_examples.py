@@ -43,3 +43,11 @@ def test_example_4():
     example4_main = join(example4_dir, "main.py")
     # Run it and make sure it doesn't raise an exception or otherwise exit with a non-zero code.
     subprocess.run(example4_main, cwd=example4_dir, check=True)
+
+
+def test_example_6():
+    """Test that the "example6" script runs successfully."""
+    example6_dir = join(EXAMPLES, "06-ip-prefixes")
+    example6_main = join(example6_dir, "main.py")
+    # Run it and make sure it doesn't raise an exception or otherwise exit with a non-zero code.
+    subprocess.run(example6_main, cwd=example6_dir, check=True)

@@ -1,0 +1,11 @@
+---
+- network: "10.10.10.10"
+  prefix_length: 24
+  tenant: null
+  vlan_id: 123
+  vrf: "voice"
+- network: "2001:DB8::"
+  prefix_length: 32
+  tenant: "XYZ Corporation"
+  vlan_id: 10
+  vrf: "data"
