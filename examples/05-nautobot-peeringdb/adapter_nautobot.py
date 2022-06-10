@@ -1,13 +1,8 @@
 """Diffsync adapter class for Nautobot."""
 # pylint: disable=import-error,no-name-in-module
-import os
 import pynautobot
 from models import RegionModel, SiteModel
 from diffsync import DiffSync
-
-
-NAUTOBOT_URL = os.getenv("NAUTOBOT_URL", "https://demo.nautobot.com")
-NAUTOBOT_TOKEN = os.getenv("NAUTOBOT_TOKEN", 40 * "a")
 
 
 class RegionNautobotModel(RegionModel):
@@ -131,7 +126,7 @@ class NautobotRemote(DiffSync):
     # Top-level class labels, i.e. those classes that are handled directly rather than as children of other models
     top_level = ["region"]
 
-    def __init__(self, *args, url=NAUTOBOT_URL, token=NAUTOBOT_TOKEN, **kwargs):
+    def __init__(self, *args, url, token, **kwargs):
         """Instantiate this class, but do not load data immediately from the remote system.
 
         Args:
@@ -173,4 +168,4 @@ class NautobotRemote(DiffSync):
             if site_entry["region"]:
                 region = self.get(self.region, site_entry["region"]["name"])
                 region.add_child(site)
-                self.update(region)  # pylint: disable=no-member
+                self.update(region)

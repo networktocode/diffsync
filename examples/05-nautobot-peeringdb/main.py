@@ -5,7 +5,7 @@ from adapter_nautobot import NautobotRemote
 from adapter_peeringdb import PeeringDB
 
 from diffsync.enum import DiffSyncFlags
-from diffsync.store.redis import RedisStore  # pylint: disable=no-name-in-module,import-error
+from diffsync.store.redis import RedisStore
 
 REDIS_HOST = "redis"
 PEERING_DB_IX_ID = 62  # CATNIX ID

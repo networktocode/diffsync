@@ -10,7 +10,7 @@ from diffsync.exceptions import ObjectNotFound
 
 
 PEERINGDB_URL = "https://peeringdb.com/"
-peeringdb_api_key = os.environ.get("PEERINGDB_API_KEY", "").strip()
+PEERINGDB_API_KEY = os.environ.get("PEERINGDB_API_KEY", "").strip()
 
 
 class PeeringDB(DiffSync):
@@ -31,8 +31,8 @@ class PeeringDB(DiffSync):
     def load(self):
         """Load data via from PeeringDB."""
         headers = {}
-        if peeringdb_api_key:
-            headers["Authorization"] = f"Api-Key {peeringdb_api_key}"
+        if PEERINGDB_API_KEY:
+            headers["Authorization"] = f"Api-Key {PEERINGDB_API_KEY}"
 
         ix_data = requests.get(f"{PEERINGDB_URL}/api/ix/{self.ix_id}", headers=headers).json()
 

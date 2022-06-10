@@ -1,4 +1,4 @@
-diffsync[redis]
+diffsync[redis]>=1.5.0
 python-slugify
 pycountry
 requests
