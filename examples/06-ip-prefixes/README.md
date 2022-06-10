@@ -13,7 +13,7 @@ You could simply run the `main.py` file, but to run step by step.
 Install the dependencies (recommended into a virtual environment)
 
 ```
-pip3 install -r requirements
+pip3 install -r requirements.txt
 ```
 
 and go into a `python` interactive session:
@@ -37,7 +37,7 @@ python3
 >>> ipam_a.load()
 ```
 
-You can check the content loaded from IPAM A. Notice that the data has been transformed into the DiffSync model, that is different from the original one.
+You can check the content loaded from IPAM A. Notice that the data has been transformed into the DiffSync model, which is different from the original YAML data.
 
 ```py
 >>> import pprint
@@ -59,7 +59,7 @@ You can check the content loaded from IPAM A. Notice that the data has been tran
 >>> ipam_b.load()
 ```
 
-You can check the content loaded from IPAM B. Notice that the data has been transformed into the DiffSync model, that is different from the original one.
+You can check the content loaded from IPAM B. Notice that the data has been transformed into the DiffSync model, which again is different from the original YAML format.
 
 ```py
 >>> pprint.pprint(ipam_b.dict())
@@ -72,7 +72,7 @@ You can check the content loaded from IPAM B. Notice that the data has been tran
 
 ### Check the difference
 
-We can use `diff_to` or `diff_sync` to select, from the perspective of the calling adapter, who is the authoritative in each case.
+We can use `diff_to` or `diff_from` to select, from the perspective of the calling adapter, who is the authoritative in each case.
 
 ```py
 >>> diff = ipam_a.diff_to(ipam_b)
