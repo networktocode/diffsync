@@ -34,7 +34,7 @@ $ cp examples/05-nautobot-peeringdb/creds.example.env examples/05-nautobot-peeri
 ```bash
 $ docker-compose -f examples/05-nautobot-peeringdb/docker-compose.yml up -d --build
 
-$ docker exec -it 05-nautobot-peeringdb_example_1 bash
+$ docker exec -it 05-nautobot-peeringdb_example_1 python
 ```
 
 ## Interactive execution
@@ -48,26 +48,34 @@ from diffsync.store.redis import RedisStore
 store_one = RedisStore(host="redis")
 store_two = RedisStore(host="redis")
 
+# Initialize PeeringDB adapter, using CATNIX id for demonstration
 peeringdb = PeeringDB(
     ix_id=62,
     internal_storage_engine=store_one
 )
 
+# Initialize Nautobot adapter, pointing to the demo instance (it's also the default settings)
 nautobot = NautobotRemote(
     url="https://demo.nautobot.com",
     token="a" * 40,
     internal_storage_engine=store_two
 )
 
+# Load PeeringDB info into the adapter
 peeringdb.load()
 
+# We can check the data that has been imported, some as `site` and some as `region` (with the parent relationships)
 peeringdb.dict()
 
+# Load Nautobot info into the adapter
 nautobot.load()
 
+# Let's diffsync do it's magic
 diff = nautobot.diff_from(peeringdb, flags=DiffSyncFlags.SKIP_UNMATCHED_DST)
 
+# Quick summary of the expected changes (remember that delete ones are dry-run)
 diff.summary()
 
+# Execute the synchronization
 nautobot.sync_from(peeringdb, flags=DiffSyncFlags.SKIP_UNMATCHED_DST)
 ```
