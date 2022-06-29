@@ -992,6 +992,10 @@ def test_diffsync_sync_skip_children_on_delete(backend_a):
     assert not diff.has_diffs()
 
 
+def test_diffsync_empty_instance_is_truthy():
+    assert bool(Adapter())
+
+
 def test_diffsync_tree_traversal():
     assert BackendA.get_tree_traversal(True) == {"site": {"device": {"interface": {}}, "person": {}}, "unused": {}}
     text = """\

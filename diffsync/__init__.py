@@ -459,6 +459,13 @@ class Adapter:  # pylint: disable=too-many-public-methods
     def __repr__(self) -> StrType:
         return f"<{str(self)}>"
 
+    def __bool__(self) -> bool:
+        """Always evaluate DiffSync instances as True.
+
+        This is needed because without it the __len__ method would be used, which in turn would cause empty DiffSync
+        instances to evaluate as False."""
+        return True
+
     def __len__(self) -> int:
         """Total number of elements stored."""
         return self.store.count()
