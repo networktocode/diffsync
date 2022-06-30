@@ -194,9 +194,9 @@ class BaseStore:
         """Get object class and model name for a model."""
         if isinstance(model, str):
             modelname = model
-            if not hasattr(self, model):
+            if not hasattr(self.diffsync, model):
                 return None, modelname
-            object_class = getattr(self, model)
+            object_class = getattr(self.diffsync, model)
         else:
             object_class = model
             modelname = model.get_type()
@@ -216,7 +216,7 @@ class BaseStore:
             uid = object_class.create_unique_id(**identifier)
         else:
             raise ValueError(
-                f"Invalid args: ({model}, {identifier}): "
-                f"either {model} should be a class/instance or {identifier} should be a str"
+                f"Invalid args: ({model}, {object_class}, {identifier}): "
+                f"either {object_class} should be a class/instance or {identifier} should be a str"
             )
         return uid
