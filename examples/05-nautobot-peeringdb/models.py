@@ -1,5 +1,5 @@
 """DiffSyncModel subclasses for Nautobot-PeeringDB data sync."""
-from typing import Optional, Union
+from typing import Optional, Union, List
 from uuid import UUID
 
 from diffsync import DiffSyncModel
@@ -16,12 +16,14 @@ class RegionModel(DiffSyncModel):
         "description",
         "parent_name",
     )
+    _children = {"site": "sites"}
 
     # Data type declarations for all identifiers and attributes
     name: str
     slug: str
     description: Optional[str]
     parent_name: Optional[str]  # may be None
+    sites: List = []
 
     # Not in _attributes or _identifiers, hence not included in diff calculations
     pk: Optional[UUID]

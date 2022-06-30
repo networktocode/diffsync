@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.5.1 - 2022-06-30
+
+### Added
+
+- #111 - Added example 6, regarding IP prefixes.
+
+### Changed
+
+- #107 - Updated example 5 to use the Redis backend store.
+
+### Fixed
+
+- #115 - Fixed ReadTheDocs rendering pipeline
+- #118 - Fixed a regression in `DiffSync.get(modelname, identifiers)` introduced in 1.5.0
+
 ## v1.5.0 - 2022-06-07
 
 ### Added

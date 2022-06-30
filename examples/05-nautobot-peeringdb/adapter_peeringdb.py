@@ -1,5 +1,6 @@
 """Diffsync adapter class for PeeringDB."""
 # pylint: disable=import-error,no-name-in-module
+import os
 import requests
 from slugify import slugify
 import pycountry
@@ -9,6 +10,7 @@ from diffsync.exceptions import ObjectNotFound
 
 
 PEERINGDB_URL = "https://peeringdb.com/"
+PEERINGDB_API_KEY = os.environ.get("PEERINGDB_API_KEY", "").strip()
 
 
 class PeeringDB(DiffSync):
@@ -19,7 +21,7 @@ class PeeringDB(DiffSync):
     site = SiteModel
 
     # Top-level class labels, i.e. those classes that are handled directly rather than as children of other models
-    top_level = ("region", "site")
+    top_level = ["region"]
 
     def __init__(self, *args, ix_id, **kwargs):
         """Initialize the PeeringDB adapter."""
@@ -28,12 +30,16 @@ class PeeringDB(DiffSync):
 
     def load(self):
         """Load data via from PeeringDB."""
-        ix_data = requests.get(f"{PEERINGDB_URL}/api/ix/{self.ix_id}").json()
+        headers = {}
+        if PEERINGDB_API_KEY:
+            headers["Authorization"] = f"Api-Key {PEERINGDB_API_KEY}"
+
+        ix_data = requests.get(f"{PEERINGDB_URL}/api/ix/{self.ix_id}", headers=headers).json()
 
         for fac in ix_data["data"][0]["fac_set"]:
             # PeeringDB has no Region entity, so we must avoid duplicates
             try:
-                self.get(self.region, fac["city"])
+                region = self.get(self.region, fac["city"])
             except ObjectNotFound:
                 # Use pycountry to translate the country code (like "DE") to a country name (like "Germany")
                 parent_name = pycountry.countries.get(alpha_2=fac["country"]).name
@@ -65,3 +71,5 @@ class PeeringDB(DiffSync):
                 pk=fac["id"],
             )
             self.add(site)
+            region.add_child(site)
+            self.update(region)  # pylint: disable=no-member

@@ -1,13 +1,8 @@
 """Diffsync adapter class for Nautobot."""
 # pylint: disable=import-error,no-name-in-module
-import os
-import requests
+import pynautobot
 from models import RegionModel, SiteModel
 from diffsync import DiffSync
-
-
-NAUTOBOT_URL = os.getenv("NAUTOBOT_URL", "https://demo.nautobot.com")
-NAUTOBOT_TOKEN = os.getenv("NAUTOBOT_TOKEN", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 
 
 class RegionNautobotModel(RegionModel):
@@ -30,7 +25,9 @@ class RegionNautobotModel(RegionModel):
             data["description"] = attrs["description"]
         if attrs["parent_name"]:
             data["parent"] = str(diffsync.get(diffsync.region, attrs["parent_name"]).pk)
-        diffsync.post("/api/dcim/regions/", data)
+
+        diffsync.nautobot_api.dcim.regions.create(**data)
+
         return super().create(diffsync, ids=ids, attrs=attrs)
 
     def update(self, attrs):
@@ -39,6 +36,7 @@ class RegionNautobotModel(RegionModel):
         Args:
             attrs (dict): Updated values for this record's _attributes
         """
+        region = self.diffsync.nautobot_api.dcim.regions.get(name=self.name)
         data = {}
         if "slug" in attrs:
             data["slug"] = attrs["slug"]
@@ -46,15 +44,17 @@ class RegionNautobotModel(RegionModel):
             data["description"] = attrs["description"]
         if "parent_name" in attrs:
             if attrs["parent_name"]:
-                data["parent"] = str(self.diffsync.get(self.diffsync.region, attrs["parent_name"]).pk)
+                data["parent"] = str(self.diffsync.get(self.diffsync.region, attrs["parent_name"]).name)
             else:
                 data["parent"] = None
-        self.diffsync.patch(f"/api/dcim/regions/{self.pk}/", data)
+
+        region.update(data=data)
+
         return super().update(attrs)
 
     def delete(self):  # pylint: disable= useless-super-delegation
         """Delete an existing Region record from remote Nautobot."""
-        # self.diffsync.delete(f"/api/dcim/regions/{self.pk}/")
+        # Not implemented
         return super().delete()
 
 
@@ -70,17 +70,14 @@ class SiteNautobotModel(SiteModel):
             ids (dict): Initial values for this model's _identifiers
             attrs (dict): Initial values for this model's _attributes
         """
-        diffsync.post(
-            "/api/dcim/sites/",
-            {
-                "name": ids["name"],
-                "slug": attrs["slug"],
-                "description": attrs["description"],
-                "status": attrs["status_slug"],
-                "region": {"name": attrs["region_name"]} if attrs["region_name"] else None,
-                "latitude": attrs["latitude"],
-                "longitude": attrs["longitude"],
-            },
+        diffsync.nautobot_api.dcim.sites.create(
+            name=ids["name"],
+            slug=attrs["slug"],
+            description=attrs["description"],
+            status=attrs["status_slug"],
+            region={"name": attrs["region_name"]} if attrs["region_name"] else None,
+            latitude=attrs["latitude"],
+            longitude=attrs["longitude"],
         )
         return super().create(diffsync, ids=ids, attrs=attrs)
 
@@ -90,6 +87,8 @@ class SiteNautobotModel(SiteModel):
         Args:
             attrs (dict): Updated values for this record's _attributes
         """
+        site = self.diffsync.nautobot_api.dcim.sites.get(name=self.name)
+
         data = {}
         if "slug" in attrs:
             data["slug"] = attrs["slug"]
@@ -106,12 +105,14 @@ class SiteNautobotModel(SiteModel):
             data["latitude"] = attrs["latitude"]
         if "longitude" in attrs:
             data["longitude"] = attrs["longitude"]
-        self.diffsync.patch(f"/api/dcim/sites/{self.pk}/", data)
+
+        site.update(data=data)
+
         return super().update(attrs)
 
     def delete(self):  # pylint: disable= useless-super-delegation
         """Delete an existing Site record from remote Nautobot."""
-        # self.diffsync.delete(f"/api/dcim/sites/{self.pk}/")
+        # Not implemented
         return super().delete()
 
 
@@ -123,9 +124,9 @@ class NautobotRemote(DiffSync):
     site = SiteNautobotModel
 
     # Top-level class labels, i.e. those classes that are handled directly rather than as children of other models
-    top_level = ("region", "site")
+    top_level = ["region"]
 
-    def __init__(self, *args, url=NAUTOBOT_URL, token=NAUTOBOT_TOKEN, **kwargs):
+    def __init__(self, *args, url, token, **kwargs):
         """Instantiate this class, but do not load data immediately from the remote system.
 
         Args:
@@ -136,21 +137,11 @@ class NautobotRemote(DiffSync):
         super().__init__(*args, **kwargs)
         if not url or not token:
             raise ValueError("Both url and token must be specified!")
-        self.url = url
-        self.token = token
-        self.headers = {
-            "Accept": "application/json",
-            "Authorization": f"Token {self.token}",
-        }
+        self.nautobot_api = pynautobot.api(url=url, token=token)
 
     def load(self):
         """Load Region and Site data from the remote Nautobot instance."""
-        region_data = requests.get(f"{self.url}/api/dcim/regions/", headers=self.headers, params={"limit": 0}).json()
-        regions = region_data["results"]
-        while region_data["next"]:
-            region_data = requests.get(region_data["next"], headers=self.headers, params={"limit": 0}).json()
-            regions.extend(region_data["results"])
-
+        regions = self.nautobot_api.dcim.regions.all()
         for region_entry in regions:
             region = self.region(
                 name=region_entry["name"],
@@ -161,12 +152,7 @@ class NautobotRemote(DiffSync):
             )
             self.add(region)
 
-        site_data = requests.get(f"{self.url}/api/dcim/sites/", headers=self.headers, params={"limit": 0}).json()
-        sites = site_data["results"]
-        while site_data["next"]:
-            site_data = requests.get(site_data["next"], headers=self.headers, params={"limit": 0}).json()
-            sites.extend(site_data["results"])
-
+        sites = self.nautobot_api.dcim.sites.all()
         for site_entry in sites:
             site = self.site(
                 name=site_entry["name"],
@@ -179,21 +165,7 @@ class NautobotRemote(DiffSync):
                 pk=site_entry["id"],
             )
             self.add(site)
-
-    def post(self, path, data):
-        """Send an appropriately constructed HTTP POST request."""
-        response = requests.post(f"{self.url}{path}", headers=self.headers, json=data)
-        response.raise_for_status()
-        return response
-
-    def patch(self, path, data):
-        """Send an appropriately constructed HTTP PATCH request."""
-        response = requests.patch(f"{self.url}{path}", headers=self.headers, json=data)
-        response.raise_for_status()
-        return response
-
-    def delete(self, path):
-        """Send an appropriately constructed HTTP DELETE request."""
-        response = requests.delete(f"{self.url}{path}", headers=self.headers)
-        response.raise_for_status()
-        return response
+            if site_entry["region"]:
+                region = self.get(self.region, site_entry["region"]["name"])
+                region.add_child(site)
+                self.update(region)
