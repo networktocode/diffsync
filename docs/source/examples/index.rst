@@ -9,3 +9,4 @@ For each example, the complete source code is `available in Github <https://gith
 .. mdinclude:: ../../../examples/03-remote-system/README.md
 .. mdinclude:: ../../../examples/04-get-update-instantiate/README.md
 .. mdinclude:: ../../../examples/05-nautobot-peeringdb/README.md
+.. mdinclude:: ../../../examples/06-ip-prefixes/README.md

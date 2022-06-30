@@ -16,3 +16,11 @@ API Reference
    diffsync.helpers
    diffsync.logging
    diffsync.utils
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   diffsync.store
