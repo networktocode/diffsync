@@ -115,6 +115,7 @@ def test_diffsync_add_raises_already_exists_with_updated_object(generic_diffsync
 
 
 def test_diffsync_get_or_instantiate_create_non_existent_object(generic_diffsync):
+    generic_diffsync.interface = Interface
     intf_identifiers = {"device_name": "device1", "name": "eth1"}
 
     # Assert that the object does not currently exist.
@@ -124,6 +125,7 @@ def test_diffsync_get_or_instantiate_create_non_existent_object(generic_diffsync
     obj, created = generic_diffsync.get_or_instantiate(Interface, intf_identifiers)
     assert created
     assert obj is generic_diffsync.get(Interface, intf_identifiers)
+    assert obj is generic_diffsync.get("interface", intf_identifiers)
 
 
 def test_diffsync_get_or_instantiate_retrieve_existing_object(generic_diffsync):
@@ -150,6 +152,7 @@ def test_diffsync_get_or_instantiate_retrieve_existing_object_w_attrs(generic_di
 
 
 def test_diffsync_get_or_instantiate_retrieve_create_non_existent_w_attrs(generic_diffsync):
+    generic_diffsync.interface = Interface
     intf_identifiers = {"device_name": "device1", "name": "eth1"}
     intf_attrs = {"interface_type": "1000base-t", "description": "Testing"}
 
@@ -158,6 +161,7 @@ def test_diffsync_get_or_instantiate_retrieve_create_non_existent_w_attrs(generi
     assert obj.interface_type == "1000base-t"
     assert obj.description == "Testing"
     assert obj is generic_diffsync.get(Interface, intf_identifiers)
+    assert obj is generic_diffsync.get("interface", intf_identifiers)
 
 
 def test_diffsync_get_or_instantiate_retrieve_existing_object_wo_attrs(generic_diffsync):
