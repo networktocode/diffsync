@@ -1,4 +1,4 @@
-# Example 06 - IP Prefixes
+# Example 6 - IP Prefixes
 
 This example shows how to play around to IPAM systems which have a different implementation of an IP Prefix.
 

@@ -289,3 +289,6 @@ fabric.properties
 
 ## Sphinx Documentation ##
 docs/build
+
+## Secrets
+creds.env
