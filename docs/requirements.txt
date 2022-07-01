@@ -3,4 +3,3 @@ mistune==0.8.4
 sphinx==4.5.0
 toml==0.10.2
 sphinx-rtd-theme==1.0.0
-pydantic==1.9.0
