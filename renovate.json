@@ -1,3 +1,28 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json"
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "baseBranches": ["develop"],
+  "constraints": {
+    "python": "3.7"
+  },
+  "enabledManagers": ["pip_requirements", "poetry"],
+  "extends": [
+    "config:base"
+  ],
+  "labels": [
+    "dependencies"
+  ],
+  "packageRules": [
+    {
+      "description": "Group patch-only updates to develop weekly to cut down on PR noise.",
+      "groupName": "Develop Updates",
+      "matchBaseBranches": ["develop"],
+      "schedule": [
+        "before 3am on Friday"
+      ],
+      "major": {"enabled": false},
+      "minor": {"enabled": false}
+    }
+  ],
+  "rangeStrategy": "in-range-only"
+>>>>>>> Stashed changes
 }
