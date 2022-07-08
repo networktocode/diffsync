@@ -29,7 +29,7 @@
         "before 2am"
       ],
       "rangeStrategy": "update-lockfile"
-    },
-  ],
+    }
+  ]
   "rangeStrategy": "in-range-only"
 }
