@@ -30,6 +30,6 @@
       ],
       "rangeStrategy": "update-lockfile"
     }
-  ]
+  ],
   "rangeStrategy": "in-range-only"
 }
