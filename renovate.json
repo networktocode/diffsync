@@ -21,7 +21,15 @@
       ],
       "major": {"enabled": false},
       "minor": {"enabled": false}
-    }
+    },
+    {
+      "description": "Schedule develop updates.",
+      "matchBaseBranches": ["develop"],
+      "schedule": [
+        "before 2am"
+      ],
+      "rangeStrategy": "update-lockfile"
+    },
   ],
   "rangeStrategy": "in-range-only"
 }
