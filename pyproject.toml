@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "diffsync"
-version = "1.5.1"
+version = "1.6.0"
 description = "Library to easily sync/diff/update 2 different data sources"
 authors = ["Network to Code, LLC <info@networktocode.com>"]
 license = "Apache-2.0"
@@ -16,13 +16,11 @@ include = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.6.2"
+python = "^3.7"
 pydantic = "^1.7.4,!=1.8,!=1.8.1"
 structlog = ">= 20.1.0, < 22.0.0"
 packaging = "^21.3"
 colorama = {version = "^0.4.3", optional = true}
-# For Pydantic
-dataclasses = {version = "^0.7", python = "~3.6"}
 redis = {version = "^4.3", optional = true}
 
 [tool.poetry.extras]
