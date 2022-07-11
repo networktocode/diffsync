@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.6.0 - 2022-07-09
+
+### Changed
+
+- #120 - Dropped support for Python 3.6, new minimum is Python 3.7
+
 ## v1.5.1 - 2022-06-30
 
 ### Added
