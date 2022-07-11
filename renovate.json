@@ -25,7 +25,7 @@
     {
       "description": "Minor and major updates (non-patch updates).",
       "groupName": "Develop minor and major updates",
-      "matchBaseBranches": ["develop"],
+      "matchBaseBranches": ["develop"]
     }
   ],
   "rangeStrategy": "in-range-only"
