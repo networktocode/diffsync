@@ -14,7 +14,7 @@
   "packageRules": [
     {
       "description": "Group patch-only updates to develop weekly to cut down on PR noise.",
-      "groupName": "Develop Updates",
+      "groupName": "Develop patch updates",
       "matchBaseBranches": ["develop"],
       "schedule": [
         "before 3am on Friday"
@@ -23,12 +23,9 @@
       "minor": {"enabled": false}
     },
     {
-      "description": "Schedule develop updates.",
+      "description": "Minor and major updates (non-patch updates).",
+      "groupName" "Develop minor and major updates",
       "matchBaseBranches": ["develop"],
-      "schedule": [
-        "before 2am"
-      ],
-      "rangeStrategy": "update-lockfile"
     }
   ],
   "rangeStrategy": "in-range-only"
