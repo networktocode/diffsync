@@ -464,9 +464,10 @@ def filter_model_fields(fields_to_filter: List[str]) -> Callable[[Type["DiffSync
 
     This is useful when subclassing existing models as it allows you to remove present fields.
     """
+
     def inner(model: Type["DiffSyncModel"]) -> Type["DiffSyncModel"]:
         # Copy the input class so we don't mutate it
-        new_class = type(f"{model.__name__}Copy_{uuid.uuid4()}", (model, ), {})
+        new_class = type(f"{model.__name__}Copy_{uuid.uuid4()}", (model,), {})
 
         # Let mypy know that the result of the above expression is in fact a subclass of 'DiffSyncModel'
         # assert issubclass(new_class, DiffSyncModel)
@@ -474,4 +475,5 @@ def filter_model_fields(fields_to_filter: List[str]) -> Callable[[Type["DiffSync
         # Filter the attributes by the input argument
         new_class.filter_attributes(fields_to_filter)
         return new_class
+
     return inner

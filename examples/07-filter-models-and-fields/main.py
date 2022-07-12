@@ -32,6 +32,7 @@ class Prefix(DiffSyncModel):
 
 class ExampleBackend(DiffSync):
     """Abstract backend example base class."""
+
     site = Site
     prefix = Prefix
 
@@ -94,7 +95,7 @@ class FilteredBackendB(ExampleBackend):
         super().__init__(*args, **kwargs)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print("\n")
     print("Unfiltered example:")
     print("\n")
