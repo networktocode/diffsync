@@ -395,6 +395,13 @@ class DiffSyncModel(BaseModel):
             raise ObjectNotFound(f"{child} was not found as a child in {attr_name}")
         childs.remove(child.get_unique_id())
 
+    @classmethod
+    def filter_attributes(cls, attributes_to_filter: List[str]) -> None:
+        """Remove the attributes in the list from the _attributes of this class."""
+        cls._attributes = [attribute for attribute in cls._attributes if attribute not in attributes_to_filter]
+        for attribute in attributes_to_filter:
+            cls.__fields__.pop(attribute)
+
 
 class DiffSync:
     """Class for storing a group of DiffSyncModel instances and diffing/synchronizing to another DiffSync instance."""

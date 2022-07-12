@@ -1,0 +1,6 @@
+---
+site:
+  - name: "Example Site 1"
+prefix:
+  - prefix: "192.0.2.0/24"
+    description: "An example prefix with an updated description"
