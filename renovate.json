@@ -11,22 +11,5 @@
   "labels": [
     "dependencies"
   ],
-  "packageRules": [
-    {
-      "description": "Group patch-only updates to develop weekly to cut down on PR noise.",
-      "groupName": "Develop patch updates",
-      "matchBaseBranches": ["develop"],
-      "schedule": [
-        "before 3am on Friday"
-      ],
-      "major": {"enabled": false},
-      "minor": {"enabled": false}
-    },
-    {
-      "description": "Minor and major updates (non-patch updates).",
-      "groupName": "Develop minor and major updates",
-      "matchBaseBranches": ["develop"]
-    }
-  ],
   "rangeStrategy": "in-range-only"
 }
