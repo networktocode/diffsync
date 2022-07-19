@@ -14,7 +14,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import uuid
 from collections.abc import Iterable as ABCIterable, Mapping as ABCMapping
 from typing import Callable, Iterable, List, Mapping, Optional, Tuple, Type, TYPE_CHECKING
 
