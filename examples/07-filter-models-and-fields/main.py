@@ -1,9 +1,9 @@
 from pathlib import Path
+from typing import Optional
 
 import yaml
 
 from diffsync import DiffSyncModel, DiffSync
-from diffsync.helpers import filter_model_fields
 
 this_dir = Path(__file__).parent
 
@@ -14,9 +14,10 @@ class Site(DiffSyncModel):
     _modelname = "site"
     _identifiers = ("name",)
     _attributes = ("description",)
+    _enabled_attributes = {"description": False}
 
     name: str
-    description: str
+    description: Optional[str]
 
 
 class Prefix(DiffSyncModel):
@@ -25,16 +26,27 @@ class Prefix(DiffSyncModel):
     _modelname = "prefix"
     _identifiers = ("prefix",)
     _attributes = ("description",)
+    _enabled_attributes = {"description": False}
 
     prefix: str
-    description: str
+    description: Optional[str]
+
+
+class SubclassedPrefix(Prefix):
+    """Subclass Prefix to enable the default-disabled attribute 'description'."""
+    _enabled_attributes = {"description": True}
+
+
+class SubclassedSite(Site):
+    """Subclass Site to enable the default-disabled attribute 'description'."""
+    _enabled_attributes = {"description": True}
 
 
 class ExampleBackend(DiffSync):
     """Abstract backend example base class."""
 
-    site = Site
-    prefix = Prefix
+    site = SubclassedSite
+    prefix = SubclassedPrefix
 
     top_level = ["site", "prefix"]
 
@@ -66,15 +78,10 @@ class BackendB(ExampleBackend):
         super().__init__(*args, **kwargs)
 
 
-@filter_model_fields(fields_to_filter=["description"])
-class FilteredSite(Site):
-    pass
-
-
 class FilteredBackendA(ExampleBackend):
     """Example backend A after filtering."""
 
-    site = FilteredSite
+    site = Site
 
     def __init__(self, *args, **kwargs):
         with open(this_dir / "data" / "data_a_filtered.yml", encoding="utf-8") as f:
@@ -86,7 +93,7 @@ class FilteredBackendA(ExampleBackend):
 class FilteredBackendB(ExampleBackend):
     """Example backend B after filtering."""
 
-    site = FilteredSite
+    site = Site
 
     def __init__(self, *args, **kwargs):
         with open(this_dir / "data" / "data_b_filtered.yml", encoding="utf-8") as f:

@@ -457,23 +457,3 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
             self.logger.warning(message, status=status.value)
         else:
             self.logger.error(message, status=status.value)
-
-
-def filter_model_fields(fields_to_filter: List[str]) -> Callable[[Type["DiffSyncModel"]], Type["DiffSyncModel"]]:
-    """Filter certain fields to exclude them from the model.
-
-    This is useful when subclassing existing models as it allows you to remove present fields.
-    """
-
-    def inner(model: Type["DiffSyncModel"]) -> Type["DiffSyncModel"]:
-        # Copy the input class so we don't mutate it
-        new_class = type(f"{model.__name__}Copy_{uuid.uuid4()}", (model,), {})
-
-        # Let mypy know that the result of the above expression is in fact a subclass of 'DiffSyncModel'
-        # assert issubclass(new_class, DiffSyncModel)
-
-        # Filter the attributes by the input argument
-        new_class.filter_attributes(fields_to_filter)
-        return new_class
-
-    return inner

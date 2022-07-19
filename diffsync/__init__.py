@@ -14,6 +14,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from collections import defaultdict
 from inspect import isclass
 from typing import Callable, ClassVar, Dict, List, Mapping, Optional, Text, Tuple, Type, Union
 
@@ -71,6 +72,20 @@ class DiffSyncModel(BaseModel):
     Note: inclusion in `_attributes` is mutually exclusive from inclusion in `_identifiers`; a field cannot be in both!
     """
 
+    _enabled_attributes: ClassVar[Mapping[str, bool]] = defaultdict(lambda: True)
+    """Optional: dict of `{field_name: enabled}` entries detailling whether an attribute is enabled or not.
+    
+    When a field is not included in this dictionary, it means it is enabled (this also provides backwards
+    compatibility). When a field is
+    - included as `_enabled_attributes[field_name] == False`, this means that while the attribute has to defined like
+      any other, it will not take part in any diffsync logic
+    - included as `_enabled_attributes[field_name] == True`, this means that the field will exhibit default diffsync
+      behavior
+    
+    This enables abstract base model classes to implement a lot of fields from which a concrete implementation can pick
+    just those fields that it needs. See example 7 for further details.
+    """
+
     _children: ClassVar[Mapping[str, str]] = {}
     """Optional: dict of `{_modelname: field_name}` entries describing how to store "child" models in this model.
 
@@ -105,20 +120,24 @@ class DiffSyncModel(BaseModel):
 
         Called automatically on subclass declaration.
         """
-        variables = cls.__fields__.keys()
         # Make sure that any field referenced by name actually exists on the model
         for attr in cls._identifiers:
-            if attr not in variables and not hasattr(cls, attr):
+            if attr not in cls.__fields__ and not hasattr(cls, attr):
                 raise AttributeError(f"_identifiers {cls._identifiers} references missing or un-annotated attr {attr}")
         for attr in cls._shortname:
-            if attr not in variables:
+            if attr not in cls.__fields__:
                 raise AttributeError(f"_shortname {cls._shortname} references missing or un-annotated attr {attr}")
         for attr in cls._attributes:
-            if attr not in variables:
+            if attr not in cls.__fields__:
                 raise AttributeError(f"_attributes {cls._attributes} references missing or un-annotated attr {attr}")
         for attr in cls._children.values():
-            if attr not in variables:
+            if attr not in cls.__fields__:
                 raise AttributeError(f"_children {cls._children} references missing or un-annotated attr {attr}")
+        for attr in cls._enabled_attributes.keys():
+            if attr not in cls.__fields__:
+                raise AttributeError(f"_enabled_attributes {cls._enabled_attributes} references missing or un-annotated attr {attr}")
+            if cls.__fields__[attr].required:
+                raise AttributeError(f"_enabled_attributes {cls._enabled_attributes} references required attr {attr}")
 
         # Any given field can only be in one of (_identifiers, _attributes, _children)
         id_attr_overlap = set(cls._identifiers).intersection(cls._attributes)
@@ -137,16 +156,29 @@ class DiffSyncModel(BaseModel):
     def __str__(self):
         return self.get_unique_id()
 
+    def _generate_exclude_set(self) -> set:
+        """Generate a set of field names to be excluded."""
+        return {field_name for field_name, enabled in self._enabled_attributes.items() if not enabled}
+
+    @classmethod
+    def _filter_attrs(cls, attrs: Mapping) -> Mapping:
+        """Filter any non-enabled attributes from the dictionary"""
+        return {key: value for key, value in attrs.items() if cls._enabled_attributes[key]}
+
     def dict(self, **kwargs) -> dict:
         """Convert this DiffSyncModel to a dict, excluding the diffsync field by default as it is not serializable."""
         if "exclude" not in kwargs:
             kwargs["exclude"] = {"diffsync"}
+        # We always need the not-enabled fields from _enabled_attributes to be excluded
+        kwargs["exclude"].update(self._generate_exclude_set())
         return super().dict(**kwargs)
 
     def json(self, **kwargs) -> str:
         """Convert this DiffSyncModel to a JSON string, excluding the diffsync field by default as it is not serializable."""
         if "exclude" not in kwargs:
             kwargs["exclude"] = {"diffsync"}
+        # We always need the not-enabled fields from _enabled_attributes to be excluded
+        kwargs["exclude"] = self._generate_exclude_set()
         if "exclude_defaults" not in kwargs:
             kwargs["exclude_defaults"] = True
         return super().json(**kwargs)
@@ -190,7 +222,7 @@ class DiffSyncModel(BaseModel):
         Returns:
             DiffSyncModel: instance of this class.
         """
-        model = cls(**ids, diffsync=diffsync, **attrs)
+        model = cls(**ids, diffsync=diffsync, **cls._filter_attrs(attrs))
         model.set_status(DiffSyncStatus.SUCCESS, "Created successfully")
         return model
 
@@ -226,7 +258,7 @@ class DiffSyncModel(BaseModel):
         Returns:
             DiffSyncModel: this instance.
         """
-        for attr, value in attrs.items():
+        for attr, value in self._filter_attrs(attrs).items():
             # TODO: enforce that only attrs in self._attributes can be updated in this way?
             setattr(self, attr, value)
 
@@ -394,13 +426,6 @@ class DiffSyncModel(BaseModel):
         if child.get_unique_id() not in childs:
             raise ObjectNotFound(f"{child} was not found as a child in {attr_name}")
         childs.remove(child.get_unique_id())
-
-    @classmethod
-    def filter_attributes(cls, attributes_to_filter: List[str]) -> None:
-        """Remove the attributes in the list from the _attributes of this class."""
-        cls._attributes = [attribute for attribute in cls._attributes if attribute not in attributes_to_filter]
-        for attribute in attributes_to_filter:
-            cls.__fields__.pop(attribute)
 
 
 class DiffSync:
