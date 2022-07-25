@@ -10,7 +10,7 @@ jobs:
       - name: "Check out repository code"
         uses: "actions/checkout@v2"
       - name: "Validate renovate configuration"
-        uses: "rinchsan/renovate-config-validator@v0.0.0"
+        uses: "rinchsan/renovate-config-validator@v0.0.11"
         with:
           pattern: "renovate.json"
   black:
