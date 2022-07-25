@@ -11,5 +11,13 @@
   "labels": [
     "dependencies"
   ],
+  "packageRules": [
+    {
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["patch", "minor"],
+      "groupName": "Update development dependencies (non-major releases)",
+      "schedule": ["before 5am on friday"]
+    }
+  ],
   "rangeStrategy": "in-range-only"
 }
