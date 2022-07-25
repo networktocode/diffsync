@@ -4,6 +4,15 @@ on:  # yamllint disable-line rule:truthy
   - "push"
   - "pull_request"
 jobs:
+  validate_renovate:
+    runs-on: "ubuntu-20.04"
+    steps:
+      - name: "Check out repository code"
+        uses: "actions/checkout@v2"
+      - name: "Validate renovate configuration"
+        uses: "rinchsan/renovate-config-validator@v0.0.0"
+        with:
+          pattern: "renovate.json"
   black:
     runs-on: "ubuntu-20.04"
     env:
