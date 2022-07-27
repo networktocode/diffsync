@@ -1,17 +1,18 @@
 ---
 name: 🐛 Bug Report
-about: Report a reproducible bug in the current release of DiffSync
+about: Report a reproducible bug in the current release of diffsync
 ---
 
 ### Environment
-* DiffSync version:  <!-- Example: 1.0.0 -->
-* Python version  <!-- Example: 3.7.7 -->
-
-<!-- What happened instead? -->
-### Observed Behavior
+* Python version:  <!-- Example: 3.7.7 -->
+* diffsync version:  <!-- Example: 1.0.0 -->
 
 <!-- What did you expect to happen? -->
 ### Expected Behavior
+
+
+<!-- What happened instead? -->
+### Observed Behavior
 
 <!--
     Describe in detail the exact steps that someone else can take to reproduce
