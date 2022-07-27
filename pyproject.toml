@@ -104,7 +104,6 @@ testpaths = [
 skip = [
     "diffsync",
     "tests",
-    ".github/workflows", # For now, might be cool to include this as well but it requires refactoring on the template
     "tasks.py",
     "CHANGELOG.md",
     "README.md",
