@@ -1,0 +1,19 @@
+{
+  "template": "https://github.com/networktocode-llc/cookiecutter-ntc",
+  "commit": "5f7a1c877320fb728843986c4913addff9bacb92",
+  "context": {
+    "cookiecutter": {
+      "codeowner_github_usernames": "@glennmatthews @Kircheneer @chadell",
+      "description": "Library to easily sync/diff/update 2 different data sources",
+      "project_name": "DiffSync",
+      "project_slug": "diffsync",
+      "project_python_name": "diffsync",
+      "project_python_base_version": "3.7",
+      "project_with_config_settings": "yes",
+      "generate_docs": "no",
+      "version": "1.6.0",
+      "_template": "https://github.com/networktocode-llc/cookiecutter-ntc"
+    }
+  },
+  "directory": "python/"
+}

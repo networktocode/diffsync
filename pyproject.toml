@@ -47,6 +47,7 @@ toml = "*"
 types-toml = "*"
 types-redis = "*"
 pytest-redislite = { version = "^0.1.0", python = "^3.7"}
+cruft = "^2.10.2"
 
 [tool.black]
 line-length = 120
@@ -97,6 +98,14 @@ min-similarity-lines = 20
 [tool.pytest.ini_options]
 testpaths = [
     "tests"
+]
+
+[tool.cruft]
+skip = [
+    "diffsync",
+    "CHANGELOG.md",
+    "README.md",
+    "Dockerfile"
 ]
 
 [build-system]
