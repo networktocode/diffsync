@@ -1,5 +1,5 @@
 ---
-name: "CI"
+name: "CI (non-template jobs)"
 on:  # yamllint disable-line rule:truthy
   - "push"
   - "pull_request"
