@@ -1,10 +1,10 @@
 ---
 name: "CI (non-template jobs)"
-on:
+on:  # yamllint disable-line rule:truthy
   push:
     branches:
-      - main
-      - develop
+      - "main"
+      - "develop"
   pull_request: ~
 jobs:
   validate_renovate:
