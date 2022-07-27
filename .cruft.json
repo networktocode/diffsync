@@ -1,6 +1,6 @@
 {
   "template": "https://github.com/networktocode-llc/cookiecutter-ntc",
-  "commit": "83ae54f27bbeb3ca93326ab1867052ed9d3f6b6a",
+  "commit": null,
   "context": {
     "cookiecutter": {
       "codeowner_github_usernames": "@glennmatthews @Kircheneer @chadell",
@@ -16,5 +16,5 @@
     }
   },
   "directory": "python/",
-  "checkout": null
+  "checkout": "main"
 }
