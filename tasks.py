@@ -336,4 +336,5 @@ def cruft_check(context):
 @task
 def cruft_update(context):
     """Update the working tree with changes from the upstream cookiecutter."""
+    context.run("cruft update -s")
     context.run("cruft diff | git apply")
