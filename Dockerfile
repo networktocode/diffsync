@@ -5,6 +5,12 @@ FROM python:${PYTHON_VER}-slim
 RUN pip install --upgrade pip \
   && pip install poetry
 
+RUN apt-get update && apt-get install -y \
+  gcc \
+  make \
+  && rm -rf /var/lib/apt/lists/*
+
+
 WORKDIR /local
 COPY pyproject.toml /local
 COPY poetry.lock /local
