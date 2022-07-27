@@ -7,7 +7,7 @@ RUN pip install --upgrade pip \
 
 RUN apt-get update && apt-get install -y \
   gcc \
-  make \
+  redis \
   && rm -rf /var/lib/apt/lists/*
 
 

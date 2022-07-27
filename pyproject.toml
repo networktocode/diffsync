@@ -46,8 +46,8 @@ sphinx-rtd-theme = "*"
 toml = "*"
 types-toml = "*"
 types-redis = "*"
-pytest-redislite = { version = "^0.1.0", python = "^3.7"}
 cruft = "^2.10.2"
+pytest-redis = "^2.4.0"
 
 [tool.black]
 line-length = 120
