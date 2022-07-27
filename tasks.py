@@ -325,3 +325,15 @@ def clean_docs(context, builddir="docs/build"):
     """
     print(f"Removing everything under {builddir} directory...")
     context.run("rm -rf " + builddir)
+
+
+@task
+def cruft_check(context):
+    """Check the upstream cookiecutter for changes."""
+    context.run("cruft diff -e")
+
+
+@task
+def cruft_update(context):
+    """Update the working tree with changes from the upstream cookiecutter."""
+    context.run("cruft diff | git apply")
