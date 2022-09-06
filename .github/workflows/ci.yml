@@ -3,7 +3,7 @@ name: "CI"
 concurrency:  # Cancel any existing runs of this workflow for this same PR
   group: "${{ github.workflow }}-${{ github.ref }}"
   cancel-in-progress: true
-on: # yamllint disable
+on:  # yamllint disable
   push:
     branches:
       - "main"
