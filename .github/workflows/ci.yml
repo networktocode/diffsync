@@ -1,8 +1,16 @@
 ---
 name: "CI"
-on:  # yamllint disable-line rule:truthy
-  - "push"
-  - "pull_request"
+concurrency:  # Cancel any existing runs of this workflow for this same PR
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+on: # yamllint disable
+  push:
+    branches:
+      - "main"
+      - "develop"
+    tags:
+      - "v*"
+  pull_request: ~
 jobs:
   validate_renovate:
     runs-on: "ubuntu-20.04"
