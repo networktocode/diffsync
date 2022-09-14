@@ -2,7 +2,8 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "baseBranches": ["develop"],
   "constraints": {
-    "python": "3.7"
+    "python": ">=3.7",
+    "poetry": ">=1.1.14"
   },
   "enabledManagers": ["pip_requirements", "poetry"],
   "extends": [
