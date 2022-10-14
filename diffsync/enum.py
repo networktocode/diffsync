@@ -95,4 +95,5 @@ class DiffSyncActions:  # pylint: disable=too-few-public-methods
     CREATE = "create"
     UPDATE = "update"
     DELETE = "delete"
+    SKIP = "skip"
     NO_CHANGE = None

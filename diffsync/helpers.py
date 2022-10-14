@@ -93,6 +93,7 @@ class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
                 self.diff.add(diff_element)
 
         self.logger.info("Diff calculation complete")
+        self.diff.models_processed = self.models_processed
         self.diff.complete()
         return self.diff
 

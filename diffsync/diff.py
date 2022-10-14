@@ -29,6 +29,7 @@ class Diff:
     def __init__(self):
         """Initialize a new, empty Diff object."""
         self.children = OrderedDefaultDict(dict)
+        self.models_processed = 0
         """DefaultDict for storing DiffElement objects.
 
         `self.children[group][unique_id] == DiffElement(...)`
@@ -115,6 +116,13 @@ class Diff:
             child_summary = child.summary()
             for key in summary:
                 summary[key] += child_summary[key]
+        summary[DiffSyncActions.SKIP] = (
+            self.models_processed
+            - summary[DiffSyncActions.CREATE]
+            - 2 * summary[DiffSyncActions.UPDATE]
+            - summary[DiffSyncActions.DELETE]
+            - 2 * summary["no-change"]
+        )
         return summary
 
     def str(self, indent: int = 0):
