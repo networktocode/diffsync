@@ -29,11 +29,11 @@ class Diff:
     def __init__(self):
         """Initialize a new, empty Diff object."""
         self.children = OrderedDefaultDict(dict)
-        self.models_processed = 0
         """DefaultDict for storing DiffElement objects.
 
         `self.children[group][unique_id] == DiffElement(...)`
         """
+        self.models_processed = 0
 
     def __len__(self):
         """Total number of DiffElements stored herein."""
