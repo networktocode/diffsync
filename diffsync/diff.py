@@ -119,8 +119,10 @@ class Diff:
         summary[DiffSyncActions.SKIP] = (
             self.models_processed
             - summary[DiffSyncActions.CREATE]
+            # Updated elements are doubly accumulated in models_processed as they exist in SCR and DST.
             - 2 * summary[DiffSyncActions.UPDATE]
             - summary[DiffSyncActions.DELETE]
+            # 'no-change' elements are doubly accumulated in models_processed as they exist in SCR and DST.
             - 2 * summary["no-change"]
         )
         return summary
