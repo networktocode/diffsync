@@ -4,6 +4,31 @@ DiffSync is a utility library that can be used to compare and synchronize differ
 
 For example, it can be used to compare a list of devices from 2 inventory systems and, if required, synchronize them in either direction.
 
+# Primary Use Cases
+
+DiffSync is at its most useful when you have multiple sources or sets of data to compare and/or synchronize, and especially if any of the following are true:
+
+- If you need to repeatedly compare or synchronize the data sets as one or both change over time.
+- If you need to account for not only the creation of new records, but also changes to and deletion of existing records as well.
+- If various types of data in your data set naturally form a tree-like or parent-child relationship with other data.
+- If the different data sets have some attributes in common and other attributes that are exclusive to one or the other.
+
+# Overview of DiffSync
+
+DiffSync acts as an intermediate translation layer between all of the data sets you are diffing and/or syncing. In practical terms, this means that to use DiffSync, you will define a set of data models as well as the “adapters” needed to translate between each base data source and the data model. In Python terms, the adapters will be subclasses of the `DiffSync` class, and each data model class will be a subclass of the `DiffSyncModel` class.
+
+![Diffsync Components](./docs/images/diffsync_components.png)
+
+Once you have used each adapter to load each data source into a collection of data model records, you can then ask DiffSync to “diff” the two data sets, and it will produce a structured representation of the difference between them. In Python, this is accomplished by calling the `diff_to()` or `diff_from()` method on one adapter and passing the other adapter as a parameter.
+
+![Diffsync Diff Creation](./docs/images/diffsync_diff_creation.png)
+
+You can also ask DiffSync to “sync” one data set onto the other, and it will instruct your adapter as to the steps it needs to take to make sure that its data set accurately reflects the other. In Python, this is accomplished by calling the `sync_to()` or `sync_from()` method on one adapter and passing the other adapter as a parameter.
+
+![Diffsync Sync](./docs/images/diffsync_sync.png)
+
+# Simple Example
+
 ```python
 A = DiffSyncSystemA()
 B = DiffSyncSystemB()
