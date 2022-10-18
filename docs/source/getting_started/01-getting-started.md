@@ -56,6 +56,68 @@ class BackendA(DiffSync):
 
 It's up to the implementer to populate the `DiffSync`'s internal cache with the appropriate data. In the example below we are using the `load()` method to populate the cache but it's not mandatory, it could be done differently.
 
+## Model Processing Ordering Logic
+
+The models will be processed in a specfic order as defined by `top_level` atttribute on the `DiffSync` object and then the `_childres` attribute on the `DiffSyncModel`. The processing algorithm can be described as:
+
+- Start with the first element in the model in `top_level`
+- If that model has `_children` set on it, process that first element next, in the order as defined in the dictionary.
+    - Continue processing `_children` as found, until complete end of lineage (e.g. children, children of children, etc.)
+- Continue with the next element as defined in the `_children` attribute.
+- Continue with the next element as defined in the `top_level` attribute.
+
+Given the following Scenario:
+
+```python
+
+class Site(DiffSyncModel):
+    _children = {"vlan": "vlans", "prefix": "prefixes"}
+    [...]
+
+class Device(DiffSyncModel):
+    _children = {"interface": "interfaces"}
+    [...]
+
+class Vlan(DiffSyncModel):
+    [...]
+
+class Prefix(DiffSyncModel):
+    [...]
+
+class IPAddress(DiffSyncModel):
+    _children = {"ip_address": "ip_addresses"}
+    [...]
+
+class Cable(DiffSyncModel):
+    [...]
+
+
+class Nautobot(DiffSync):
+    site = Site
+    device = Device
+    interface = Interface
+    ip_address = IPAddress
+    cable = Cable
+    vlan = Vlan
+    prefix = Prefix
+
+    top_level = ["site", "device", "cable"]
+    [...]
+
+```
+
+Would result in processing in the following order:
+
+- site
+- vlan
+- prefix
+- device
+- interface
+- ip_address
+- cable
+
+> Note: This applies to the actual diff sync, and not the loading of the data, which is up to the developer to determine the order. 
+
 # Store data in a `DiffSync` object
 
 To add a site to the local cache/store, you need to pass a valid `DiffSyncModel` object to the `add()` function.
