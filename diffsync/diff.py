@@ -33,6 +33,7 @@ class Diff:
 
         `self.children[group][unique_id] == DiffElement(...)`
         """
+        self.models_processed = 0
 
     def __len__(self):
         """Total number of DiffElements stored herein."""
@@ -115,6 +116,15 @@ class Diff:
             child_summary = child.summary()
             for key in summary:
                 summary[key] += child_summary[key]
+        summary[DiffSyncActions.SKIP] = (
+            self.models_processed
+            - summary[DiffSyncActions.CREATE]
+            # Updated elements are doubly accumulated in models_processed as they exist in SCR and DST.
+            - 2 * summary[DiffSyncActions.UPDATE]
+            - summary[DiffSyncActions.DELETE]
+            # 'no-change' elements are doubly accumulated in models_processed as they exist in SCR and DST.
+            - 2 * summary["no-change"]
+        )
         return summary
 
     def str(self, indent: int = 0):

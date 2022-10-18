@@ -24,20 +24,20 @@ from diffsync.exceptions import ObjectNotFound
 def test_diffsync_diff_with_skip_unmatched_src_flag_on_models(backend_a, backend_a_with_extra_models):
     # Validate that there are 2 extras objects out of the box
     diff = backend_a.diff_from(backend_a_with_extra_models)
-    assert diff.summary() == {"create": 2, "update": 0, "delete": 0, "no-change": 23}
+    assert diff.summary() == {"create": 2, "update": 0, "delete": 0, "no-change": 23, "skip": 0}
 
     # Check that only 1 object is affected by the flag
     backend_a_with_extra_models.get(
         backend_a_with_extra_models.site, "lax"
     ).model_flags |= DiffSyncModelFlags.SKIP_UNMATCHED_SRC
     diff = backend_a.diff_from(backend_a_with_extra_models)
-    assert diff.summary() == {"create": 1, "update": 0, "delete": 0, "no-change": 23}
+    assert diff.summary() == {"create": 1, "update": 0, "delete": 0, "no-change": 23, "skip": 1}
 
     backend_a_with_extra_models.get(
         backend_a_with_extra_models.device, "nyc-spine3"
     ).model_flags |= DiffSyncModelFlags.SKIP_UNMATCHED_SRC
     diff = backend_a.diff_from(backend_a_with_extra_models)
-    assert diff.summary() == {"create": 0, "update": 0, "delete": 0, "no-change": 23}
+    assert diff.summary() == {"create": 0, "update": 0, "delete": 0, "no-change": 23, "skip": 2}
 
 
 def test_diffsync_sync_with_skip_unmatched_src_flag_on_models(backend_a, backend_a_with_extra_models):
@@ -58,23 +58,23 @@ def test_diffsync_sync_with_skip_unmatched_src_flag_on_models(backend_a, backend
     assert "nyc-spine3" not in backend_a.get(backend_a.site, "nyc").devices
 
     diff = backend_a.diff_from(backend_a_with_extra_models)
-    assert diff.summary() == {"create": 0, "update": 0, "delete": 0, "no-change": 23}
+    assert diff.summary() == {"create": 0, "update": 0, "delete": 0, "no-change": 23, "skip": 2}
 
 
 def test_diffsync_diff_with_skip_unmatched_dst_flag_on_models(backend_a, backend_a_minus_some_models):
     # Validate that there are 3 extras objects out of the box
     diff = backend_a.diff_from(backend_a_minus_some_models)
-    assert diff.summary() == {"create": 0, "update": 0, "delete": 12, "no-change": 11}
+    assert diff.summary() == {"create": 0, "update": 0, "delete": 12, "no-change": 11, "skip": 0}
 
     # Check that only the device "rdu-spine1" and its 2 interfaces are affected by the flag
     backend_a.get(backend_a.device, "rdu-spine1").model_flags |= DiffSyncModelFlags.SKIP_UNMATCHED_DST
     diff = backend_a.diff_from(backend_a_minus_some_models)
-    assert diff.summary() == {"create": 0, "update": 0, "delete": 9, "no-change": 11}
+    assert diff.summary() == {"create": 0, "update": 0, "delete": 9, "no-change": 11, "skip": 1}
 
     # Check that only one additional device "sfo-spine2" and its 3 interfaces are affected by the flag
     backend_a.get(backend_a.device, "sfo-spine2").model_flags |= DiffSyncModelFlags.SKIP_UNMATCHED_DST
     diff = backend_a.diff_from(backend_a_minus_some_models)
-    assert diff.summary() == {"create": 0, "update": 0, "delete": 5, "no-change": 11}
+    assert diff.summary() == {"create": 0, "update": 0, "delete": 5, "no-change": 11, "skip": 2}
 
 
 def test_diffsync_sync_with_skip_unmatched_dst_flag_on_models(backend_a, backend_a_minus_some_models):
