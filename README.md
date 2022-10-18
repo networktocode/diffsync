@@ -17,15 +17,16 @@ DiffSync is at its most useful when you have multiple sources or sets of data to
 
 DiffSync acts as an intermediate translation layer between all of the data sets you are diffing and/or syncing. In practical terms, this means that to use DiffSync, you will define a set of data models as well as the “adapters” needed to translate between each base data source and the data model. In Python terms, the adapters will be subclasses of the `DiffSync` class, and each data model class will be a subclass of the `DiffSyncModel` class.
 
-![Diffsync Components](./docs/images/diffsync_components.png)
+![Diffsync Components](https://raw.githubusercontent.com/networktocode/diffsync/develop/docs/images/diffsync_components.png "Diffsync Components")
+
 
 Once you have used each adapter to load each data source into a collection of data model records, you can then ask DiffSync to “diff” the two data sets, and it will produce a structured representation of the difference between them. In Python, this is accomplished by calling the `diff_to()` or `diff_from()` method on one adapter and passing the other adapter as a parameter.
 
-![Diffsync Diff Creation](./docs/images/diffsync_diff_creation.png)
+![Diffsync Diff Creation](https://raw.githubusercontent.com/networktocode/diffsync/develop/docs/images/diffsync_diff_creation.png "Diffsync Diff Creation")
 
 You can also ask DiffSync to “sync” one data set onto the other, and it will instruct your adapter as to the steps it needs to take to make sure that its data set accurately reflects the other. In Python, this is accomplished by calling the `sync_to()` or `sync_from()` method on one adapter and passing the other adapter as a parameter.
 
-![Diffsync Sync](./docs/images/diffsync_sync.png)
+![Diffsync Sync](https://raw.githubusercontent.com/networktocode/diffsync/develop/docs/images/diffsync_sync.png "Diffsync Sync")
 
 # Simple Example
 
