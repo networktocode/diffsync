@@ -449,6 +449,8 @@ def diff_with_children():
     address_element.add_attrs(source={"state": "NC"}, dest={"state": "NC"})
     diff.add(address_element)
 
+    diff.models_processed = 8
+
     return diff
 
 

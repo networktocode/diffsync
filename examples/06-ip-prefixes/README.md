@@ -82,7 +82,7 @@ From this `diff`, we can check the summary of what would happen.
 
 ```py
 >>> diff.summary()
-{'create': 2, 'update': 1, 'delete': 1, 'no-change': 0}
+{'create': 2, 'update': 1, 'delete': 1, 'no-change': 0, 'skip': 0}
 ```
 
 And, also go into the details. We can see how the `'+'` and + `'-'` represent the actual changes in the target adapter: create, delete or update (when both symbols appear).
@@ -119,5 +119,5 @@ Now, if we reload the IPAM B, and try to check the difference, we should see no 
 >>> new_ipam_b.load()
 >>> diff = ipam_a.diff_to(new_ipam_b)
 >>> diff.summary()
-{'create': 0, 'update': 0, 'delete': 0, 'no-change': 3}
+{'create': 0, 'update': 0, 'delete': 0, 'no-change': 3, 'skip': 0}
 ```
