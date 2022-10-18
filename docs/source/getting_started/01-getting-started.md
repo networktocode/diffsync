@@ -116,7 +116,7 @@ Would result in processing in the following order:
 - ip_address
 - cable
 
-> Note: This applies to the actual diff sync, and not the loading of the data, which is up to the developer to determine the order. 
+> Note: This applies to the actual diff sync (`Diffsync.sync_from/Diffsync.sync_to`), and not the loading of the data (`Diffsync.load`), which is up to the developer to determine the order.
 
 # Store data in a `DiffSync` object
 
