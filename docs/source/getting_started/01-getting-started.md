@@ -58,13 +58,12 @@ It's up to the implementer to populate the `DiffSync`'s internal cache with the 
 
 ## Model Processing Ordering Logic
 
-The models will be processed in a specfic order as defined by `top_level` atttribute on the `DiffSync` object and then the `_childres` attribute on the `DiffSyncModel`. The processing algorithm can be described as:
+The models will be processed in a specfic order as defined by `top_level` atttribute on the `DiffSync` object and then the `_children` attribute on the `DiffSyncModel`. The processing algorithm is technically a "Preorder Tree Traversal", which means that "a parent node is processed before any of its child nodes is done." This can be described as:
 
 - Start with the first element in the model in `top_level`
-- If that model has `_children` set on it, process that first element next, in the order as defined in the dictionary.
-    - Continue processing `_children` as found, until complete end of lineage (e.g. children, children of children, etc.)
-- Continue with the next element as defined in the `_children` attribute.
-- Continue with the next element as defined in the `top_level` attribute.
+- If that model has `_children` set on it, process that first element, in the order as defined in the dictionary.
+- If a child has has `_children` set on it, process that element, and so on until the complete end of lineage (e.g. children, children of children, etc.)
+- Continue with the next element as defined in the `top_level` attribute, and repeat the process
 
 Given the following Scenario:
 
@@ -84,8 +83,11 @@ class Vlan(DiffSyncModel):
 class Prefix(DiffSyncModel):
     [...]
 
-class IPAddress(DiffSyncModel):
+class Interface(DiffSyncModel):
     _children = {"ip_address": "ip_addresses"}
+    [...]
+
+class IPAddress(DiffSyncModel):
     [...]
 
 class Cable(DiffSyncModel):
@@ -106,17 +108,21 @@ class Nautobot(DiffSync):
 
 ```
 
-Would result in processing in the following order:
+Would result in processing in the following order for each element until there is no elements left:
 
 - site
-- vlan
-- prefix
+    - vlan
+    - prefix
 - device
-- interface
-- ip_address
+    - interface
+        - ip_address
 - cable
 
 > Note: This applies to the actual diff sync (`Diffsync.sync_from/Diffsync.sync_to`), and not the loading of the data (`Diffsync.load`), which is up to the developer to determine the order.
+
+This can be visualized here in the included diagram.
+
+![Preorder Tree Traversal](../../images/preorder-tree-traversal.drawio.png "Preorder Tree Traversal")
 
 # Store data in a `DiffSync` object
 
