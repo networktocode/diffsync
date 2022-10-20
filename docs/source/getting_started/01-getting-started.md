@@ -60,10 +60,13 @@ It's up to the implementer to populate the `DiffSync`'s internal cache with the 
 
 The models will be processed in a specfic order as defined by `top_level` atttribute on the `DiffSync` object and then the `_children` attribute on the `DiffSyncModel`. The processing algorithm is technically a "Preorder Tree Traversal", which means that "a parent node is processed before any of its child nodes is done." This can be described as:
 
-- Start with the first element in the model in `top_level`
-- If that model has `_children` set on it, process that first element, in the order as defined in the dictionary.
-- If a child has has `_children` set on it, process that element, and so on until the complete end of lineage (e.g. children, children of children, etc.)
-- Continue with the next element as defined in the `top_level` attribute, and repeat the process
+- Start with the first element of the first model in `top_level` and process it.
+- If that model has `_children` set on it, for each child of each child model, in order:
+    - Process that child element.
+    - If the child has has `_children` of its own, process its children, and so on until the complete end of lineage (e.g. children, children of children, etc.)
+    - Proceed to the next child element, or to the next model in `_children` if done with all elements of that model.
+- Repeat for the next element of the top-level model, until done with all elements of that model.
+- Continue to the first element of the next model in the `top_level` attribute, and repeat the process, and so on.
 
 Given the following Scenario:
 
