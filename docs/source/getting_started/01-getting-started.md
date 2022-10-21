@@ -56,6 +56,77 @@ class BackendA(DiffSync):
 
 It's up to the implementer to populate the `DiffSync`'s internal cache with the appropriate data. In the example below we are using the `load()` method to populate the cache but it's not mandatory, it could be done differently.
 
+## Model Processing Ordering Logic
+
+The models will be processed in a specfic order as defined by `top_level` atttribute on the `DiffSync` object and then the `_children` attribute on the `DiffSyncModel`. The processing algorithm is technically a "Preorder Tree Traversal", which means that "a parent node is processed before any of its child nodes is done." This can be described as:
+
+- Start with the first element of the first model in `top_level` and process it.
+- If that model has `_children` set on it, for each child of each child model, in order:
+    - Process that child element.
+    - If the child has has `_children` of its own, process its children, and so on until the complete end of lineage (e.g. children, children of children, etc.)
+    - Proceed to the next child element, or to the next model in `_children` if done with all elements of that model.
+- Repeat for the next element of the top-level model, until done with all elements of that model.
+- Continue to the first element of the next model in the `top_level` attribute, and repeat the process, and so on.
+
+Given the following Scenario:
+
+```python
+
+class Site(DiffSyncModel):
+    _children = {"vlan": "vlans", "prefix": "prefixes"}
+    [...]
+
+class Device(DiffSyncModel):
+    _children = {"interface": "interfaces"}
+    [...]
+
+class Vlan(DiffSyncModel):
+    [...]
+
+class Prefix(DiffSyncModel):
+    [...]
+
+class Interface(DiffSyncModel):
+    _children = {"ip_address": "ip_addresses"}
+    [...]
+
+class IPAddress(DiffSyncModel):
+    [...]
+
+class Cable(DiffSyncModel):
+    [...]
+
+
+class Nautobot(DiffSync):
+    site = Site
+    device = Device
+    interface = Interface
+    ip_address = IPAddress
+    cable = Cable
+    vlan = Vlan
+    prefix = Prefix
+
+    top_level = ["site", "device", "cable"]
+    [...]
+
+```
+
+Would result in processing in the following order for each element until there is no elements left:
+
+- site
+    - vlan
+    - prefix
+- device
+    - interface
+        - ip_address
+- cable
+
+> Note: This applies to the actual diff sync (`Diffsync.sync_from/Diffsync.sync_to`), and not the loading of the data (`Diffsync.load`), which is up to the developer to determine the order.
+
+This can be visualized here in the included diagram.
+
+![Preorder Tree Traversal](../../images/preorder-tree-traversal.drawio.png "Preorder Tree Traversal")
+
 # Store data in a `DiffSync` object
 
 To add a site to the local cache/store, you need to pass a valid `DiffSyncModel` object to the `add()` function.
