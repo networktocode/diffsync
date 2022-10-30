@@ -1,19 +1,5 @@
-"""Unit tests for the DiffSync class.
-
-Copyright (c) 2020-2021 Network To Code, LLC <info@networktocode.com>
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-  http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+"""Unit tests for the DiffSync class."""
+# pylint: disable=too-many-lines
 
 from unittest import mock
 
@@ -898,3 +884,147 @@ def test_diffsync_sync_skip_children_on_delete(backend_a):
     diff = extra_models.diff_from(backend_a)
     print(diff.str())  # for debugging of any failure
     assert not diff.has_diffs()
+
+
+def test_diffsync_tree_traversal(backend_a):
+    assert backend_a.get_tree_traversal(True) == {"site": {"device": {"interface": {}}, "person": {}}, "unused": {}}
+    text = "BackendA\n├── site\n│   ├── device\n│   │   └── interface\n│   └── person\n└── unused"
+    assert backend_a.get_tree_traversal() == text
+
+
+def test_diffsync_load_from_dict(backend_a):
+    data = {
+        "device": {
+            "nyc-spine1": {
+                "interfaces": ["nyc-spine1__eth0", "nyc-spine1__eth1"],
+                "name": "nyc-spine1",
+                "role": "spine",
+                "site_name": "nyc",
+            },
+            "nyc-spine2": {
+                "interfaces": ["nyc-spine2__eth0", "nyc-spine2__eth1"],
+                "name": "nyc-spine2",
+                "role": "spine",
+                "site_name": "nyc",
+            },
+            "rdu-spine1": {
+                "interfaces": ["rdu-spine1__eth0", "rdu-spine1__eth1"],
+                "name": "rdu-spine1",
+                "role": "spine",
+                "site_name": "rdu",
+            },
+            "rdu-spine2": {
+                "interfaces": ["rdu-spine2__eth0", "rdu-spine2__eth1"],
+                "name": "rdu-spine2",
+                "role": "spine",
+                "site_name": "rdu",
+            },
+            "sfo-spine1": {
+                "interfaces": ["sfo-spine1__eth0", "sfo-spine1__eth1"],
+                "name": "sfo-spine1",
+                "role": "spine",
+                "site_name": "sfo",
+            },
+            "sfo-spine2": {
+                "interfaces": ["sfo-spine2__eth0", "sfo-spine2__eth1", "sfo-spine2__eth2"],
+                "name": "sfo-spine2",
+                "role": "spine",
+                "site_name": "sfo",
+            },
+        },
+        "interface": {
+            "nyc-spine1__eth0": {
+                "description": "Interface 0",
+                "device_name": "nyc-spine1",
+                "name": "eth0",
+            },
+            "nyc-spine1__eth1": {
+                "description": "Interface 1",
+                "device_name": "nyc-spine1",
+                "name": "eth1",
+            },
+            "nyc-spine2__eth0": {
+                "description": "Interface 0",
+                "device_name": "nyc-spine2",
+                "name": "eth0",
+            },
+            "nyc-spine2__eth1": {
+                "description": "Interface 1",
+                "device_name": "nyc-spine2",
+                "name": "eth1",
+            },
+            "rdu-spine1__eth0": {
+                "description": "Interface 0",
+                "device_name": "rdu-spine1",
+                "name": "eth0",
+            },
+            "rdu-spine1__eth1": {
+                "description": "Interface 1",
+                "device_name": "rdu-spine1",
+                "name": "eth1",
+            },
+            "rdu-spine2__eth0": {
+                "description": "Interface 0",
+                "device_name": "rdu-spine2",
+                "name": "eth0",
+            },
+            "rdu-spine2__eth1": {
+                "description": "Interface 1",
+                "device_name": "rdu-spine2",
+                "name": "eth1",
+            },
+            "sfo-spine1__eth0": {
+                "description": "Interface 0",
+                "device_name": "sfo-spine1",
+                "name": "eth0",
+            },
+            "sfo-spine1__eth1": {
+                "description": "Interface 1",
+                "device_name": "sfo-spine1",
+                "name": "eth1",
+            },
+            "sfo-spine2__eth0": {
+                "description": "TBD",
+                "device_name": "sfo-spine2",
+                "name": "eth0",
+            },
+            "sfo-spine2__eth1": {
+                "description": "ddd",
+                "device_name": "sfo-spine2",
+                "name": "eth1",
+            },
+            "sfo-spine2__eth2": {
+                "description": "Interface 2",
+                "device_name": "sfo-spine2",
+                "name": "eth2",
+            },
+        },
+        "person": {"Glenn Matthews": {"name": "Glenn Matthews"}},
+        "site": {
+            "nyc": {"devices": ["nyc-spine1", "nyc-spine2"], "name": "nyc"},
+            "rdu": {
+                "devices": ["rdu-spine1", "rdu-spine2"],
+                "name": "rdu",
+                "people": ["Glenn Matthews"],
+            },
+            "sfo": {"devices": ["sfo-spine1", "sfo-spine2"], "name": "sfo"},
+        },
+    }
+    backend_a_by_dict = BackendA()
+    backend_a_by_dict.load_from_dict(data)
+    assert backend_a.dict() == backend_a_by_dict.dict()
+
+
+def test_diffsync_get_or_none(backend_a):
+    assert backend_a.get_or_none(backend_a.site, "rdu") is not None
+    assert backend_a.get_or_none(backend_a.site, "does-not-exist") is None
+
+
+def test_diffsync_get_value_order(backend_a):
+    assert backend_a._get_value_order() == [  # pylint: disable=protected-access
+        "site",
+        "unused",
+        "device",
+        "interface",
+        "person",
+    ]

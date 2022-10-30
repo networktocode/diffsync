@@ -15,17 +15,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from inspect import isclass
-from typing import Callable, ClassVar, Dict, List, Mapping, Optional, Text, Tuple, Type, Union
+from typing import Any, Callable, ClassVar, Dict, List, Mapping, Optional, Text, Tuple, Type, Union
 
 from pydantic import BaseModel, PrivateAttr
 import structlog  # type: ignore
 
-from .diff import Diff
-from .enum import DiffSyncModelFlags, DiffSyncFlags, DiffSyncStatus
-from .exceptions import DiffClassMismatch, ObjectAlreadyExists, ObjectStoreWrongType, ObjectNotFound
-from .helpers import DiffSyncDiffer, DiffSyncSyncer
-from .store import BaseStore
-from .store.local import LocalStore
+from diffsync.diff import Diff
+from diffsync.enum import DiffSyncModelFlags, DiffSyncFlags, DiffSyncStatus
+from diffsync.exceptions import DiffClassMismatch, ObjectAlreadyExists, ObjectStoreWrongType, ObjectNotFound
+from diffsync.helpers import DiffSyncDiffer, DiffSyncSyncer
+from diffsync.store import BaseStore
+from diffsync.store.local import LocalStore
+from diffsync.utils import get_path, set_key, tree_string
 
 
 class DiffSyncModel(BaseModel):
@@ -396,7 +397,7 @@ class DiffSyncModel(BaseModel):
         childs.remove(child.get_unique_id())
 
 
-class DiffSync:
+class DiffSync:  # pylint: disable=too-many-public-methods
     """Class for storing a group of DiffSyncModel instances and diffing/synchronizing to another DiffSync instance."""
 
     # In any subclass, you would add mapping of names to specific model classes here:
@@ -460,6 +461,25 @@ class DiffSync:
         """Total number of elements stored."""
         return self.store.count()
 
+    def _get_value_order(self) -> List[str]:
+        """Get the initial value order of diffsync object.
+
+        Returns:
+            List[str]: List of method names as strings in the order they are initially processed.
+        """
+        if hasattr(self, "top_level") and isinstance(getattr(self, "top_level"), list):
+            value_order = self.top_level.copy()
+        else:
+            value_order = []
+
+        for item in dir(self):
+            _method = getattr(self, item)
+            if item in value_order:
+                continue
+            if isclass(_method) and issubclass(_method, DiffSyncModel):
+                value_order.append(item)
+        return value_order
+
     def load(self):
         """Load all desired data from whatever backend data source into this instance."""
         # No-op in this generic class
@@ -488,6 +508,18 @@ class DiffSync:
                 for model in models:
                     output += "\n" + model.str(indent=indent + 2)
         return output
+
+    def load_from_dict(self, data: Dict):
+        """The reverse of `dict` method, taking a dictionary and loading into the inventory.
+
+        Args:
+            data (Dict): Dictionary in the format that `dict` would export as
+        """
+        value_order = self._get_value_order()
+        for key in value_order:
+            model_obj = getattr(self, key)
+            for values in data.get(key, {}).values():
+                self.add(model_obj(**values))
 
     # ------------------------------------------------------------------------------
     # Synchronization between DiffSync instances
@@ -625,7 +657,6 @@ class DiffSync:
     def get(
         self, obj: Union[Text, DiffSyncModel, Type[DiffSyncModel]], identifier: Union[Text, Mapping]
     ) -> DiffSyncModel:
-
         """Get one object from the data store based on its unique id.
 
         Args:
@@ -637,6 +668,26 @@ class DiffSync:
             ObjectNotFound: if the requested object is not present
         """
         return self.store.get(model=obj, identifier=identifier)
+
+    def get_or_none(
+        self, obj: Union[Text, DiffSyncModel, Type[DiffSyncModel]], identifier: Union[Text, Mapping]
+    ) -> Union[DiffSyncModel, None]:
+        """Get one object from the data store based on its unique id or get a None
+
+        Args:
+            obj: DiffSyncModel class or instance, or modelname string, that defines the type of the object to retrieve
+            identifier: Unique ID of the object to retrieve, or dict of unique identifier keys/values
+
+        Raises:
+            ValueError: if obj is a str and identifier is a dict (can't convert dict into a uid str without a model class)
+
+        Returns:
+            DiffSyncModel: DiffSyncModel matching provided criteria
+        """
+        try:
+            return self.get(obj, identifier)
+        except ObjectNotFound:
+            return None
 
     def get_all(self, obj: Union[Text, DiffSyncModel, Type[DiffSyncModel]]) -> List[DiffSyncModel]:
         """Get all objects of a given type.
@@ -662,6 +713,34 @@ class DiffSync:
             ObjectNotFound: if any of the requested UIDs are not found in the store
         """
         return self.store.get_by_uids(uids=uids, model=obj)
+
+    def get_tree_traversal(self, as_dict: bool = False) -> Any:
+        """Get a string describing the tree traversal for the diffsync object.
+
+        Args:
+            as_dict (bool): Whether or not to return as a dictionary
+
+        Returns:
+            Any: A string or dictionary representation of tree
+        """
+        value_order = self._get_value_order()
+        output_dict: Dict = {}
+        for key in value_order:
+            model_obj = getattr(self, key)
+            if not get_path(output_dict, key):
+                set_key(output_dict, [key])
+            if hasattr(model_obj, "_children"):
+                children = getattr(model_obj, "_children")
+                for item in list(children.keys()):
+                    path = get_path(output_dict, key)
+                    if not path:
+                        set_key(output_dict, [key, item])
+                    else:
+                        path.append(item)
+                        set_key(output_dict, path)
+        if as_dict:
+            return output_dict
+        return tree_string(output_dict, self.type)
 
     def add(self, obj: DiffSyncModel):
         """Add a DiffSyncModel object to the store.
