@@ -516,10 +516,10 @@ class DiffSync:  # pylint: disable=too-many-public-methods
             data (Dict): Dictionary in the format that `dict` would export as
         """
         value_order = self._get_value_order()
-        for key in value_order:
-            model_obj = getattr(self, key)
-            for values in data.get(key, {}).values():
-                self.add(model_obj(**values))
+        for field_name in value_order:
+            model_class = getattr(self, field_name)
+            for values in data.get(field_name, {}).values():
+                self.add(model_class(**values))
 
     # ------------------------------------------------------------------------------
     # Synchronization between DiffSync instances
@@ -714,7 +714,7 @@ class DiffSync:  # pylint: disable=too-many-public-methods
         """
         return self.store.get_by_uids(uids=uids, model=obj)
 
-    def get_tree_traversal(self, as_dict: bool = False) -> Any:
+    def get_tree_traversal(self, as_dict: bool = False) -> Union[Text, Mapping]:
         """Get a string describing the tree traversal for the diffsync object.
 
         Args:

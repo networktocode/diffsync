@@ -129,7 +129,7 @@ This can be visualized here in the included diagram.
 
 ### Mapping Tree Traversal with `get_tree_traversal` method
 
-For your convenience, there is a helper method that will provide a mapping of the order. The `DiffSync.get_tree_traversal` method will return a string, in a tree-like format or optionally a dictionary when setting the `as_dict` method on.
+For your convenience, there is a helper method that will provide a mapping of the order. The `DiffSync.get_tree_traversal()` method will return a tree-like string, or optionally a dictionary when passing the `as_dict=True` parameter.
 
 ```python
 >>> from nautobot_device_onboarding.network_importer.adapters.network_device.adapter import NetworkImporterAdapter

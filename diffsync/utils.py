@@ -68,14 +68,11 @@ def _tree(data: dict, prefix: str = ""):
 
 def tree_string(data: dict, root):
     """String wrapper around `_tree` function to add header and provide tree view of a dictionary."""
-    output = root
-    for line in _tree(data):
-        output = output + "\n" + line
-    return output
+    return "\n".join([root, *_tree(data)])
 
 
 def set_key(data, keys):
-    """Set a nested dictionary key given a set of keys."""
+    """Set a nested dictionary key given a list of keys."""
     current_level = data
     for item in keys:
         if item not in current_level:

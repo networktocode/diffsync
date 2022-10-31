@@ -888,7 +888,13 @@ def test_diffsync_sync_skip_children_on_delete(backend_a):
 
 def test_diffsync_tree_traversal(backend_a):
     assert backend_a.get_tree_traversal(True) == {"site": {"device": {"interface": {}}, "person": {}}, "unused": {}}
-    text = "BackendA\n├── site\n│   ├── device\n│   │   └── interface\n│   └── person\n└── unused"
+    text = """\
+BackendA
+├── site
+│   ├── device
+│   │   └── interface
+│   └── person
+└── unused"""
     assert backend_a.get_tree_traversal() == text
 
 
