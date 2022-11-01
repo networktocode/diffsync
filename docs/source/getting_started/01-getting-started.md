@@ -129,13 +129,12 @@ This can be visualized here in the included diagram.
 
 ### Mapping Tree Traversal with `get_tree_traversal` method
 
-For your convenience, there is a helper method that will provide a mapping of the order. The `DiffSync.get_tree_traversal()` method will return a tree-like string, or optionally a dictionary when passing the `as_dict=True` parameter.
+For your convenience, there is a helper method that will provide a mapping of the order. The `DiffSync.get_tree_traversal()` class method will return a tree-like string, or optionally a dictionary when passing the `as_dict=True` parameter.
 
 ```python
 >>> from nautobot_device_onboarding.network_importer.adapters.network_device.adapter import NetworkImporterAdapter
->>> network_adapter = NetworkImporterAdapter()
->>> print(network_adapter.get_tree_traversal())
-Network
+>>> print(NetworkImporterAdapter.get_tree_traversal())
+NetworkImporterAdapter
 ├── status
 ├── site
 │   ├── vlan
