@@ -15,7 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from inspect import isclass
-from typing import Any, Callable, ClassVar, Dict, List, Mapping, Optional, Text, Tuple, Type, Union
+from typing import Callable, ClassVar, Dict, List, Mapping, Optional, Text, Tuple, Type, Union
 
 from pydantic import BaseModel, PrivateAttr
 import structlog  # type: ignore
@@ -461,19 +461,20 @@ class DiffSync:  # pylint: disable=too-many-public-methods
         """Total number of elements stored."""
         return self.store.count()
 
-    def _get_value_order(self) -> List[str]:
+    @classmethod
+    def _get_initial_value_order(cls) -> List[str]:
         """Get the initial value order of diffsync object.
 
         Returns:
-            List[str]: List of method names as strings in the order they are initially processed.
+            List[str]: List of model-referencing attribute names in the order they are initially processed.
         """
-        if hasattr(self, "top_level") and isinstance(getattr(self, "top_level"), list):
-            value_order = self.top_level.copy()
+        if hasattr(cls, "top_level") and isinstance(getattr(cls, "top_level"), list):
+            value_order = cls.top_level.copy()
         else:
             value_order = []
 
-        for item in dir(self):
-            _method = getattr(self, item)
+        for item in dir(cls):
+            _method = getattr(cls, item)
             if item in value_order:
                 continue
             if isclass(_method) and issubclass(_method, DiffSyncModel):
@@ -515,7 +516,7 @@ class DiffSync:  # pylint: disable=too-many-public-methods
         Args:
             data (Dict): Dictionary in the format that `dict` would export as
         """
-        value_order = self._get_value_order()
+        value_order = self._get_initial_value_order()
         for field_name in value_order:
             model_class = getattr(self, field_name)
             for values in data.get(field_name, {}).values():
@@ -714,7 +715,8 @@ class DiffSync:  # pylint: disable=too-many-public-methods
         """
         return self.store.get_by_uids(uids=uids, model=obj)
 
-    def get_tree_traversal(self, as_dict: bool = False) -> Union[Text, Mapping]:
+    @classmethod
+    def get_tree_traversal(cls, as_dict: bool = False) -> Union[Text, Mapping]:
         """Get a string describing the tree traversal for the diffsync object.
 
         Args:
@@ -723,24 +725,21 @@ class DiffSync:  # pylint: disable=too-many-public-methods
         Returns:
             Any: A string or dictionary representation of tree
         """
-        value_order = self._get_value_order()
+        value_order = cls._get_initial_value_order()
         output_dict: Dict = {}
         for key in value_order:
-            model_obj = getattr(self, key)
+            model_obj = getattr(cls, key)
             if not get_path(output_dict, key):
                 set_key(output_dict, [key])
             if hasattr(model_obj, "_children"):
                 children = getattr(model_obj, "_children")
-                for item in list(children.keys()):
-                    path = get_path(output_dict, key)
-                    if not path:
-                        set_key(output_dict, [key, item])
-                    else:
-                        path.append(item)
-                        set_key(output_dict, path)
+                for child_key in list(children.keys()):
+                    path = get_path(output_dict, key) or [key]
+                    path.append(child_key)
+                    set_key(output_dict, path)
         if as_dict:
             return output_dict
-        return tree_string(output_dict, self.type)
+        return tree_string(output_dict, cls.__name__)
 
     def add(self, obj: DiffSyncModel):
         """Add a DiffSyncModel object to the store.

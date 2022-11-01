@@ -886,8 +886,8 @@ def test_diffsync_sync_skip_children_on_delete(backend_a):
     assert not diff.has_diffs()
 
 
-def test_diffsync_tree_traversal(backend_a):
-    assert backend_a.get_tree_traversal(True) == {"site": {"device": {"interface": {}}, "person": {}}, "unused": {}}
+def test_diffsync_tree_traversal():
+    assert BackendA.get_tree_traversal(True) == {"site": {"device": {"interface": {}}, "person": {}}, "unused": {}}
     text = """\
 BackendA
 ├── site
@@ -895,7 +895,7 @@ BackendA
 │   │   └── interface
 │   └── person
 └── unused"""
-    assert backend_a.get_tree_traversal() == text
+    assert BackendA.get_tree_traversal() == text
 
 
 def test_diffsync_load_from_dict(backend_a):
@@ -1026,8 +1026,8 @@ def test_diffsync_get_or_none(backend_a):
     assert backend_a.get_or_none(backend_a.site, "does-not-exist") is None
 
 
-def test_diffsync_get_value_order(backend_a):
-    assert backend_a._get_value_order() == [  # pylint: disable=protected-access
+def test_diffsync_get_initial_value_order():
+    assert BackendA._get_initial_value_order() == [  # pylint: disable=protected-access
         "site",
         "unused",
         "device",

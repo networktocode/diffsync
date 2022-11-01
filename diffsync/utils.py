@@ -74,10 +74,8 @@ def tree_string(data: dict, root):
 def set_key(data, keys):
     """Set a nested dictionary key given a list of keys."""
     current_level = data
-    for item in keys:
-        if item not in current_level:
-            current_level[item] = {}
-        current_level = current_level[item]
+    for key in keys:
+        current_level = current_level.setdefault(key, {})
 
 
 def get_path(nested_dict, search_value):
