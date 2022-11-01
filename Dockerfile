@@ -2,11 +2,14 @@ ARG PYTHON_VER
 
 FROM python:${PYTHON_VER}-slim
 
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends build-essential
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  build-essential \
+  redis \
+  && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --upgrade pip \
   && pip install poetry
+
 
 WORKDIR /local
 COPY pyproject.toml /local
