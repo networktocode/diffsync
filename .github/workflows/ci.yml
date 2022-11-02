@@ -140,6 +140,8 @@ jobs:
         uses: "networktocode/gh-action-setup-poetry-environment@v2"
         with:
           python-version: "${{ matrix.python-version }}"
+      - name: "Install redis"
+        run: "sudo apt-get install -y redis"
       - name: "Run poetry Install"
         run: "poetry install"
       - name: "Run Tests"
