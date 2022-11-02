@@ -127,6 +127,24 @@ This can be visualized here in the included diagram.
 
 ![Preorder Tree Traversal](../../images/preorder-tree-traversal.drawio.png "Preorder Tree Traversal")
 
+### Mapping Tree Traversal with `get_tree_traversal` method
+
+For your convenience, there is a helper method that will provide a mapping of the order. The `DiffSync.get_tree_traversal()` class method will return a tree-like string, or optionally a dictionary when passing the `as_dict=True` parameter.
+
+```python
+>>> from nautobot_device_onboarding.network_importer.adapters.network_device.adapter import NetworkImporterAdapter
+>>> print(NetworkImporterAdapter.get_tree_traversal())
+NetworkImporterAdapter
+├── status
+├── site
+│   ├── vlan
+│   └── prefix
+└── device
+    └── interface
+        └── ip_address
+>>> 
+```
+
 # Store data in a `DiffSync` object
 
 To add a site to the local cache/store, you need to pass a valid `DiffSyncModel` object to the `add()` function.

@@ -2,6 +2,9 @@ ARG PYTHON_VER
 
 FROM python:${PYTHON_VER}-slim
 
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends build-essential
+
 RUN pip install --upgrade pip \
   && pip install poetry
 
