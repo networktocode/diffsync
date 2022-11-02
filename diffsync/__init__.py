@@ -466,7 +466,7 @@ class DiffSync:  # pylint: disable=too-many-public-methods
         """Get the initial value order of diffsync object.
 
         Returns:
-            List[str]: List of model-referencing attribute names in the order they are initially processed.
+            List of model-referencing attribute names in the order they are initially processed.
         """
         if hasattr(cls, "top_level") and isinstance(getattr(cls, "top_level"), list):
             value_order = cls.top_level.copy()
@@ -514,7 +514,7 @@ class DiffSync:  # pylint: disable=too-many-public-methods
         """The reverse of `dict` method, taking a dictionary and loading into the inventory.
 
         Args:
-            data (Dict): Dictionary in the format that `dict` would export as
+            data: Dictionary in the format that `dict` would export as
         """
         value_order = self._get_initial_value_order()
         for field_name in value_order:
@@ -672,7 +672,7 @@ class DiffSync:  # pylint: disable=too-many-public-methods
 
     def get_or_none(
         self, obj: Union[Text, DiffSyncModel, Type[DiffSyncModel]], identifier: Union[Text, Mapping]
-    ) -> Union[DiffSyncModel, None]:
+    ) -> Optional[DiffSyncModel]:
         """Get one object from the data store based on its unique id or get a None
 
         Args:
@@ -683,7 +683,7 @@ class DiffSync:  # pylint: disable=too-many-public-methods
             ValueError: if obj is a str and identifier is a dict (can't convert dict into a uid str without a model class)
 
         Returns:
-            DiffSyncModel: DiffSyncModel matching provided criteria
+            DiffSyncModel matching provided criteria
         """
         try:
             return self.get(obj, identifier)
@@ -720,10 +720,10 @@ class DiffSync:  # pylint: disable=too-many-public-methods
         """Get a string describing the tree traversal for the diffsync object.
 
         Args:
-            as_dict (bool): Whether or not to return as a dictionary
+            as_dict: Whether or not to return as a dictionary
 
         Returns:
-            Any: A string or dictionary representation of tree
+            A string or dictionary representation of tree
         """
         value_order = cls._get_initial_value_order()
         output_dict: Dict = {}

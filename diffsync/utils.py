@@ -16,7 +16,7 @@ limitations under the License.
 """
 
 from collections import OrderedDict
-from typing import List
+from typing import Iterator, List, Dict, Optional
 
 SPACE = "    "
 BRANCH = "│   "
@@ -50,7 +50,7 @@ class OrderedDefaultDict(OrderedDict):
 
 
 # from: https://stackoverflow.com/questions/72618673/list-directory-tree-structure-in-python-from-a-list-of-path-file
-def _tree(data: dict, prefix: str = ""):
+def _tree(data: Dict, prefix: str = "") -> Iterator[str]:
     """Given a dictionary will yield a visual tree structure.
 
     A recursive generator, given a dictionary will yield a visual tree structure line by line
@@ -66,19 +66,19 @@ def _tree(data: dict, prefix: str = ""):
             yield from _tree(data[path], prefix=prefix + extension)
 
 
-def tree_string(data: dict, root):
+def tree_string(data: Dict, root: str) -> str:
     """String wrapper around `_tree` function to add header and provide tree view of a dictionary."""
     return "\n".join([root, *_tree(data)])
 
 
-def set_key(data, keys):
+def set_key(data: Dict, keys: List):
     """Set a nested dictionary key given a list of keys."""
     current_level = data
     for key in keys:
         current_level = current_level.setdefault(key, {})
 
 
-def get_path(nested_dict, search_value):
+def get_path(nested_dict: Dict, search_value: str) -> Optional[List]:
     """Find the path of keys in a dictionary, given a single unique value."""
     for key in nested_dict.keys():
         if key == search_value:
