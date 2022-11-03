@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.7.0 - 2022-10-03
+
+### Changed
+
+- #176 - Remove pytest-redislite in favor of pytest-redis.
+- #174 - Update Dockerfile to install build-essential
+
+### Added
+
+- #174 - Add methods to load data from dictionary and enable tree traversal
+- #168 - Add 'skip' counter to diff.summary()
+- #169/#170 - Add documentation about model processing order
+- #121/#140 - Add and configure renovate
+- #140 - Add renovate configuration validation to the CI
+
+### Fixed
+
+- #149 Limit redundant CI concurrency
+
 ## v1.6.0 - 2022-07-09
 
 ### Changed
