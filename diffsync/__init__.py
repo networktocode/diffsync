@@ -790,18 +790,40 @@ class DiffSync:  # pylint: disable=too-many-public-methods
         """
         return self.store.get_or_instantiate(model=model, ids=ids, attrs=attrs)
 
+    def get_or_add_model_instance(self, obj: DiffSyncModel) -> Tuple[DiffSyncModel, bool]:
+        """Attempt to get the object with provided obj identifiers or instantiate obj.
+
+        Args:
+            obj: An obj of the DiffSyncModel to get or add.
+
+        Returns:
+            Provides the existing or new object and whether it was created or not.
+        """
+        return self.store.get_or_add_model_instance(obj=obj)
+
     def update_or_instantiate(self, model: Type[DiffSyncModel], ids: Dict, attrs: Dict) -> Tuple[DiffSyncModel, bool]:
         """Attempt to update an existing object with provided ids/attrs or instantiate it with provided identifiers and attrs.
 
         Args:
-            model (DiffSyncModel): The DiffSyncModel to get or create.
-            ids (Dict): Identifiers for the DiffSyncModel to get or create with.
+            model (DiffSyncModel): The DiffSyncModel to update or create.
+            ids (Dict): Identifiers for the DiffSyncModel to update or create with.
             attrs (Dict): Attributes when creating/updating an object if it doesn't exist. Pass in empty dict, if no specific attrs.
 
         Returns:
             Tuple[DiffSyncModel, bool]: Provides the existing or new object and whether it was created or not.
         """
         return self.store.update_or_instantiate(model=model, ids=ids, attrs=attrs)
+
+    def update_or_add_model_instance(self, obj: DiffSyncModel) -> Tuple[DiffSyncModel, bool]:
+        """Attempt to update an existing object with provided obj ids/attrs or instantiate obj.
+
+        Args:
+            instance: An instance of the DiffSyncModel to update or create.
+
+        Returns:
+            Provides the existing or new object and whether it was created or not.
+        """
+        return self.store.update_or_add_model_instance(obj=obj)
 
     def count(self, model: Union[Text, "DiffSyncModel", Type["DiffSyncModel"], None] = None):
         """Count how many objects of one model type exist in the backend store.
