@@ -526,14 +526,14 @@ class DiffSync:  # pylint: disable=too-many-public-methods
     # Synchronization between DiffSync instances
     # ------------------------------------------------------------------------------
 
-    def sync_from(
+    def sync_from(  # pylint: disable=too-many-arguments
         self,
         source: "DiffSync",
         diff_class: Type[Diff] = Diff,
         flags: DiffSyncFlags = DiffSyncFlags.NONE,
         callback: Optional[Callable[[Text, int, int], None]] = None,
         diff: Optional[Diff] = None,
-    ) -> Diff:  # pylint: disable=too-many-arguments:
+    ) -> Diff:
         """Synchronize data from the given source DiffSync object into the current DiffSync object.
 
         Args:
@@ -564,14 +564,14 @@ class DiffSync:  # pylint: disable=too-many-public-methods
 
         return diff
 
-    def sync_to(
+    def sync_to(  # pylint: disable=too-many-arguments
         self,
         target: "DiffSync",
         diff_class: Type[Diff] = Diff,
         flags: DiffSyncFlags = DiffSyncFlags.NONE,
         callback: Optional[Callable[[Text, int, int], None]] = None,
         diff: Optional[Diff] = None,
-    ) -> Diff:  # pylint: disable=too-many-arguments
+    ) -> Diff:
         """Synchronize data from the current DiffSync object into the given target DiffSync object.
 
         Args:
