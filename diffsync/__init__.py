@@ -561,7 +561,7 @@ class DiffSync:  # pylint: disable=too-many-public-methods
         result = syncer.perform_sync()
         if result:
             self.sync_complete(source, diff, flags, syncer.base_logger)
-        
+
         return diff
 
     def sync_to(
