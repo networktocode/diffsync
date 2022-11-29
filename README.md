@@ -75,5 +75,7 @@ The project is following Network to Code software development guidelines and are
 - Black, Pylint, Bandit, flake8, and pydocstyle, mypy for Python linting, formatting and type hint checking.
 - pytest, coverage, and unittest for unit tests.
 
+You can ensure your contribution adheres to these checks by running `invoke tests` from the CLI.
+
 # Questions
 Please see the [documentation](https://diffsync.readthedocs.io/en/latest/index.html) for detailed documentation on how to use `diffsync`. For any additional questions or comments, feel free to swing by the [Network to Code slack channel](https://networktocode.slack.com/) (channel #networktocode). Sign up [here](http://slack.networktocode.com/)
