@@ -526,14 +526,14 @@ class DiffSync:  # pylint: disable=too-many-public-methods
     # Synchronization between DiffSync instances
     # ------------------------------------------------------------------------------
 
-    def sync_from(
+    def sync_from(  # pylint: disable=too-many-arguments
         self,
         source: "DiffSync",
         diff_class: Type[Diff] = Diff,
         flags: DiffSyncFlags = DiffSyncFlags.NONE,
         callback: Optional[Callable[[Text, int, int], None]] = None,
         diff: Optional[Diff] = None,
-    ):  # pylint: disable=too-many-arguments:
+    ) -> Diff:
         """Synchronize data from the given source DiffSync object into the current DiffSync object.
 
         Args:
@@ -543,6 +543,10 @@ class DiffSync:  # pylint: disable=too-many-public-methods
             callback (function): Function with parameters (stage, current, total), to be called at intervals as the
                 calculation of the diff and subsequent sync proceed.
             diff (Diff): An existing diff to be used rather than generating a completely new diff.
+        Returns:
+            Diff: Diff between origin object and source
+        Raises:
+            DiffClassMismatch: The provided diff's class does not match the diff_class
         """
         if diff_class and diff:
             if not isinstance(diff, diff_class):
@@ -558,14 +562,16 @@ class DiffSync:  # pylint: disable=too-many-public-methods
         if result:
             self.sync_complete(source, diff, flags, syncer.base_logger)
 
-    def sync_to(
+        return diff
+
+    def sync_to(  # pylint: disable=too-many-arguments
         self,
         target: "DiffSync",
         diff_class: Type[Diff] = Diff,
         flags: DiffSyncFlags = DiffSyncFlags.NONE,
         callback: Optional[Callable[[Text, int, int], None]] = None,
         diff: Optional[Diff] = None,
-    ):  # pylint: disable=too-many-arguments
+    ) -> Diff:
         """Synchronize data from the current DiffSync object into the given target DiffSync object.
 
         Args:
@@ -575,8 +581,12 @@ class DiffSync:  # pylint: disable=too-many-public-methods
             callback (function): Function with parameters (stage, current, total), to be called at intervals as the
                 calculation of the diff and subsequent sync proceed.
             diff (Diff): An existing diff that will be used when determining what needs to be synced.
+        Returns:
+            Diff: Diff between origin object and target
+        Raises:
+            DiffClassMismatch: The provided diff's class does not match the diff_class
         """
-        target.sync_from(self, diff_class=diff_class, flags=flags, callback=callback, diff=diff)
+        return target.sync_from(self, diff_class=diff_class, flags=flags, callback=callback, diff=diff)
 
     def sync_complete(
         self,

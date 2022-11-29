@@ -42,7 +42,9 @@ def test_diffsync_diff_self_with_no_data_has_no_diffs(generic_diffsync):
 def test_diffsync_sync_self_with_no_data_is_noop(generic_diffsync):
     generic_diffsync.sync_complete = mock.Mock()
     generic_diffsync.sync_from(generic_diffsync)
-    generic_diffsync.sync_to(generic_diffsync)
+    diff = generic_diffsync.sync_to(generic_diffsync)
+    # Check if the returning Diff object has diffs
+    assert not diff.has_diffs()
     # sync_complete() should only be called if something actually changed
     assert not generic_diffsync.sync_complete.called
 
@@ -588,12 +590,13 @@ def test_diffsync_sync_to_w_diff(backend_a, backend_b):
     backend_a.diff_from = mock.Mock()
     backend_a.diff_to = mock.Mock()
     # Perform full sync
-    backend_b.sync_to(backend_a, diff=diff)
+    result_diff = backend_b.sync_to(backend_a, diff=diff)
     # Assert none of the diff methods have been called
     assert not backend_b.diff_from.called
     assert not backend_b.diff_to.called
     assert not backend_a.diff_from.called
     assert not backend_a.diff_to.called
+    assert result_diff.has_diffs()
 
 
 def test_diffsync_sync_from_w_diff(backend_a, backend_b):
