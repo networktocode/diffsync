@@ -593,7 +593,7 @@ class DiffSync:  # pylint: disable=too-many-public-methods
         source: "DiffSync",
         diff: Diff,
         flags: DiffSyncFlags = DiffSyncFlags.NONE,
-        logger: structlog.BoundLogger = None,
+        logger: Optional[structlog.BoundLogger] = None,
     ):
         """Callback triggered after a `sync_from` operation has completed and updated the model data of this instance.
 
@@ -786,7 +786,7 @@ class DiffSync:  # pylint: disable=too-many-public-methods
         return self.store.remove(obj=obj, remove_children=remove_children)
 
     def get_or_instantiate(
-        self, model: Type[DiffSyncModel], ids: Dict, attrs: Dict = None
+        self, model: Type[DiffSyncModel], ids: Dict, attrs: Optional[Dict] = None
     ) -> Tuple[DiffSyncModel, bool]:
         """Attempt to get the object with provided identifiers or instantiate it with provided identifiers and attrs.
 

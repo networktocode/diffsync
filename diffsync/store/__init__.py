@@ -134,7 +134,7 @@ class BaseStore:
         raise NotImplementedError
 
     def get_or_instantiate(
-        self, *, model: Type["DiffSyncModel"], ids: Dict, attrs: Dict = None
+        self, *, model: Type["DiffSyncModel"], ids: Dict, attrs: Optional[Dict] = None
     ) -> Tuple["DiffSyncModel", bool]:
         """Attempt to get the object with provided identifiers or instantiate it with provided identifiers and attrs.
 
