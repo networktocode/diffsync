@@ -328,7 +328,7 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
         self.base_logger.info("Sync complete")
         return changed
 
-    def sync_diff_element(self, element: DiffElement, parent_model: "DiffSyncModel" = None) -> bool:
+    def sync_diff_element(self, element: DiffElement, parent_model: Optional["DiffSyncModel"] = None) -> bool:
         """Recursively synchronize the given DiffElement and its children, if any, into the dst_diffsync.
 
         Helper method to `perform_sync`.

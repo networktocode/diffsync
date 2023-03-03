@@ -99,6 +99,10 @@ testpaths = [
     "tests"
 ]
 
+[tool.mypy]
+warn_unused_configs = true
+ignore_missing_imports = true
+
 [build-system]
 requires = ["poetry_core>=1.0.8"]
 build-backend = "poetry.core.masonry.api"
