@@ -15,7 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from collections.abc import Iterable as ABCIterable, Mapping as ABCMapping
-from typing import Callable, Iterable, List, Mapping, Optional, Tuple, Type, TYPE_CHECKING
+from typing import Callable, List, Optional, Tuple, Type, TYPE_CHECKING, Dict, Iterable
 
 import structlog  # type: ignore
 
@@ -57,7 +57,7 @@ class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
         self.total_models = len(src_diffsync) + len(dst_diffsync)
         self.logger.debug(f"Diff calculation between these two datasets will involve {self.total_models} models")
 
-    def incr_models_processed(self, delta: int = 1):
+    def incr_models_processed(self, delta: int = 1) -> None:
         """Increment self.models_processed, then call self.callback if present."""
         if delta:
             self.models_processed += delta
@@ -136,7 +136,9 @@ class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
         return diff_elements
 
     @staticmethod
-    def validate_objects_for_diff(object_pairs: Iterable[Tuple[Optional["DiffSyncModel"], Optional["DiffSyncModel"]]]):
+    def validate_objects_for_diff(
+        object_pairs: Iterable[Tuple[Optional["DiffSyncModel"], Optional["DiffSyncModel"]]]
+    ) -> None:
         """Check whether all DiffSyncModels in the given dictionary are valid for comparison to one another.
 
         Helper method for `diff_object_list`.
@@ -234,7 +236,7 @@ class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
         diff_element: DiffElement,
         src_obj: Optional["DiffSyncModel"],
         dst_obj: Optional["DiffSyncModel"],
-    ):
+    ) -> DiffElement:
         """For all children of the given DiffSyncModel pair, diff recursively, adding diffs to the given diff_element.
 
         Helper method to `calculate_diffs`, usually doesn't need to be called directly.
@@ -242,7 +244,7 @@ class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
         These helper methods work in a recursive cycle:
         diff_object_list -> diff_object_pair -> diff_child_objects -> diff_object_list -> etc.
         """
-        children_mapping: Mapping[str, str]
+        children_mapping: Dict[str, str]
         if src_obj and dst_obj:
             # Get the subset of child types common to both src_obj and dst_obj
             src_mapping = src_obj.get_children_mapping()
@@ -308,7 +310,7 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
         self.model_class: Type["DiffSyncModel"]
         self.action: Optional[str] = None
 
-    def incr_elements_processed(self, delta: int = 1):
+    def incr_elements_processed(self, delta: int = 1) -> None:
         """Increment self.elements_processed, then call self.callback if present."""
         if delta:
             self.elements_processed += delta
@@ -319,7 +321,7 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
         """Perform data synchronization based on the provided diff.
 
         Returns:
-            bool: True if any changes were actually performed, else False.
+            True if any changes were actually performed, else False.
         """
         changed = False
         self.base_logger.info("Beginning sync")
@@ -401,14 +403,14 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
         return changed
 
     def sync_model(  # pylint: disable=too-many-branches, unused-argument
-        self, src_model: Optional["DiffSyncModel"], dst_model: Optional["DiffSyncModel"], ids: Mapping, attrs: Mapping
+        self, src_model: Optional["DiffSyncModel"], dst_model: Optional["DiffSyncModel"], ids: Dict, attrs: Dict
     ) -> Tuple[bool, Optional["DiffSyncModel"]]:
         """Create/update/delete the current DiffSyncModel with current ids/attrs, and update self.status and self.message.
 
         Helper method to `sync_diff_element`.
 
         Returns:
-            tuple: (changed, model) where model may be None if an error occurred
+            (changed, model) where model may be None if an error occurred
         """
         if self.action is None:
             status = DiffSyncStatus.SUCCESS
@@ -451,7 +453,7 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
 
         return (True, dst_model)
 
-    def log_sync_status(self, action: Optional[str], status: DiffSyncStatus, message: str):
+    def log_sync_status(self, action: Optional[str], status: DiffSyncStatus, message: str) -> None:
         """Log the current sync status at the appropriate verbosity with appropriate context.
 
         Helper method to `sync_diff_element`/`sync_model`.

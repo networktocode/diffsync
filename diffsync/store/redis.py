@@ -2,7 +2,7 @@
 import copy
 import uuid
 from pickle import loads, dumps  # nosec
-from typing import List, Mapping, Text, Type, Union, TYPE_CHECKING, Set
+from typing import List, Type, Union, TYPE_CHECKING, Set, Any, Optional, Dict
 
 try:
     from redis import Redis
@@ -23,7 +23,16 @@ REDIS_DIFFSYNC_ROOT_LABEL = "diffsync"
 class RedisStore(BaseStore):
     """RedisStore class."""
 
-    def __init__(self, *args, store_id=None, host=None, port=6379, url=None, db=0, **kwargs):
+    def __init__(
+        self,
+        *args: Any,
+        store_id: Optional[str] = None,
+        host: Optional[str] = None,
+        port: int = 6379,
+        url: Optional[str] = None,
+        db: int = 0,
+        **kwargs: Any,
+    ):
         """Init method for RedisStore."""
         super().__init__(*args, **kwargs)
 
@@ -33,11 +42,13 @@ class RedisStore(BaseStore):
         try:
             if url:
                 self._store = Redis.from_url(url, db=db)
-            else:
+            elif host:
                 self._store = Redis(host=host, port=port, db=db)
+            else:
+                raise RedisConnectionError("Neither 'host' nor 'url' were specified.")
 
             if not self._store.ping():
-                raise RedisConnectionError
+                raise RedisConnectionError()
         except RedisConnectionError:
             raise ObjectStoreException("Redis store is unavailable.") from RedisConnectionError
 
@@ -45,24 +56,24 @@ class RedisStore(BaseStore):
 
         self._store_label = f"{REDIS_DIFFSYNC_ROOT_LABEL}:{self._store_id}"
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Render store name."""
         return f"{self.name} ({self._store_id})"
 
-    def _get_object_from_redis_key(self, key):
+    def _get_object_from_redis_key(self, key: str) -> "DiffSyncModel":
         """Get the object from Redis key."""
-        try:
-            obj_result = loads(self._store.get(key))  # nosec
+        pickled_object = self._store.get(key)
+        if pickled_object:
+            obj_result = loads(pickled_object)  # nosec
             obj_result.diffsync = self.diffsync
             return obj_result
-        except TypeError as exc:
-            raise ObjectNotFound(f"{key} not present in Cache") from exc
+        raise ObjectNotFound(f"{key} not present in Cache")
 
     def get_all_model_names(self) -> Set[str]:
         """Get all the model names stored.
 
         Return:
-            Set[str]: Set of all the model names.
+            Set of all the model names.
         """
         # TODO: optimize it
         all_model_names = set()
@@ -74,11 +85,11 @@ class RedisStore(BaseStore):
 
         return all_model_names
 
-    def _get_key_for_object(self, modelname, uid):
+    def _get_key_for_object(self, modelname: str, uid: str) -> str:
         return f"{self._store_label}:{modelname}:{uid}"
 
     def get(
-        self, *, model: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]], identifier: Union[Text, Mapping]
+        self, *, model: Union[str, "DiffSyncModel", Type["DiffSyncModel"]], identifier: Union[str, Dict]
     ) -> "DiffSyncModel":
         """Get one object from the data store based on its unique id.
 
@@ -96,28 +107,28 @@ class RedisStore(BaseStore):
 
         return self._get_object_from_redis_key(self._get_key_for_object(modelname, uid))
 
-    def get_all(self, *, model: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]]) -> List["DiffSyncModel"]:
+    def get_all(self, *, model: Union[str, "DiffSyncModel", Type["DiffSyncModel"]]) -> List["DiffSyncModel"]:
         """Get all objects of a given type.
 
         Args:
             model: DiffSyncModel class or instance, or modelname string, that defines the type of the objects to retrieve
 
         Returns:
-            List[DiffSyncModel]: List of Object
+            List of Object
         """
         if isinstance(model, str):
             modelname = model
         else:
             modelname = model.get_type()
 
-        results = []
+        results: List["DiffSyncModel"] = []
         for key in self._store.scan_iter(f"{self._store_label}:{modelname}:*"):
-            results.append(self._get_object_from_redis_key(key))
+            results.append(self._get_object_from_redis_key(key))  # type: ignore[arg-type]
 
         return results
 
     def get_by_uids(
-        self, *, uids: List[Text], model: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]]
+        self, *, uids: List[str], model: Union[str, "DiffSyncModel", Type["DiffSyncModel"]]
     ) -> List["DiffSyncModel"]:
         """Get multiple objects from the store by their unique IDs/Keys and type.
 
@@ -139,11 +150,11 @@ class RedisStore(BaseStore):
 
         return results
 
-    def add(self, *, obj: "DiffSyncModel"):
+    def add(self, *, obj: "DiffSyncModel") -> None:
         """Add a DiffSyncModel object to the store.
 
         Args:
-            obj (DiffSyncModel): Object to store
+            obj: Object to store
 
         Raises:
             ObjectAlreadyExists: if a different object with the same uid is already present.
@@ -171,11 +182,11 @@ class RedisStore(BaseStore):
 
         self._store.set(object_key, dumps(obj_copy))
 
-    def update(self, *, obj: "DiffSyncModel"):
+    def update(self, *, obj: "DiffSyncModel") -> None:
         """Update a DiffSyncModel object to the store.
 
         Args:
-            obj (DiffSyncModel): Object to update
+            obj: Object to update
         """
         modelname = obj.get_type()
         uid = obj.get_unique_id()
@@ -186,7 +197,7 @@ class RedisStore(BaseStore):
 
         self._store.set(object_key, dumps(obj_copy))
 
-    def remove_item(self, modelname: str, uid: str):
+    def remove_item(self, modelname: str, uid: str) -> None:
         """Remove one item from store."""
         object_key = self._get_key_for_object(modelname, uid)
 
@@ -195,7 +206,7 @@ class RedisStore(BaseStore):
 
         self._store.delete(object_key)
 
-    def count(self, *, model: Union[Text, "DiffSyncModel", Type["DiffSyncModel"], None] = None) -> int:
+    def count(self, *, model: Union[str, "DiffSyncModel", Type["DiffSyncModel"], None] = None) -> int:
         """Returns the number of elements of a specific model, or all elements in the store if unspecified."""
         search_pattern = f"{self._store_label}:*"
         if model is not None:
