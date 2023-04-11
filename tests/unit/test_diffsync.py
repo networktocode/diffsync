@@ -973,6 +973,7 @@ def test_diffsync_sync_skip_children_on_delete(backend_a):
     extra_models.load()
     extra_device = extra_models.device(name="nyc-spine3", site_name="nyc", role="spine")
     extra_device.model_flags |= DiffSyncModelFlags.SKIP_CHILDREN_ON_DELETE
+    extra_device.model_flags |= DiffSyncModelFlags.NATURAL_DELETION_ORDER
     extra_models.get(extra_models.site, "nyc").add_child(extra_device)
     extra_models.add(extra_device)
     extra_interface = extra_models.interface(name="eth0", device_name="nyc-spine3")

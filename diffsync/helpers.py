@@ -361,11 +361,14 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
             dst_model = None
 
         natural_deletion_order = False
+        skip_children = False
+        # Set up flag booleans
         if dst_model:
             natural_deletion_order = bool(dst_model.model_flags & DiffSyncModelFlags.NATURAL_DELETION_ORDER)
+            skip_children = bool(dst_model.model_flags & DiffSyncModelFlags.SKIP_CHILDREN_ON_DELETE)
 
         changed = False
-        if natural_deletion_order and self.action == DiffSyncActions.DELETE:
+        if natural_deletion_order and self.action == DiffSyncActions.DELETE and not skip_children:
             for child in element.get_children():
                 changed |= self.sync_diff_element(child, parent_model=dst_model)
 
@@ -384,7 +387,6 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
             if parent_model:
                 parent_model.remove_child(dst_model)
 
-            skip_children = bool(dst_model.model_flags & DiffSyncModelFlags.SKIP_CHILDREN_ON_DELETE)
             self.dst_diffsync.remove(dst_model, remove_children=skip_children)
 
             if skip_children:
