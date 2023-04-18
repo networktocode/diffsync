@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.8.0 - 2023-04-18
+
+### Added
+
+- #182 - Added `get_or_add_model_instance()` and `update_or_add_model_instance()` APIs.
+- #189 - Added note in `README.md` about running `invoke tests`.
+- #190 - Added note in `README.md` about running `invoke build`.
+
+### Changed
+
+- #77/#188 - `sync_from()` and `sync_to()` now return the `Diff` that was applied.
+- #211 - Loosened `packaging` and `structlog` library dependency constraints for broader compatibility.
+
 ## v1.7.0 - 2022-11-03
 
 ### Changed
@@ -10,7 +23,7 @@
 ### Added
 
 - #174 - Add methods to load data from dictionary and enable tree traversal
-- #174 - Add a get_or_none method to the DiffSync class
+- #174 - Add a `get_or_none` method to the DiffSync class
 - #168 - Add 'skip' counter to diff.summary()
 - #169/#170 - Add documentation about model processing order
 - #121/#140 - Add and configure renovate
