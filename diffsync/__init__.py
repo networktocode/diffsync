@@ -526,14 +526,14 @@ class DiffSync:  # pylint: disable=too-many-public-methods
     # Synchronization between DiffSync instances
     # ------------------------------------------------------------------------------
 
-    def sync_from(
+    def sync_from(  # pylint: disable=too-many-arguments
         self,
         source: "DiffSync",
         diff_class: Type[Diff] = Diff,
         flags: DiffSyncFlags = DiffSyncFlags.NONE,
         callback: Optional[Callable[[Text, int, int], None]] = None,
         diff: Optional[Diff] = None,
-    ):  # pylint: disable=too-many-arguments:
+    ) -> Diff:
         """Synchronize data from the given source DiffSync object into the current DiffSync object.
 
         Args:
@@ -543,6 +543,10 @@ class DiffSync:  # pylint: disable=too-many-public-methods
             callback (function): Function with parameters (stage, current, total), to be called at intervals as the
                 calculation of the diff and subsequent sync proceed.
             diff (Diff): An existing diff to be used rather than generating a completely new diff.
+        Returns:
+            Diff: Diff between origin object and source
+        Raises:
+            DiffClassMismatch: The provided diff's class does not match the diff_class
         """
         if diff_class and diff:
             if not isinstance(diff, diff_class):
@@ -558,14 +562,16 @@ class DiffSync:  # pylint: disable=too-many-public-methods
         if result:
             self.sync_complete(source, diff, flags, syncer.base_logger)
 
-    def sync_to(
+        return diff
+
+    def sync_to(  # pylint: disable=too-many-arguments
         self,
         target: "DiffSync",
         diff_class: Type[Diff] = Diff,
         flags: DiffSyncFlags = DiffSyncFlags.NONE,
         callback: Optional[Callable[[Text, int, int], None]] = None,
         diff: Optional[Diff] = None,
-    ):  # pylint: disable=too-many-arguments
+    ) -> Diff:
         """Synchronize data from the current DiffSync object into the given target DiffSync object.
 
         Args:
@@ -575,15 +581,19 @@ class DiffSync:  # pylint: disable=too-many-public-methods
             callback (function): Function with parameters (stage, current, total), to be called at intervals as the
                 calculation of the diff and subsequent sync proceed.
             diff (Diff): An existing diff that will be used when determining what needs to be synced.
+        Returns:
+            Diff: Diff between origin object and target
+        Raises:
+            DiffClassMismatch: The provided diff's class does not match the diff_class
         """
-        target.sync_from(self, diff_class=diff_class, flags=flags, callback=callback, diff=diff)
+        return target.sync_from(self, diff_class=diff_class, flags=flags, callback=callback, diff=diff)
 
     def sync_complete(
         self,
         source: "DiffSync",
         diff: Diff,
         flags: DiffSyncFlags = DiffSyncFlags.NONE,
-        logger: structlog.BoundLogger = None,
+        logger: Optional[structlog.BoundLogger] = None,
     ):
         """Callback triggered after a `sync_from` operation has completed and updated the model data of this instance.
 
@@ -776,7 +786,7 @@ class DiffSync:  # pylint: disable=too-many-public-methods
         return self.store.remove(obj=obj, remove_children=remove_children)
 
     def get_or_instantiate(
-        self, model: Type[DiffSyncModel], ids: Dict, attrs: Dict = None
+        self, model: Type[DiffSyncModel], ids: Dict, attrs: Optional[Dict] = None
     ) -> Tuple[DiffSyncModel, bool]:
         """Attempt to get the object with provided identifiers or instantiate it with provided identifiers and attrs.
 
@@ -790,18 +800,40 @@ class DiffSync:  # pylint: disable=too-many-public-methods
         """
         return self.store.get_or_instantiate(model=model, ids=ids, attrs=attrs)
 
+    def get_or_add_model_instance(self, obj: DiffSyncModel) -> Tuple[DiffSyncModel, bool]:
+        """Attempt to get the object with provided obj identifiers or instantiate obj.
+
+        Args:
+            obj: An obj of the DiffSyncModel to get or add.
+
+        Returns:
+            Provides the existing or new object and whether it was created or not.
+        """
+        return self.store.get_or_add_model_instance(obj=obj)
+
     def update_or_instantiate(self, model: Type[DiffSyncModel], ids: Dict, attrs: Dict) -> Tuple[DiffSyncModel, bool]:
         """Attempt to update an existing object with provided ids/attrs or instantiate it with provided identifiers and attrs.
 
         Args:
-            model (DiffSyncModel): The DiffSyncModel to get or create.
-            ids (Dict): Identifiers for the DiffSyncModel to get or create with.
+            model (DiffSyncModel): The DiffSyncModel to update or create.
+            ids (Dict): Identifiers for the DiffSyncModel to update or create with.
             attrs (Dict): Attributes when creating/updating an object if it doesn't exist. Pass in empty dict, if no specific attrs.
 
         Returns:
             Tuple[DiffSyncModel, bool]: Provides the existing or new object and whether it was created or not.
         """
         return self.store.update_or_instantiate(model=model, ids=ids, attrs=attrs)
+
+    def update_or_add_model_instance(self, obj: DiffSyncModel) -> Tuple[DiffSyncModel, bool]:
+        """Attempt to update an existing object with provided obj ids/attrs or instantiate obj.
+
+        Args:
+            instance: An instance of the DiffSyncModel to update or create.
+
+        Returns:
+            Provides the existing or new object and whether it was created or not.
+        """
+        return self.store.update_or_add_model_instance(obj=obj)
 
     def count(self, model: Union[Text, "DiffSyncModel", Type["DiffSyncModel"], None] = None):
         """Count how many objects of one model type exist in the backend store.

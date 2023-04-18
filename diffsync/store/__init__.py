@@ -134,7 +134,7 @@ class BaseStore:
         raise NotImplementedError
 
     def get_or_instantiate(
-        self, *, model: Type["DiffSyncModel"], ids: Dict, attrs: Dict = None
+        self, *, model: Type["DiffSyncModel"], ids: Dict, attrs: Optional[Dict] = None
     ) -> Tuple["DiffSyncModel", bool]:
         """Attempt to get the object with provided identifiers or instantiate it with provided identifiers and attrs.
 
@@ -158,6 +158,24 @@ class BaseStore:
             created = True
 
         return obj, created
+
+    def get_or_add_model_instance(self, obj: "DiffSyncModel") -> Tuple["DiffSyncModel", bool]:
+        """Attempt to get the object with provided obj identifiers or instantiate obj.
+
+        Args:
+            obj: An obj of the DiffSyncModel to get or add.
+
+        Returns:
+            Provides the existing or new object and whether it was added or not.
+        """
+        model = obj.get_type()
+        ids = obj.get_unique_id()
+
+        try:
+            return self.get(model=model, identifier=ids), False
+        except ObjectNotFound:
+            self.add(obj=obj)
+            return obj, True
 
     def update_or_instantiate(
         self, *, model: Type["DiffSyncModel"], ids: Dict, attrs: Dict
@@ -187,6 +205,33 @@ class BaseStore:
                 setattr(obj, attr, value)
 
         return obj, created
+
+    def update_or_add_model_instance(self, obj: "DiffSyncModel") -> Tuple["DiffSyncModel", bool]:
+        """Attempt to update an existing object with provided ids/attrs or instantiate obj.
+
+        Args:
+            instance: An instance of the DiffSyncModel to update or create.
+
+        Returns:
+            Provides the existing or new object and whether it was added or not.
+        """
+        model = obj.get_type()
+        ids = obj.get_unique_id()
+        attrs = obj.get_attrs()
+
+        added = False
+        try:
+            obj = self.get(model=model, identifier=ids)
+        except ObjectNotFound:
+            # Add the object to the diffsync instance
+            self.add(obj=obj)
+            added = True
+
+        # Update existing obj with attrs
+        for attr, value in attrs.items():
+            setattr(obj, attr, value)
+
+        return obj, added
 
     def _get_object_class_and_model(
         self, model: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]]
