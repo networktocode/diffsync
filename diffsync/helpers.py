@@ -350,11 +350,7 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
         attrs = diffs.get("+", {})
 
         # Retrieve Source Object to get its flags
-        src_model: Optional["DiffSyncModel"]
-        try:
-            src_model = self.src_diffsync.get(self.model_class, ids)
-        except ObjectNotFound:
-            src_model = None
+        src_model = self.src_diffsync.get_or_none(self.model_class, ids)
 
         # Retrieve Dest (and primary) Object
         dst_model: Optional["DiffSyncModel"]
@@ -364,6 +360,18 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
         except ObjectNotFound:
             dst_model = None
 
+        natural_deletion_order = False
+        skip_children = False
+        # Set up flag booleans
+        if dst_model:
+            natural_deletion_order = bool(dst_model.model_flags & DiffSyncModelFlags.NATURAL_DELETION_ORDER)
+            skip_children = bool(dst_model.model_flags & DiffSyncModelFlags.SKIP_CHILDREN_ON_DELETE)
+
+        changed = False
+        if natural_deletion_order and self.action == DiffSyncActions.DELETE and not skip_children:
+            for child in element.get_children():
+                changed |= self.sync_diff_element(child, parent_model=dst_model)
+
         changed, modified_model = self.sync_model(src_model=src_model, dst_model=dst_model, ids=ids, attrs=attrs)
         dst_model = modified_model or dst_model
 
@@ -371,7 +379,7 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
             self.logger.warning("No object resulted from sync, will not process child objects.")
             return changed
 
-        if self.action == DiffSyncActions.CREATE:  # type: ignore
+        if self.action == DiffSyncActions.CREATE:
             if parent_model:
                 parent_model.add_child(dst_model)
             self.dst_diffsync.add(dst_model)
@@ -379,7 +387,6 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
             if parent_model:
                 parent_model.remove_child(dst_model)
 
-            skip_children = bool(dst_model.model_flags & DiffSyncModelFlags.SKIP_CHILDREN_ON_DELETE)
             self.dst_diffsync.remove(dst_model, remove_children=skip_children)
 
             if skip_children:
@@ -387,8 +394,9 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
 
         self.incr_elements_processed()
 
-        for child in element.get_children():
-            changed |= self.sync_diff_element(child, parent_model=dst_model)
+        if not natural_deletion_order:
+            for child in element.get_children():
+                changed |= self.sync_diff_element(child, parent_model=dst_model)
 
         return changed
 

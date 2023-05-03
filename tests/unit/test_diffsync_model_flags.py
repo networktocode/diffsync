@@ -14,9 +14,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from typing import List
 
 import pytest
 
+from diffsync import DiffSync, DiffSyncModel
 from diffsync.enum import DiffSyncModelFlags
 from diffsync.exceptions import ObjectNotFound
 
@@ -111,3 +113,52 @@ def test_diffsync_diff_with_ignore_flag_on_target_models(backend_a, backend_a_mi
     diff = backend_a.diff_from(backend_a_minus_some_models)
     print(diff.str())  # for debugging of any failure
     assert not diff.has_diffs()
+
+
+def test_diffsync_diff_with_natural_deletion_order():
+    # This list will contain the order in which the delete methods were called
+    call_order = []
+
+    class TestModelChild(DiffSyncModel):  # pylint: disable=missing-class-docstring
+        _modelname = "child"
+        _identifiers = ("name",)
+
+        name: str
+
+        def delete(self):
+            call_order.append(self.name)
+            return super().delete()
+
+    class TestModelParent(DiffSyncModel):  # pylint: disable=missing-class-docstring
+        _modelname = "parent"
+        _identifiers = ("name",)
+        _children = {"child": "children"}
+
+        name: str
+        children: List[TestModelChild] = []
+
+        def delete(self):
+            call_order.append(self.name)
+            return super().delete()
+
+    class TestBackend(DiffSync):  # pylint: disable=missing-class-docstring
+        top_level = ["parent"]
+
+        parent = TestModelParent
+        child = TestModelChild
+
+        def load(self):
+            parent = self.parent(name="Test-Parent")
+            parent.model_flags |= DiffSyncModelFlags.NATURAL_DELETION_ORDER
+            self.add(parent)
+            child = self.child(name="Test-Child")
+            parent.add_child(child)
+            self.add(child)
+
+    source = TestBackend()
+    source.load()
+    destination = TestBackend()
+    destination.load()
+    source.remove(source.get("parent", {"name": "Test-Parent"}), remove_children=True)
+    source.sync_to(destination)
+    assert call_order == ["Test-Child", "Test-Parent"]
