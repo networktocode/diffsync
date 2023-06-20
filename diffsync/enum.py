@@ -104,3 +104,10 @@ class DiffSyncActions:  # pylint: disable=too-few-public-methods
     DELETE = "delete"
     SKIP = "skip"
     NO_CHANGE = None
+
+
+class DiffSyncFieldType(enum.Enum):
+    """Enum that details which type of field a mode field is."""
+    ATTRIBUTE = "attribute"
+    IDENTIFIER = "identifier"
+    CHILDREN = "children"

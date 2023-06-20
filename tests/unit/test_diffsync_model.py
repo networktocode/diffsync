@@ -15,12 +15,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from typing import List
+from typing import List, Annotated
 
 import pytest
 
 from diffsync import DiffSyncModel
-from diffsync.enum import DiffSyncModelFlags
+from diffsync.enum import DiffSyncModelFlags, DiffSyncFieldType
 from diffsync.exceptions import ObjectStoreWrongType, ObjectAlreadyExists, ObjectNotFound
 
 from .conftest import Device, Interface
@@ -262,16 +262,6 @@ def test_diffsync_model_subclass_validation():
 
     with pytest.raises(AttributeError) as excinfo:
 
-        class BadIdentifier(DiffSyncModel):
-            """Model with an _identifiers referencing a nonexistent field."""
-
-            _identifiers = ("name",)
-
-    assert "_identifiers" in str(excinfo.value)
-    assert "name" in str(excinfo.value)
-
-    with pytest.raises(AttributeError) as excinfo:
-
         class BadShortname(DiffSyncModel):
             """Model with a _shortname referencing a nonexistent field."""
 
@@ -283,78 +273,6 @@ def test_diffsync_model_subclass_validation():
     assert "_shortname" in str(excinfo.value)
     assert "short_name" in str(excinfo.value)
 
-    with pytest.raises(AttributeError) as excinfo:
-
-        class BadAttributes(DiffSyncModel):
-            """Model with _attributes referencing a nonexistent field."""
-
-            _identifiers = ("name",)
-            _shortname = ("short_name",)
-            _attributes = ("my_attr",)
-
-            name: str
-            # Note that short_name doesn't have a type annotation - making sure this works too
-            short_name = "short_name"
-
-    assert "_attributes" in str(excinfo.value)
-    assert "my_attr" in str(excinfo.value)
-
-    with pytest.raises(AttributeError) as excinfo:
-
-        class BadChildren(DiffSyncModel):
-            """Model with _children referencing a nonexistent field."""
-
-            _identifiers = ("name",)
-            _shortname = ("short_name",)
-            _attributes = ("my_attr",)
-            _children = {"device": "devices"}
-
-            name: str
-            short_name = "short_name"
-            my_attr: int = 0
-
-    assert "_children" in str(excinfo.value)
-    assert "devices" in str(excinfo.value)
-
-    with pytest.raises(AttributeError) as excinfo:
-
-        class IdAttrOverlap(DiffSyncModel):
-            """Model including a field in both _identifiers and _attributes."""
-
-            _identifiers = ("name",)
-            _attributes = ("name",)
-
-            name: str
-
-    assert "both _identifiers and _attributes" in str(excinfo.value)
-    assert "name" in str(excinfo.value)
-
-    with pytest.raises(AttributeError) as excinfo:
-
-        class IdChildOverlap(DiffSyncModel):
-            """Model including a field in both _identifiers and _children."""
-
-            _identifiers = ("names",)
-            _children = {"name": "names"}
-
-            names: str
-
-    assert "both _identifiers and _children" in str(excinfo.value)
-    assert "names" in str(excinfo.value)
-
-    with pytest.raises(AttributeError) as excinfo:
-
-        class AttrChildOverlap(DiffSyncModel):
-            """Model including a field in both _attributes and _children."""
-
-            _attributes = ("devices",)
-            _children = {"device": "devices"}
-
-            devices: List
-
-    assert "both _attributes and _children" in str(excinfo.value)
-    assert "devices" in str(excinfo.value)
-
 
 def test_diffsync_model_subclass_inheritance():
     """Verify that the class validation works properly even with a hierarchy of subclasses."""
@@ -365,24 +283,19 @@ def test_diffsync_model_subclass_inheritance():
         """A model class representing a single Greek letter."""
 
         _modelname = "alpha"
-        _identifiers = ("name",)
         _shortname = ("name",)
-        _attributes = ("letter",)
-        _children = {"number": "numbers"}
 
-        name: str
-        letter: str
-        numbers: List = []
+        name: Annotated[str, DiffSyncFieldType.IDENTIFIER]
+        letter: Annotated[str, DiffSyncFieldType.ATTRIBUTE]
+        numbers: Annotated[List, DiffSyncFieldType.CHILDREN, "number"] = []
 
     class Beta(Alpha):
         """A model class representing a single Greek letter in both English and Spanish."""
 
         _modelname = "beta"
-        _identifiers = ("name", "nombre")  # reference parent field, as well as a new field of our own
-        _attributes = ("letter", "letra")  # reference parent field, as well as a new field of our own
 
-        nombre: str
-        letra: str
+        nombre: Annotated[str, DiffSyncFieldType.IDENTIFIER]
+        letra: Annotated[str, DiffSyncFieldType.ATTRIBUTE]
 
     beta = Beta(name="Beta", letter="β", nombre="Beta", letra="β")
     assert beta.get_unique_id() == "Beta__Beta"

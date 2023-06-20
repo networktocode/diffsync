@@ -1,8 +1,8 @@
 """DiffSyncModel subclasses for Nautobot-PeeringDB data sync."""
-from typing import Optional, Union, List
+from typing import Optional, Union, List, Annotated
 from uuid import UUID
 
-from diffsync import DiffSyncModel
+from diffsync import DiffSyncModel, DiffSyncFieldType
 
 
 class RegionModel(DiffSyncModel):
@@ -10,22 +10,15 @@ class RegionModel(DiffSyncModel):
 
     # Metadata about this model
     _modelname = "region"
-    _identifiers = ("name",)
-    _attributes = (
-        "slug",
-        "description",
-        "parent_name",
-    )
-    _children = {"site": "sites"}
 
     # Data type declarations for all identifiers and attributes
-    name: str
-    slug: str
-    description: Optional[str]
-    parent_name: Optional[str]  # may be None
-    sites: List = []
+    name: Annotated[str, DiffSyncFieldType.IDENTIFIER]
+    slug: Annotated[str, DiffSyncFieldType.ATTRIBUTE]
+    description: Annotated[Optional[str], DiffSyncFieldType.ATTRIBUTE]
+    parent_name: Annotated[Optional[str], DiffSyncFieldType.ATTRIBUTE]
+    sites: Annotated[List, DiffSyncFieldType.CHILDREN, "sites"] = []
 
-    # Not in _attributes or _identifiers, hence not included in diff calculations
+    # Not annotated, hence not included in diff calculations
     pk: Optional[UUID]
 
 
@@ -34,25 +27,15 @@ class SiteModel(DiffSyncModel):
 
     # Metadata about this model
     _modelname = "site"
-    _identifiers = ("name",)
-    # To keep this example simple, we don't include **all** attributes of a Site here. But you could!
-    _attributes = (
-        "slug",
-        "status_slug",
-        "region_name",
-        "description",
-        "latitude",
-        "longitude",
-    )
 
-    # Data type declarations for all identifiers and attributes
-    name: str
-    slug: str
-    status_slug: str
-    region_name: Optional[str]  # may be None
-    description: Optional[str]
-    latitude: Optional[float]
-    longitude: Optional[float]
+    # To keep this example simple, we don't include **all** attributes of a Site here. But you could!
+    name: Annotated[str, DiffSyncFieldType.IDENTIFIER]
+    slug: Annotated[str, DiffSyncFieldType.ATTRIBUTE]
+    status_slug: Annotated[str, DiffSyncFieldType.ATTRIBUTE]
+    region_name: Annotated[Optional[str], DiffSyncFieldType.ATTRIBUTE]
+    description: Annotated[Optional[str], DiffSyncFieldType.ATTRIBUTE]
+    latitude: Annotated[Optional[float], DiffSyncFieldType.ATTRIBUTE]
+    longitude: Annotated[Optional[float], DiffSyncFieldType.ATTRIBUTE]
 
     # Not in _attributes or _identifiers, hence not included in diff calculations
     pk: Optional[Union[UUID, int]]

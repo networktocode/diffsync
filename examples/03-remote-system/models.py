@@ -1,22 +1,19 @@
 """Main DiffSync models for example3."""
-from typing import List, Optional
-from diffsync import DiffSyncModel
+from typing import List, Optional, Annotated
+from diffsync import DiffSyncModel, DiffSyncFieldType
 
 
 class Region(DiffSyncModel):
     """Example model of a geographic region."""
 
     _modelname = "region"
-    _identifiers = ("slug",)
-    _attributes = ("name",)
 
-    # By listing country as a child to Region
+    slug: Annotated[str, DiffSyncFieldType.IDENTIFIER]
+    name: Annotated[str, DiffSyncFieldType.ATTRIBUTE]
+
+    # By annotating country as a child to Region
     # DiffSync will be able to recursively compare all regions including all their children
-    _children = {"country": "countries"}
-
-    slug: str
-    name: str
-    countries: List[str] = []
+    countries: Annotated[List[str], DiffSyncFieldType.CHILDREN, "country"] = []
 
 
 class Country(DiffSyncModel):
@@ -26,10 +23,8 @@ class Country(DiffSyncModel):
     """
 
     _modelname = "country"
-    _identifiers = ("slug",)
-    _attributes = ("name", "region", "population")
 
-    slug: str
-    name: str
-    region: str
-    population: Optional[int]
+    slug: Annotated[str, DiffSyncFieldType.IDENTIFIER]
+    name: Annotated[str, DiffSyncFieldType.ATTRIBUTE]
+    region: Annotated[str, DiffSyncFieldType.ATTRIBUTE]
+    population: Annotated[Optional[int], DiffSyncFieldType.ATTRIBUTE]

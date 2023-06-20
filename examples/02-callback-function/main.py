@@ -16,8 +16,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import random
+from typing import Annotated
 
-from diffsync import DiffSync, DiffSyncModel
+from diffsync import DiffSync, DiffSyncModel, DiffSyncFieldType
 from diffsync.logging import enable_console_logging
 
 
@@ -25,9 +26,8 @@ class Number(DiffSyncModel):
     """Simple model that consists only of a number."""
 
     _modelname = "number"
-    _identifiers = ("number",)
 
-    number: int
+    number: Annotated[int, DiffSyncFieldType.IDENTIFIER]
 
 
 class DiffSync1(DiffSync):

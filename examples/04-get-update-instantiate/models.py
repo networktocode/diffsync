@@ -14,45 +14,38 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from typing import List, Optional
-from diffsync import DiffSyncModel
+from typing import List, Optional, Annotated
+from diffsync import DiffSyncModel, DiffSyncFieldType
 
 
 class Site(DiffSyncModel):
     """Example model of a geographic Site."""
 
     _modelname = "site"
-    _identifiers = ("name",)
     _shortname = ()
-    _attributes = ()
 
-    name: str
+    name: Annotated[str, DiffSyncFieldType.IDENTIFIER]
 
 
 class Device(DiffSyncModel):
     """Example model of a network Device."""
 
     _modelname = "device"
-    _identifiers = ("name",)
-    _attributes = ()
-    _children = {"interface": "interfaces", "site": "sites"}
 
-    name: str
-    site_name: Optional[str]  # note that this attribute is NOT included in _attributes
-    role: Optional[str]  # note that this attribute is NOT included in _attributes
-    interfaces: List = []
-    sites: List = []
+    name: Annotated[str, DiffSyncFieldType.IDENTIFIER]
+    site_name: Optional[str]  # note that this attribute is NOT annotated
+    role: Optional[str]  # note that this attribute is NOT annotated
+    interfaces: Annotated[List[str], DiffSyncFieldType.CHILDREN, "interface"] = []
+    sites: Annotated[List[str], DiffSyncFieldType.CHILDREN, "site"] = []
 
 
 class Interface(DiffSyncModel):
     """Example model of a network Interface."""
 
     _modelname = "interface"
-    _identifiers = ("device_name", "name")
     _shortname = ("name",)
-    _attributes = ("description",)
 
-    name: str
-    device_name: str
+    name: Annotated[str, DiffSyncFieldType.IDENTIFIER]
+    device_name: Annotated[str, DiffSyncFieldType.IDENTIFIER]
 
-    description: Optional[str]
+    description: Annotated[Optional[str], DiffSyncFieldType.ATTRIBUTE]

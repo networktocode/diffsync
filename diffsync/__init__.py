@@ -15,14 +15,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from inspect import isclass
-from typing import Callable, ClassVar, Dict, List, Mapping, Optional, Text, Tuple, Type, Union
+from typing import Callable, ClassVar, Dict, List, Mapping, Optional, Text, Tuple, Type, Union, get_type_hints, get_args
 
 from pydantic import BaseModel, PrivateAttr
 import structlog  # type: ignore
 
 from diffsync.diff import Diff
-from diffsync.enum import DiffSyncModelFlags, DiffSyncFlags, DiffSyncStatus
-from diffsync.exceptions import DiffClassMismatch, ObjectAlreadyExists, ObjectStoreWrongType, ObjectNotFound
+from diffsync.enum import DiffSyncModelFlags, DiffSyncFlags, DiffSyncStatus, DiffSyncFieldType
+from diffsync.exceptions import (
+    DiffClassMismatch,
+    ObjectAlreadyExists,
+    ObjectStoreWrongType,
+    ObjectNotFound,
+)
 from diffsync.helpers import DiffSyncDiffer, DiffSyncSyncer
 from diffsync.store import BaseStore
 from diffsync.store.local import LocalStore
@@ -37,9 +42,6 @@ class DiffSyncModel(BaseModel):
     as model attributes and we want to avoid any ambiguity or collisions.
 
     This class has several underscore-prefixed class variables that subclasses should set as desired; see below.
-
-    NOTE: The groupings _identifiers, _attributes, and _children are mutually exclusive; any given field name can
-    be included in **at most** one of these three tuples.
     """
 
     _modelname: ClassVar[str] = "diffsyncmodel"
@@ -48,36 +50,11 @@ class DiffSyncModel(BaseModel):
     Lowercase by convention; typically corresponds to the class name, but that is not enforced.
     """
 
-    _identifiers: ClassVar[Tuple[str, ...]] = ()
-    """List of model fields which together uniquely identify an instance of this model.
-
-    This identifier MUST be globally unique among all instances of this class.
-    """
-
     _shortname: ClassVar[Tuple[str, ...]] = ()
     """Optional: list of model fields that together form a shorter identifier of an instance.
 
     This MUST be locally unique (e.g., interface shortnames MUST be unique among all interfaces on a given device),
     but does not need to be guaranteed to be globally unique among all instances.
-    """
-
-    _attributes: ClassVar[Tuple[str, ...]] = ()
-    """Optional: list of additional model fields (beyond those in `_identifiers`) that are relevant to this model.
-
-    Only the fields in `_attributes` (as well as any `_children` fields, see below) will be considered
-    for the purposes of Diff calculation.
-    A model may define additional fields (not included in `_attributes`) for its internal use;
-    a common example would be a locally significant database primary key or id value.
-
-    Note: inclusion in `_attributes` is mutually exclusive from inclusion in `_identifiers`; a field cannot be in both!
-    """
-
-    _children: ClassVar[Mapping[str, str]] = {}
-    """Optional: dict of `{_modelname: field_name}` entries describing how to store "child" models in this model.
-
-    When calculating a Diff or performing a sync, DiffSync will automatically recurse into these child models.
-
-    Note: inclusion in `_children` is mutually exclusive from inclusion in `_identifiers` or `_attributes`.
     """
 
     model_flags: DiffSyncModelFlags = DiffSyncModelFlags.NONE
@@ -106,31 +83,32 @@ class DiffSyncModel(BaseModel):
 
         Called automatically on subclass declaration.
         """
-        variables = cls.__fields__.keys()
-        # Make sure that any field referenced by name actually exists on the model
-        for attr in cls._identifiers:
-            if attr not in variables and not hasattr(cls, attr):
-                raise AttributeError(f"_identifiers {cls._identifiers} references missing or un-annotated attr {attr}")
-        for attr in cls._shortname:
-            if attr not in variables:
-                raise AttributeError(f"_shortname {cls._shortname} references missing or un-annotated attr {attr}")
-        for attr in cls._attributes:
-            if attr not in variables:
-                raise AttributeError(f"_attributes {cls._attributes} references missing or un-annotated attr {attr}")
-        for attr in cls._children.values():
-            if attr not in variables:
-                raise AttributeError(f"_children {cls._children} references missing or un-annotated attr {attr}")
+        type_hints = get_type_hints(cls, include_extras=True)
+        field_name_type_mapping = {field_type.value: [] for field_type in DiffSyncFieldType}
+        children = {}
+        for key, value in type_hints.items():
+            try:
+                field_type = value.__metadata__[0]
+            except AttributeError:
+                # In this case we aren't dealing with an actual payload field
+                continue
 
-        # Any given field can only be in one of (_identifiers, _attributes, _children)
-        id_attr_overlap = set(cls._identifiers).intersection(cls._attributes)
-        if id_attr_overlap:
-            raise AttributeError(f"Fields {id_attr_overlap} are included in both _identifiers and _attributes.")
-        id_child_overlap = set(cls._identifiers).intersection(cls._children.values())
-        if id_child_overlap:
-            raise AttributeError(f"Fields {id_child_overlap} are included in both _identifiers and _children.")
-        attr_child_overlap = set(cls._attributes).intersection(cls._children.values())
-        if attr_child_overlap:
-            raise AttributeError(f"Fields {attr_child_overlap} are included in both _attributes and _children.")
+            if field_type in [DiffSyncFieldType.IDENTIFIER, DiffSyncFieldType.ATTRIBUTE]:
+                field_name_type_mapping[field_type.value].append(key)
+            elif field_type == DiffSyncFieldType.CHILDREN:
+                actual_type, _, child_modelname = get_args(value)
+                children[child_modelname] = key
+
+        cls._identifiers = field_name_type_mapping[DiffSyncFieldType.IDENTIFIER.value]
+        cls._attributes = field_name_type_mapping[DiffSyncFieldType.ATTRIBUTE.value]
+        cls._children = children
+
+        all_field_names = cls._identifiers + cls._attributes + list(cls._children.keys())
+
+        # Make sure that any field referenced by name actually exists on the model
+        for attr in cls._shortname:
+            if attr not in all_field_names:
+                raise AttributeError(f"_shortname {cls._shortname} references missing or un-annotated attr {attr}")
 
     def __repr__(self):
         return f'{self.get_type()} "{self.get_unique_id()}"'

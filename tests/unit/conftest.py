@@ -14,11 +14,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from typing import ClassVar, List, Mapping, Optional, Tuple
+from typing import ClassVar, List, Mapping, Optional, Annotated
 
 import pytest
 
-from diffsync import DiffSync, DiffSyncModel
+from diffsync import DiffSync, DiffSyncModel, DiffSyncFieldType
 from diffsync.diff import Diff, DiffElement
 from diffsync.exceptions import ObjectNotCreated, ObjectNotUpdated, ObjectNotDeleted
 
@@ -26,7 +26,12 @@ from diffsync.exceptions import ObjectNotCreated, ObjectNotUpdated, ObjectNotDel
 @pytest.fixture
 def generic_diffsync_model():
     """Provide a generic DiffSyncModel instance."""
-    return DiffSyncModel()
+
+    # Create a subclass to ensure __init_subclass__ is called
+    class GenericDiffSyncModel(DiffSyncModel):
+        pass
+
+    return GenericDiffSyncModel()
 
 
 class ErrorProneModelMixin:
@@ -86,11 +91,9 @@ class Site(DiffSyncModel):
     """Concrete DiffSyncModel subclass representing a site or location that contains devices."""
 
     _modelname = "site"
-    _identifiers = ("name",)
-    _children = {"device": "devices"}
 
-    name: str
-    devices: List = []
+    name: Annotated[str, DiffSyncFieldType.IDENTIFIER]
+    devices: Annotated[List, DiffSyncFieldType.CHILDREN, "device"] = []
 
 
 @pytest.fixture
@@ -110,14 +113,11 @@ class Device(DiffSyncModel):
     """Concrete DiffSyncModel subclass representing a device."""
 
     _modelname = "device"
-    _identifiers = ("name",)
-    _attributes: ClassVar[Tuple[str, ...]] = ("role",)
-    _children = {"interface": "interfaces"}
 
-    name: str
-    site_name: Optional[str]  # note this is not included in _attributes
-    role: str
-    interfaces: List = []
+    name: Annotated[str, DiffSyncFieldType.IDENTIFIER]
+    site_name: Optional[str]  # note this is not annotated with a field type
+    role: Annotated[str, DiffSyncFieldType.ATTRIBUTE]
+    interfaces: Annotated[List, DiffSyncFieldType.CHILDREN, "interface"] = []
 
 
 @pytest.fixture
@@ -135,15 +135,13 @@ class Interface(DiffSyncModel):
     """Concrete DiffSyncModel subclass representing an interface."""
 
     _modelname = "interface"
-    _identifiers = ("device_name", "name")
     _shortname = ("name",)
-    _attributes = ("interface_type", "description")
 
-    device_name: str
-    name: str
+    device_name: Annotated[str, DiffSyncFieldType.IDENTIFIER]
+    name: Annotated[str, DiffSyncFieldType.IDENTIFIER]
 
-    interface_type: str = "ethernet"
-    description: Optional[str]
+    interface_type: Annotated[str, DiffSyncFieldType.ATTRIBUTE] = "ethernet"
+    description: Annotated[Optional[str], DiffSyncFieldType.ATTRIBUTE]
 
 
 @pytest.fixture
@@ -167,9 +165,8 @@ class UnusedModel(DiffSyncModel):
     """Concrete DiffSyncModel subclass that can be referenced as a class attribute but never has any data."""
 
     _modelname = "unused"
-    _identifiers = ("name",)
 
-    name: str
+    name: Annotated[str, DiffSyncFieldType.IDENTIFIER]
 
 
 class GenericBackend(DiffSync):
@@ -204,26 +201,21 @@ class GenericBackend(DiffSync):
 class SiteA(Site):
     """Extend Site with a `people` list."""
 
-    _children = {"device": "devices", "person": "people"}
-
-    people: List = []
+    people: Annotated[List, DiffSyncFieldType.CHILDREN, "person"] = []
 
 
 class DeviceA(Device):
     """Extend Device with additional data fields."""
 
-    _attributes = ("role", "tag")
-
-    tag: str = ""
+    tag: Annotated[str, DiffSyncFieldType.ATTRIBUTE] = ""
 
 
 class PersonA(DiffSyncModel):
     """Concrete DiffSyncModel subclass representing a person; only used by BackendA."""
 
     _modelname = "person"
-    _identifiers = ("name",)
 
-    name: str
+    name: Annotated[str, DiffSyncFieldType.IDENTIFIER]
 
 
 class BackendA(GenericBackend):
@@ -346,26 +338,21 @@ def exception_backend_a():
 class SiteB(Site):
     """Extend Site with a `places` list."""
 
-    _children = {"device": "devices", "place": "places"}
-
-    places: List = []
+    places: Annotated[List, DiffSyncFieldType.CHILDREN, "place"] = []
 
 
 class DeviceB(Device):
     """Extend Device with a `vlans` list."""
 
-    _attributes = ("role", "vlans")
-
-    vlans: List = []
+    vlans: Annotated[List, DiffSyncFieldType.ATTRIBUTE] = []
 
 
 class PlaceB(DiffSyncModel):
     """Concrete DiffSyncModel subclass representing a place; only used by BackendB."""
 
     _modelname = "place"
-    _identifiers = ("name",)
 
-    name: str
+    name: Annotated[str, DiffSyncFieldType.IDENTIFIER]
 
 
 class BackendB(GenericBackend):

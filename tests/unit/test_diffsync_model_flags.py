@@ -14,12 +14,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from typing import List
+from typing import List, Annotated
 
 import pytest
 
 from diffsync import DiffSync, DiffSyncModel
-from diffsync.enum import DiffSyncModelFlags
+from diffsync.enum import DiffSyncModelFlags, DiffSyncFieldType
 from diffsync.exceptions import ObjectNotFound
 
 
@@ -121,9 +121,8 @@ def test_diffsync_diff_with_natural_deletion_order():
 
     class TestModelChild(DiffSyncModel):  # pylint: disable=missing-class-docstring
         _modelname = "child"
-        _identifiers = ("name",)
 
-        name: str
+        name: Annotated[str, DiffSyncFieldType.IDENTIFIER]
 
         def delete(self):
             call_order.append(self.name)
@@ -131,11 +130,9 @@ def test_diffsync_diff_with_natural_deletion_order():
 
     class TestModelParent(DiffSyncModel):  # pylint: disable=missing-class-docstring
         _modelname = "parent"
-        _identifiers = ("name",)
-        _children = {"child": "children"}
 
-        name: str
-        children: List[TestModelChild] = []
+        name: Annotated[str, DiffSyncFieldType.IDENTIFIER]
+        children: Annotated[List[TestModelChild], DiffSyncFieldType.CHILDREN, "child"] = []
 
         def delete(self):
             call_order.append(self.name)

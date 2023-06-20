@@ -1,16 +1,14 @@
 """DiffSync models."""
-from typing import Optional
-from diffsync import DiffSyncModel
+from typing import Optional, Annotated
+from diffsync import DiffSyncModel, DiffSyncFieldType
 
 
 class Prefix(DiffSyncModel):
     """Example model of a Prefix."""
 
     _modelname = "prefix"
-    _identifiers = ("prefix",)
-    _attributes = ("vrf", "vlan_id", "tenant")
 
-    prefix: str
-    vrf: Optional[str]
-    vlan_id: Optional[int]
-    tenant: Optional[str]
+    prefix: Annotated[str, DiffSyncFieldType.IDENTIFIER]
+    vrf: Annotated[Optional[str], DiffSyncFieldType.ATTRIBUTE]
+    vlan_id: Annotated[Optional[int], DiffSyncFieldType.ATTRIBUTE]
+    tenant: Annotated[Optional[str], DiffSyncFieldType.ATTRIBUTE]
