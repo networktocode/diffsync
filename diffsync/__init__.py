@@ -15,7 +15,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from inspect import isclass
-from typing import Callable, ClassVar, Dict, List, Mapping, Optional, Text, Tuple, Type, Union
+from typing import Callable, ClassVar, Dict, List, Optional, Tuple, Type, Union, Any, Set
+from typing_extensions import Self
 
 from pydantic import BaseModel, PrivateAttr
 import structlog  # type: ignore
@@ -27,6 +28,10 @@ from diffsync.helpers import DiffSyncDiffer, DiffSyncSyncer
 from diffsync.store import BaseStore
 from diffsync.store.local import LocalStore
 from diffsync.utils import get_path, set_key, tree_string
+
+# This workaround is used because we are defining a method called `str` in our class definition, which therefore renders
+# the builtin `str` type unusable.
+StrType = str
 
 
 class DiffSyncModel(BaseModel):
@@ -72,7 +77,7 @@ class DiffSyncModel(BaseModel):
     Note: inclusion in `_attributes` is mutually exclusive from inclusion in `_identifiers`; a field cannot be in both!
     """
 
-    _children: ClassVar[Mapping[str, str]] = {}
+    _children: ClassVar[Dict[str, str]] = {}
     """Optional: dict of `{_modelname: field_name}` entries describing how to store "child" models in this model.
 
     When calculating a Diff or performing a sync, DiffSync will automatically recurse into these child models.
@@ -101,7 +106,7 @@ class DiffSyncModel(BaseModel):
         # Let us have a DiffSync as an instance variable even though DiffSync is not a Pydantic model itself.
         arbitrary_types_allowed = True
 
-    def __init_subclass__(cls):
+    def __init_subclass__(cls) -> None:
         """Validate that the various class attribute declarations correspond to actual instance fields.
 
         Called automatically on subclass declaration.
@@ -132,19 +137,19 @@ class DiffSyncModel(BaseModel):
         if attr_child_overlap:
             raise AttributeError(f"Fields {attr_child_overlap} are included in both _attributes and _children.")
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'{self.get_type()} "{self.get_unique_id()}"'
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.get_unique_id()
 
-    def dict(self, **kwargs) -> dict:
+    def dict(self, **kwargs: Any) -> Dict:
         """Convert this DiffSyncModel to a dict, excluding the diffsync field by default as it is not serializable."""
         if "exclude" not in kwargs:
             kwargs["exclude"] = {"diffsync"}
         return super().dict(**kwargs)
 
-    def json(self, **kwargs) -> str:
+    def json(self, **kwargs: Any) -> StrType:
         """Convert this DiffSyncModel to a JSON string, excluding the diffsync field by default as it is not serializable."""
         if "exclude" not in kwargs:
             kwargs["exclude"] = {"diffsync"}
@@ -152,7 +157,7 @@ class DiffSyncModel(BaseModel):
             kwargs["exclude_defaults"] = True
         return super().json(**kwargs)
 
-    def str(self, include_children: bool = True, indent: int = 0) -> str:
+    def str(self, include_children: bool = True, indent: int = 0) -> StrType:
         """Build a detailed string representation of this DiffSyncModel and optionally its children."""
         margin = " " * indent
         output = f"{margin}{self.get_type()}: {self.get_unique_id()}: {self.get_attrs()}"
@@ -172,13 +177,13 @@ class DiffSyncModel(BaseModel):
                         output += f"\n{margin}    {child_id} (ERROR: details unavailable)"
         return output
 
-    def set_status(self, status: DiffSyncStatus, message: Text = ""):
+    def set_status(self, status: DiffSyncStatus, message: StrType = "") -> None:
         """Update the status (and optionally status message) of this model in response to a create/update/delete call."""
         self._status = status
         self._status_message = message
 
     @classmethod
-    def create_base(cls, diffsync: "DiffSync", ids: Mapping, attrs: Mapping) -> Optional["DiffSyncModel"]:
+    def create_base(cls, diffsync: "DiffSync", ids: Dict, attrs: Dict) -> Optional[Self]:
         """Instantiate this class, along with any platform-specific data creation.
 
         This method is not meant to be subclassed, users should redefine create() instead.
@@ -196,7 +201,7 @@ class DiffSyncModel(BaseModel):
         return model
 
     @classmethod
-    def create(cls, diffsync: "DiffSync", ids: Mapping, attrs: Mapping) -> Optional["DiffSyncModel"]:
+    def create(cls, diffsync: "DiffSync", ids: Dict, attrs: Dict) -> Optional[Self]:
         """Instantiate this class, along with any platform-specific data creation.
 
         Subclasses must call `super().create()` or `self.create_base()`; they may wish to then override the default status information
@@ -216,7 +221,7 @@ class DiffSyncModel(BaseModel):
         """
         return cls.create_base(diffsync=diffsync, ids=ids, attrs=attrs)
 
-    def update_base(self, attrs: Mapping) -> Optional["DiffSyncModel"]:
+    def update_base(self, attrs: Dict) -> Optional[Self]:
         """Base Update method to update the attributes of this instance, along with any platform-specific data updates.
 
         This method is not meant to be subclassed, users should redefine update() instead.
@@ -234,7 +239,7 @@ class DiffSyncModel(BaseModel):
         self.set_status(DiffSyncStatus.SUCCESS, "Updated successfully")
         return self
 
-    def update(self, attrs: Mapping) -> Optional["DiffSyncModel"]:
+    def update(self, attrs: Dict) -> Optional[Self]:
         """Update the attributes of this instance, along with any platform-specific data updates.
 
         Subclasses must call `super().update()` or `self.update_base()`; they may wish to then override the default status information
@@ -252,7 +257,7 @@ class DiffSyncModel(BaseModel):
         """
         return self.update_base(attrs=attrs)
 
-    def delete_base(self) -> Optional["DiffSyncModel"]:
+    def delete_base(self) -> Optional[Self]:
         """Base delete method Delete any platform-specific data corresponding to this instance.
 
         This method is not meant to be subclassed, users should redefine delete() instead.
@@ -263,7 +268,7 @@ class DiffSyncModel(BaseModel):
         self.set_status(DiffSyncStatus.SUCCESS, "Deleted successfully")
         return self
 
-    def delete(self) -> Optional["DiffSyncModel"]:
+    def delete(self) -> Optional[Self]:
         """Delete any platform-specific data corresponding to this instance.
 
         Subclasses must call `super().delete()` or `self.delete_base()`; they may wish to then override the default status information
@@ -279,7 +284,7 @@ class DiffSyncModel(BaseModel):
         return self.delete_base()
 
     @classmethod
-    def get_type(cls) -> Text:
+    def get_type(cls) -> StrType:
         """Return the type AKA modelname of the object or the class
 
         Returns:
@@ -288,7 +293,7 @@ class DiffSyncModel(BaseModel):
         return cls._modelname
 
     @classmethod
-    def create_unique_id(cls, **identifiers) -> Text:
+    def create_unique_id(cls, **identifiers: Dict[StrType, Any]) -> StrType:
         """Construct a unique identifier for this model class.
 
         Args:
@@ -297,11 +302,11 @@ class DiffSyncModel(BaseModel):
         return "__".join(str(identifiers[key]) for key in cls._identifiers)
 
     @classmethod
-    def get_children_mapping(cls) -> Mapping[Text, Text]:
+    def get_children_mapping(cls) -> Dict[StrType, StrType]:
         """Get the mapping of types to fieldnames for child models of this model."""
         return cls._children
 
-    def get_identifiers(self) -> Mapping:
+    def get_identifiers(self) -> Dict:
         """Get a dict of all identifiers (primary keys) and their values for this object.
 
         Returns:
@@ -309,7 +314,7 @@ class DiffSyncModel(BaseModel):
         """
         return self.dict(include=set(self._identifiers))
 
-    def get_attrs(self) -> Mapping:
+    def get_attrs(self) -> Dict:
         """Get all the non-primary-key attributes or parameters for this object.
 
         Similar to Pydantic's `BaseModel.dict()` method, with the following key differences:
@@ -322,7 +327,7 @@ class DiffSyncModel(BaseModel):
         """
         return self.dict(include=set(self._attributes))
 
-    def get_unique_id(self) -> Text:
+    def get_unique_id(self) -> StrType:
         """Get the unique ID of an object.
 
         By default the unique ID is built based on all the primary keys defined in `_identifiers`.
@@ -332,7 +337,7 @@ class DiffSyncModel(BaseModel):
         """
         return self.create_unique_id(**self.get_identifiers())
 
-    def get_shortname(self) -> Text:
+    def get_shortname(self) -> StrType:
         """Get the (not guaranteed-unique) shortname of an object, if any.
 
         By default the shortname is built based on all the keys defined in `_shortname`.
@@ -345,11 +350,11 @@ class DiffSyncModel(BaseModel):
             return "__".join([str(getattr(self, key)) for key in self._shortname])
         return self.get_unique_id()
 
-    def get_status(self) -> Tuple[DiffSyncStatus, Text]:
+    def get_status(self) -> Tuple[DiffSyncStatus, StrType]:
         """Get the status of the last create/update/delete operation on this object, and any associated message."""
-        return (self._status, self._status_message)
+        return self._status, self._status_message
 
-    def add_child(self, child: "DiffSyncModel"):
+    def add_child(self, child: "DiffSyncModel") -> None:
         """Add a child reference to an object.
 
         The child object isn't stored, only its unique id.
@@ -373,7 +378,7 @@ class DiffSyncModel(BaseModel):
             raise ObjectAlreadyExists(f"Already storing a {child_type} with unique_id {child.get_unique_id()}", child)
         childs.append(child.get_unique_id())
 
-    def remove_child(self, child: "DiffSyncModel"):
+    def remove_child(self, child: "DiffSyncModel") -> None:
         """Remove a child reference from an object.
 
         The name of the storage attribute is defined in `_children` per object type.
@@ -404,13 +409,15 @@ class DiffSync:  # pylint: disable=too-many-public-methods
     # modelname1 = MyModelClass1
     # modelname2 = MyModelClass2
 
-    type: ClassVar[Optional[str]] = None
+    type: Optional[str] = None
     """Type of the object, will default to the name of the class if not provided."""
 
     top_level: ClassVar[List[str]] = []
     """List of top-level modelnames to begin from when diffing or synchronizing."""
 
-    def __init__(self, name=None, internal_storage_engine=LocalStore):
+    def __init__(
+        self, name: Optional[str] = None, internal_storage_engine: Union[Type[BaseStore], BaseStore] = LocalStore
+    ) -> None:
         """Generic initialization function.
 
         Subclasses should be careful to call super().__init__() if they override this method.
@@ -429,7 +436,7 @@ class DiffSync:  # pylint: disable=too-many-public-methods
         # If the name has not been provided, use the type as the name
         self.name = name if name else self.type
 
-    def __init_subclass__(cls):
+    def __init_subclass__(cls) -> None:
         """Validate that references to specific DiffSyncModels use the correct modelnames.
 
         Called automatically on subclass declaration.
@@ -448,16 +455,16 @@ class DiffSync:  # pylint: disable=too-many-public-methods
             if not isclass(value) or not issubclass(value, DiffSyncModel):
                 raise AttributeError(f'top_level references attribute "{name}" but it is not a DiffSyncModel subclass!')
 
-    def __str__(self):
+    def __str__(self) -> StrType:
         """String representation of a DiffSync."""
         if self.type != self.name:
             return f'{self.type} "{self.name}"'
         return self.type
 
-    def __repr__(self):
+    def __repr__(self) -> StrType:
         return f"<{str(self)}>"
 
-    def __len__(self):
+    def __len__(self) -> int:
         """Total number of elements stored."""
         return self.store.count()
 
@@ -481,11 +488,11 @@ class DiffSync:  # pylint: disable=too-many-public-methods
                 value_order.append(item)
         return value_order
 
-    def load(self):
+    def load(self) -> None:
         """Load all desired data from whatever backend data source into this instance."""
         # No-op in this generic class
 
-    def dict(self, exclude_defaults: bool = True, **kwargs) -> Mapping:
+    def dict(self, exclude_defaults: bool = True, **kwargs: Any) -> Dict[str, Dict[str, Dict]]:
         """Represent the DiffSync contents as a dict, as if it were a Pydantic model."""
         data: Dict[str, Dict[str, Dict]] = {}
         for modelname in self.store.get_all_model_names():
@@ -494,7 +501,7 @@ class DiffSync:  # pylint: disable=too-many-public-methods
                 data[obj.get_type()][obj.get_unique_id()] = obj.dict(exclude_defaults=exclude_defaults, **kwargs)
         return data
 
-    def str(self, indent: int = 0) -> str:
+    def str(self, indent: int = 0) -> StrType:
         """Build a detailed string representation of this DiffSync."""
         margin = " " * indent
         output = ""
@@ -510,7 +517,7 @@ class DiffSync:  # pylint: disable=too-many-public-methods
                     output += "\n" + model.str(indent=indent + 2)
         return output
 
-    def load_from_dict(self, data: Dict):
+    def load_from_dict(self, data: Dict) -> None:
         """The reverse of `dict` method, taking a dictionary and loading into the inventory.
 
         Args:
@@ -531,20 +538,20 @@ class DiffSync:  # pylint: disable=too-many-public-methods
         source: "DiffSync",
         diff_class: Type[Diff] = Diff,
         flags: DiffSyncFlags = DiffSyncFlags.NONE,
-        callback: Optional[Callable[[Text, int, int], None]] = None,
+        callback: Optional[Callable[[StrType, int, int], None]] = None,
         diff: Optional[Diff] = None,
     ) -> Diff:
         """Synchronize data from the given source DiffSync object into the current DiffSync object.
 
         Args:
-            source (DiffSync): object to sync data from into this one
-            diff_class (class): Diff or subclass thereof to use to calculate the diffs to use for synchronization
-            flags (DiffSyncFlags): Flags influencing the behavior of this sync.
-            callback (function): Function with parameters (stage, current, total), to be called at intervals as the
-                calculation of the diff and subsequent sync proceed.
-            diff (Diff): An existing diff to be used rather than generating a completely new diff.
+            source: object to sync data from into this one
+            diff_class: Diff or subclass thereof to use to calculate the diffs to use for synchronization
+            flags: Flags influencing the behavior of this sync.
+            callback: Function with parameters (stage, current, total), to be called at intervals as the calculation of
+                the diff and subsequent sync proceed.
+            diff: An existing diff to be used rather than generating a completely new diff.
         Returns:
-            Diff: Diff between origin object and source
+            Diff between origin object and source
         Raises:
             DiffClassMismatch: The provided diff's class does not match the diff_class
         """
@@ -569,20 +576,20 @@ class DiffSync:  # pylint: disable=too-many-public-methods
         target: "DiffSync",
         diff_class: Type[Diff] = Diff,
         flags: DiffSyncFlags = DiffSyncFlags.NONE,
-        callback: Optional[Callable[[Text, int, int], None]] = None,
+        callback: Optional[Callable[[StrType, int, int], None]] = None,
         diff: Optional[Diff] = None,
     ) -> Diff:
         """Synchronize data from the current DiffSync object into the given target DiffSync object.
 
         Args:
-            target (DiffSync): object to sync data into from this one.
-            diff_class (class): Diff or subclass thereof to use to calculate the diffs to use for synchronization
-            flags (DiffSyncFlags): Flags influencing the behavior of this sync.
-            callback (function): Function with parameters (stage, current, total), to be called at intervals as the
-                calculation of the diff and subsequent sync proceed.
-            diff (Diff): An existing diff that will be used when determining what needs to be synced.
+            target: object to sync data into from this one.
+            diff_class: Diff or subclass thereof to use to calculate the diffs to use for synchronization
+            flags: Flags influencing the behavior of this sync.
+            callback: Function with parameters (stage, current, total), to be called at intervals as the calculation of
+                the diff and subsequent sync proceed.
+            diff: An existing diff that will be used when determining what needs to be synced.
         Returns:
-            Diff: Diff between origin object and target
+            Diff between origin object and target
         Raises:
             DiffClassMismatch: The provided diff's class does not match the diff_class
         """
@@ -594,7 +601,7 @@ class DiffSync:  # pylint: disable=too-many-public-methods
         diff: Diff,
         flags: DiffSyncFlags = DiffSyncFlags.NONE,
         logger: Optional[structlog.BoundLogger] = None,
-    ):
+    ) -> None:
         """Callback triggered after a `sync_from` operation has completed and updated the model data of this instance.
 
         Note that this callback is **only** triggered if the sync actually resulted in data changes. If there are no
@@ -619,15 +626,15 @@ class DiffSync:  # pylint: disable=too-many-public-methods
         source: "DiffSync",
         diff_class: Type[Diff] = Diff,
         flags: DiffSyncFlags = DiffSyncFlags.NONE,
-        callback: Optional[Callable[[Text, int, int], None]] = None,
+        callback: Optional[Callable[[StrType, int, int], None]] = None,
     ) -> Diff:
         """Generate a Diff describing the difference from the other DiffSync to this one.
 
         Args:
-            source (DiffSync): Object to diff against.
-            diff_class (class): Diff or subclass thereof to use for diff calculation and storage.
-            flags (DiffSyncFlags): Flags influencing the behavior of this diff operation.
-            callback (function): Function with parameters (stage, current, total), to be called at intervals as the
+            source: Object to diff against.
+            diff_class: Diff or subclass thereof to use for diff calculation and storage.
+            flags: Flags influencing the behavior of this diff operation.
+            callback: Function with parameters (stage, current, total), to be called at intervals as the
                 calculation of the diff proceeds.
         """
         differ = DiffSyncDiffer(
@@ -640,15 +647,15 @@ class DiffSync:  # pylint: disable=too-many-public-methods
         target: "DiffSync",
         diff_class: Type[Diff] = Diff,
         flags: DiffSyncFlags = DiffSyncFlags.NONE,
-        callback: Optional[Callable[[Text, int, int], None]] = None,
+        callback: Optional[Callable[[StrType, int, int], None]] = None,
     ) -> Diff:
         """Generate a Diff describing the difference from this DiffSync to another one.
 
         Args:
-            target (DiffSync): Object to diff against.
-            diff_class (class): Diff or subclass thereof to use for diff calculation and storage.
-            flags (DiffSyncFlags): Flags influencing the behavior of this diff operation.
-            callback (function): Function with parameters (stage, current, total), to be called at intervals as the
+            target: Object to diff against.
+            diff_class: Diff or subclass thereof to use for diff calculation and storage.
+            flags: Flags influencing the behavior of this diff operation.
+            callback: Function with parameters (stage, current, total), to be called at intervals as the
                 calculation of the diff proceeds.
         """
         return target.diff_from(self, diff_class=diff_class, flags=flags, callback=callback)
@@ -657,16 +664,16 @@ class DiffSync:  # pylint: disable=too-many-public-methods
     # Object Storage Management
     # ------------------------------------------------------------------------------
 
-    def get_all_model_names(self):
+    def get_all_model_names(self) -> Set[StrType]:
         """Get all model names.
 
         Returns:
-            List[str]: List of model names
+            List of model names
         """
         return self.store.get_all_model_names()
 
     def get(
-        self, obj: Union[Text, DiffSyncModel, Type[DiffSyncModel]], identifier: Union[Text, Mapping]
+        self, obj: Union[StrType, DiffSyncModel, Type[DiffSyncModel]], identifier: Union[StrType, Dict]
     ) -> DiffSyncModel:
         """Get one object from the data store based on its unique id.
 
@@ -681,7 +688,7 @@ class DiffSync:  # pylint: disable=too-many-public-methods
         return self.store.get(model=obj, identifier=identifier)
 
     def get_or_none(
-        self, obj: Union[Text, DiffSyncModel, Type[DiffSyncModel]], identifier: Union[Text, Mapping]
+        self, obj: Union[StrType, DiffSyncModel, Type[DiffSyncModel]], identifier: Union[StrType, Dict]
     ) -> Optional[DiffSyncModel]:
         """Get one object from the data store based on its unique id or get a None
 
@@ -700,19 +707,19 @@ class DiffSync:  # pylint: disable=too-many-public-methods
         except ObjectNotFound:
             return None
 
-    def get_all(self, obj: Union[Text, DiffSyncModel, Type[DiffSyncModel]]) -> List[DiffSyncModel]:
+    def get_all(self, obj: Union[StrType, DiffSyncModel, Type[DiffSyncModel]]) -> List[DiffSyncModel]:
         """Get all objects of a given type.
 
         Args:
             obj: DiffSyncModel class or instance, or modelname string, that defines the type of the objects to retrieve
 
         Returns:
-            List[DiffSyncModel]: List of Object
+            List of Object
         """
         return self.store.get_all(model=obj)
 
     def get_by_uids(
-        self, uids: List[Text], obj: Union[Text, DiffSyncModel, Type[DiffSyncModel]]
+        self, uids: List[StrType], obj: Union[StrType, DiffSyncModel, Type[DiffSyncModel]]
     ) -> List[DiffSyncModel]:
         """Get multiple objects from the store by their unique IDs/Keys and type.
 
@@ -726,11 +733,11 @@ class DiffSync:  # pylint: disable=too-many-public-methods
         return self.store.get_by_uids(uids=uids, model=obj)
 
     @classmethod
-    def get_tree_traversal(cls, as_dict: bool = False) -> Union[Text, Mapping]:
+    def get_tree_traversal(cls, as_dict: bool = False) -> Union[StrType, Dict]:
         """Get a string describing the tree traversal for the diffsync object.
 
         Args:
-            as_dict: Whether or not to return as a dictionary
+            as_dict: Whether to return as a dictionary
 
         Returns:
             A string or dictionary representation of tree
@@ -751,34 +758,34 @@ class DiffSync:  # pylint: disable=too-many-public-methods
             return output_dict
         return tree_string(output_dict, cls.__name__)
 
-    def add(self, obj: DiffSyncModel):
+    def add(self, obj: DiffSyncModel) -> None:
         """Add a DiffSyncModel object to the store.
 
         Args:
-            obj (DiffSyncModel): Object to store
+            obj: Object to store
 
         Raises:
             ObjectAlreadyExists: if a different object with the same uid is already present.
         """
         return self.store.add(obj=obj)
 
-    def update(self, obj: DiffSyncModel):
+    def update(self, obj: DiffSyncModel) -> None:
         """Update a DiffSyncModel object to the store.
 
         Args:
-            obj (DiffSyncModel): Object to store
+            obj: Object to store
 
         Raises:
             ObjectAlreadyExists: if a different object with the same uid is already present.
         """
         return self.store.update(obj=obj)
 
-    def remove(self, obj: DiffSyncModel, remove_children: bool = False):
+    def remove(self, obj: DiffSyncModel, remove_children: bool = False) -> None:
         """Remove a DiffSyncModel object from the store.
 
         Args:
-            obj (DiffSyncModel): object to remove
-            remove_children (bool): If True, also recursively remove any children of this object
+            obj: object to remove
+            remove_children: If True, also recursively remove any children of this object
 
         Raises:
             ObjectNotFound: if the object is not present
@@ -791,12 +798,12 @@ class DiffSync:  # pylint: disable=too-many-public-methods
         """Attempt to get the object with provided identifiers or instantiate it with provided identifiers and attrs.
 
         Args:
-            model (DiffSyncModel): The DiffSyncModel to get or create.
-            ids (Mapping): Identifiers for the DiffSyncModel to get or create with.
-            attrs (Mapping, optional): Attributes when creating an object if it doesn't exist. Defaults to None.
+            model: The DiffSyncModel to get or create.
+            ids: Identifiers for the DiffSyncModel to get or create with.
+            attrs: Attributes when creating an object if it doesn't exist. Defaults to None.
 
         Returns:
-            Tuple[DiffSyncModel, bool]: Provides the existing or new object and whether it was created or not.
+            Provides the existing or new object and whether it was created or not.
         """
         return self.store.get_or_instantiate(model=model, ids=ids, attrs=attrs)
 
@@ -815,12 +822,12 @@ class DiffSync:  # pylint: disable=too-many-public-methods
         """Attempt to update an existing object with provided ids/attrs or instantiate it with provided identifiers and attrs.
 
         Args:
-            model (DiffSyncModel): The DiffSyncModel to update or create.
-            ids (Dict): Identifiers for the DiffSyncModel to update or create with.
-            attrs (Dict): Attributes when creating/updating an object if it doesn't exist. Pass in empty dict, if no specific attrs.
+            model: The DiffSyncModel to update or create.
+            ids: Identifiers for the DiffSyncModel to update or create with.
+            attrs: Attributes when creating/updating an object if it doesn't exist. Pass in empty dict, if no specific attrs.
 
         Returns:
-            Tuple[DiffSyncModel, bool]: Provides the existing or new object and whether it was created or not.
+            Provides the existing or new object and whether it was created or not.
         """
         return self.store.update_or_instantiate(model=model, ids=ids, attrs=attrs)
 
@@ -828,21 +835,21 @@ class DiffSync:  # pylint: disable=too-many-public-methods
         """Attempt to update an existing object with provided obj ids/attrs or instantiate obj.
 
         Args:
-            instance: An instance of the DiffSyncModel to update or create.
+            obj: An instance of the DiffSyncModel to update or create.
 
         Returns:
             Provides the existing or new object and whether it was created or not.
         """
         return self.store.update_or_add_model_instance(obj=obj)
 
-    def count(self, model: Union[Text, "DiffSyncModel", Type["DiffSyncModel"], None] = None):
+    def count(self, model: Union[StrType, "DiffSyncModel", Type["DiffSyncModel"], None] = None) -> int:
         """Count how many objects of one model type exist in the backend store.
 
         Args:
-            model (DiffSyncModel): The DiffSyncModel to check the number of elements. If not provided, default to all.
+            model: The DiffSyncModel to check the number of elements. If not provided, default to all.
 
         Returns:
-            Int: Number of elements of the model type
+            Number of elements of the model type
         """
         return self.store.count(model=model)
 

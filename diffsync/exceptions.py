@@ -14,6 +14,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from typing import TYPE_CHECKING, Union, Any
+
+if TYPE_CHECKING:
+    from diffsync import DiffSyncModel
+    from diffsync.diff import DiffElement
 
 
 class ObjectCrudException(Exception):
@@ -39,7 +44,7 @@ class ObjectStoreException(Exception):
 class ObjectAlreadyExists(ObjectStoreException):
     """Exception raised when trying to store a DiffSyncModel or DiffElement that is already being stored."""
 
-    def __init__(self, message, existing_object, *args, **kwargs):
+    def __init__(self, message: str, existing_object: Union["DiffSyncModel", "DiffElement"], *args: Any, **kwargs: Any):
         """Add existing_object to the exception to provide user with existing object."""
         self.existing_object = existing_object
         super().__init__(message, existing_object, *args, **kwargs)

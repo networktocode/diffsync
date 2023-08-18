@@ -1573,6 +1573,17 @@ files = [
 cryptography = ">=35.0.0"
 
 [[package]]
+name = "types-python-slugify"
+version = "8.0.0.1"
+description = "Typing stubs for python-slugify"
+optional = false
+python-versions = "*"
+files = [
+    {file = "types-python-slugify-8.0.0.1.tar.gz", hash = "sha256:f2177d2e65ecf2eca742d28fbf236a8d919a72e68272d1d748c3fe965e5ea3ab"},
+    {file = "types_python_slugify-8.0.0.1-py3-none-any.whl", hash = "sha256:1de288ce45c85627ef632c2b5098dedccfc7ebedb241d181ba69402f03704449"},
+]
+
+[[package]]
 name = "types-redis"
 version = "4.5.1.4"
 description = "Typing stubs for redis"
@@ -1588,6 +1599,20 @@ cryptography = ">=35.0.0"
 types-pyOpenSSL = "*"
 
 [[package]]
+name = "types-requests"
+version = "2.28.11.15"
+description = "Typing stubs for requests"
+optional = false
+python-versions = "*"
+files = [
+    {file = "types-requests-2.28.11.15.tar.gz", hash = "sha256:fc8eaa09cc014699c6b63c60c2e3add0c8b09a410c818b5ac6e65f92a26dde09"},
+    {file = "types_requests-2.28.11.15-py3-none-any.whl", hash = "sha256:a05e4c7bc967518fba5789c341ea8b0c942776ee474c7873129a61161978e586"},
+]
+
+[package.dependencies]
+types-urllib3 = "<1.27"
+
+[[package]]
 name = "types-toml"
 version = "0.10.8.5"
 description = "Typing stubs for toml"
@@ -1596,6 +1621,17 @@ python-versions = "*"
 files = [
     {file = "types-toml-0.10.8.5.tar.gz", hash = "sha256:bf80fce7d2d74be91148f47b88d9ae5adeb1024abef22aa2fdbabc036d6b8b3c"},
     {file = "types_toml-0.10.8.5-py3-none-any.whl", hash = "sha256:2432017febe43174af0f3c65f03116e3d3cf43e7e1406b8200e106da8cf98992"},
+]
+
+[[package]]
+name = "types-urllib3"
+version = "1.26.25.8"
+description = "Typing stubs for urllib3"
+optional = false
+python-versions = "*"
+files = [
+    {file = "types-urllib3-1.26.25.8.tar.gz", hash = "sha256:ecf43c42d8ee439d732a1110b4901e9017a79a38daca26f08e42c8460069392c"},
+    {file = "types_urllib3-1.26.25.8-py3-none-any.whl", hash = "sha256:95ea847fbf0bf675f50c8ae19a665baedcf07e6b4641662c4c3c72e7b2edf1a9"},
 ]
 
 [[package]]
@@ -1746,4 +1782,4 @@ redis = ["redis"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.7"
-content-hash = "37892839cc3207d00936d4f2d47780725bc0c299e1b1372a0bb4aba8907fe379"
+content-hash = "2213a75a00f27293bb23f2a74792c2f8e46b97148e9197ddf620c9239d88b634"

@@ -14,36 +14,41 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-
 from collections import OrderedDict
-from typing import Iterator, List, Dict, Optional
+from typing import Iterator, List, Dict, Optional, TypeVar, Callable, Generic
 
 SPACE = "    "
 BRANCH = "│   "
 TEE = "├── "
 LAST = "└── "
 
+T = TypeVar("T")
+K = TypeVar("K")
+V = TypeVar("V")
 
-def intersection(lst1, lst2) -> List:
+
+def intersection(lst1: List[T], lst2: List[T]) -> List[T]:
     """Calculate the intersection of two lists, with ordering based on the first list."""
     lst3 = [value for value in lst1 if value in lst2]
     return lst3
 
 
-def symmetric_difference(lst1, lst2) -> List:
+def symmetric_difference(lst1: List[T], lst2: List[T]) -> List[T]:
     """Calculate the symmetric difference of two lists."""
-    return sorted(set(lst1) ^ set(lst2))
+    # Type hinting this correct is kind of hard to do. _Probably_ the solution is using typing.Protocol to ensure the
+    # set members support the ^ operator / set.symmetric_difference, but I decided this wasn't worth figuring out.
+    return sorted(set(lst1) ^ set(lst2))  # type: ignore[type-var]
 
 
-class OrderedDefaultDict(OrderedDict):
+class OrderedDefaultDict(OrderedDict, Generic[K, V]):
     """A combination of collections.OrderedDict and collections.DefaultDict behavior."""
 
-    def __init__(self, dict_type):
+    def __init__(self, dict_type: Callable[[], V]) -> None:
         """Create a new OrderedDefaultDict."""
         self.factory = dict_type
         super().__init__(self)
 
-    def __missing__(self, key):
+    def __missing__(self, key: K) -> V:
         """When trying to access a nonexistent key, initialize the key value based on the internal factory."""
         self[key] = value = self.factory()
         return value
@@ -71,7 +76,7 @@ def tree_string(data: Dict, root: str) -> str:
     return "\n".join([root, *_tree(data)])
 
 
-def set_key(data: Dict, keys: List):
+def set_key(data: Dict, keys: List) -> None:
     """Set a nested dictionary key given a list of keys."""
     current_level = data
     for key in keys:
