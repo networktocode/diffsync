@@ -115,7 +115,7 @@ class Device(DiffSyncModel):
     _children = {"interface": "interfaces"}
 
     name: str
-    site_name: Optional[str]  # note this is not included in _attributes
+    site_name: Optional[str] = None  # note this is not included in _attributes
     role: str
     interfaces: List = []
 
@@ -143,7 +143,7 @@ class Interface(DiffSyncModel):
     name: str
 
     interface_type: str = "ethernet"
-    description: Optional[str]
+    description: Optional[str] = None
 
 
 @pytest.fixture

@@ -106,24 +106,24 @@ class DiffSyncModel(BaseModel):
     """Message, if any, associated with the create/update/delete status value."""
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    def __init_subclass__(cls) -> None:
+    @classmethod
+    def __pydantic_init_subclass__(cls, **kwargs: Any) -> None:
         """Validate that the various class attribute declarations correspond to actual instance fields.
 
         Called automatically on subclass declaration.
         """
-        variables = cls.__fields__.keys()
         # Make sure that any field referenced by name actually exists on the model
         for attr in cls._identifiers:
-            if attr not in variables and not hasattr(cls, attr):
+            if attr not in cls.model_fields and not hasattr(cls, attr):
                 raise AttributeError(f"_identifiers {cls._identifiers} references missing or un-annotated attr {attr}")
         for attr in cls._shortname:
-            if attr not in variables:
+            if attr not in cls.model_fields:
                 raise AttributeError(f"_shortname {cls._shortname} references missing or un-annotated attr {attr}")
         for attr in cls._attributes:
-            if attr not in variables:
+            if attr not in cls.model_fields:
                 raise AttributeError(f"_attributes {cls._attributes} references missing or un-annotated attr {attr}")
         for attr in cls._children.values():
-            if attr not in variables:
+            if attr not in cls.model_fields:
                 raise AttributeError(f"_children {cls._children} references missing or un-annotated attr {attr}")
 
         # Any given field can only be in one of (_identifiers, _attributes, _children)
@@ -147,7 +147,7 @@ class DiffSyncModel(BaseModel):
         """Convert this DiffSyncModel to a dict, excluding the diffsync field by default as it is not serializable."""
         if "exclude" not in kwargs:
             kwargs["exclude"] = {"diffsync"}
-        return super().dict(**kwargs)
+        return super().model_dump(**kwargs)
 
     def json(self, **kwargs: Any) -> StrType:
         """Convert this DiffSyncModel to a JSON string, excluding the diffsync field by default as it is not serializable."""
@@ -155,7 +155,7 @@ class DiffSyncModel(BaseModel):
             kwargs["exclude"] = {"diffsync"}
         if "exclude_defaults" not in kwargs:
             kwargs["exclude_defaults"] = True
-        return super().json(**kwargs)
+        return super().model_dump_json(**kwargs)
 
     def str(self, include_children: bool = True, indent: int = 0) -> StrType:
         """Build a detailed string representation of this DiffSyncModel and optionally its children."""
@@ -855,4 +855,4 @@ class DiffSync:  # pylint: disable=too-many-public-methods
 
 
 # DiffSyncModel references DiffSync and DiffSync references DiffSyncModel. Break the typing loop:
-DiffSyncModel.update_forward_refs()
+DiffSyncModel.model_rebuild()

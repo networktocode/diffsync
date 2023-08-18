@@ -107,7 +107,7 @@ def test_diffsync_model_dict_with_data(make_interface):
 def test_diffsync_model_json_with_data(make_interface):
     intf = make_interface()
     # json() omits default values for brevity
-    assert intf.json() == '{"device_name": "device1", "name": "eth0"}'
+    assert intf.json() == '{"device_name":"device1","name":"eth0"}'
 
 
 def test_diffsync_model_str_with_data(make_interface):
@@ -182,7 +182,7 @@ def test_diffsync_model_json_with_children(generic_diffsync, make_site, make_dev
     generic_diffsync.add(site1)
     generic_diffsync.add(device1)
 
-    assert site1.json() == '{"name": "site1", "devices": ["device1"]}'
+    assert site1.json() == '{"name":"site1","devices":["device1"]}'
 
 
 def test_diffsync_model_str_with_children(generic_diffsync, make_site, make_device, make_interface):
@@ -294,7 +294,7 @@ def test_diffsync_model_subclass_validation():
 
             name: str
             # Note that short_name doesn't have a type annotation - making sure this works too
-            short_name = "short_name"
+            short_name: str = "short_name"
 
     assert "_attributes" in str(excinfo.value)
     assert "my_attr" in str(excinfo.value)
@@ -310,7 +310,7 @@ def test_diffsync_model_subclass_validation():
             _children = {"device": "devices"}
 
             name: str
-            short_name = "short_name"
+            short_name: str = "short_name"
             my_attr: int = 0
 
     assert "_children" in str(excinfo.value)

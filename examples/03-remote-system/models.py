@@ -32,4 +32,4 @@ class Country(DiffSyncModel):
     slug: str
     name: str
     region: str
-    population: Optional[int]
+    population: Optional[int] = 0
