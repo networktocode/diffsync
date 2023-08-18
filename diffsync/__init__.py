@@ -18,7 +18,7 @@ import sys
 from inspect import isclass
 from typing import Callable, ClassVar, Dict, List, Optional, Tuple, Type, Union, Any, Set
 
-from pydantic import BaseModel, PrivateAttr
+from pydantic import ConfigDict, BaseModel, PrivateAttr
 import structlog  # type: ignore
 
 from diffsync.diff import Diff
@@ -104,12 +104,7 @@ class DiffSyncModel(BaseModel):
 
     _status_message: str = PrivateAttr("")
     """Message, if any, associated with the create/update/delete status value."""
-
-    class Config:  # pylint: disable=too-few-public-methods
-        """Pydantic class configuration."""
-
-        # Let us have a DiffSync as an instance variable even though DiffSync is not a Pydantic model itself.
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def __init_subclass__(cls) -> None:
         """Validate that the various class attribute declarations correspond to actual instance fields.
