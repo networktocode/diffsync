@@ -1,6 +1,16 @@
 # Changelog
 
-## v1.8.0 - 2023-04-18
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+
+## [Unreleased]
+
+### Changed
+
+- **BREAKING CHANGE** #236/240 - Upgrade to Pydantic v2. 
+
+## [1.8.0] - 2023-04-18
 
 ### Added
 
@@ -13,7 +23,7 @@
 - #77/#188 - `sync_from()` and `sync_to()` now return the `Diff` that was applied.
 - #211 - Loosened `packaging` and `structlog` library dependency constraints for broader compatibility.
 
-## v1.7.0 - 2022-11-03
+## [1.7.0] - 2022-11-03
 
 ### Changed
 
@@ -31,15 +41,15 @@
 
 ### Fixed
 
-- #149 Limit redundant CI concurrency
+- #149 - Limit redundant CI concurrency
 
-## v1.6.0 - 2022-07-09
+## [1.6.0] - 2022-07-09
 
 ### Changed
 
 - #120 - Dropped support for Python 3.6, new minimum is Python 3.7
 
-## v1.5.1 - 2022-06-30
+## [1.5.1] - 2022-06-30
 
 ### Added
 
@@ -54,13 +64,13 @@
 - #115 - Fixed ReadTheDocs rendering pipeline
 - #118 - Fixed a regression in `DiffSync.get(modelname, identifiers)` introduced in 1.5.0
 
-## v1.5.0 - 2022-06-07
+## [1.5.0] - 2022-06-07
 
 ### Added
 
 - #106 - Add a new, optional, backend store based in Redis
 
-## v1.4.3 - 2022-03-03
+## [1.4.3] - 2022-03-03
 
 ### Fixed
 
@@ -70,9 +80,9 @@
 
 ### Changed
 
-- #103 Update development dependencies
+- #103 - Update development dependencies
 
-## v1.4.2 - 2022-02-28
+## [1.4.2] - 2022-02-28
 
 **WARNING** - #90 inadvertently introduced a breaking API change in DiffSync 1.4.0 through 1.4.2 (#101); this change was reverted in #102 for DiffSync 1.4.3 and later. We recommend not using this release, and moving to 1.4.3 instead.
 
@@ -80,7 +90,7 @@
 
 - #100 - Added explicit dependency on `packaging`.
 
-## v1.4.1 - 2022-01-26
+## [1.4.1] - 2022-01-26
 
 **WARNING** - #90 inadvertently introduced a breaking API change in DiffSync 1.4.0 through 1.4.2 (#101); this change was reverted in #102 for DiffSync 1.4.3 and later. We recommend not using this release, and moving to 1.4.3 instead.
 
@@ -88,7 +98,7 @@
 
 - #95 - Removed optional dependencies on `sphinx`, `m2r2`, `sphinx-rtd-theme`, `toml`.
 
-## v1.4.0 - 2022-01-24
+## [1.4.0] - 2022-01-24
 
 **WARNING** - #90 inadvertently introduced a breaking API change in DiffSync 1.4.0 through 1.4.2 (#101); this change was reverted in #102 for DiffSync 1.4.3 and later. We recommend not using this release, and moving to 1.4.3 instead.
 
@@ -117,19 +127,19 @@
 - #51 - Update minimum Pydantic version due to security advisory GHSA-5jqp-qgf6-3pvh
 - #63 - Fix type in Readme
 
-## v1.3.0 - 2021-04-07
+## [1.3.0] - 2021-04-07
 
 ### Added
 
 - #48 - added optional `callback` argument to `diff_from`/`diff_to`/`sync_from`/`sync_to` for use with progress reporting.
 
-## v1.2.0 - 2020-12-08
+## [1.2.0] - 2020-12-08
 
 ### Added
 
 - #45 - minimum Python version lowered from 3.7 to 3.6, also now tested against Python 3.9.
 
-## v1.1.0 - 2020-12-01
+## [1.1.0] - 2020-12-01
 
 ### Added
 
@@ -147,6 +157,6 @@
 
 - #44 - On CRUD failure, do not generate an extraneous "success" log message in addition to the "failed" message
 
-## v1.0.0 - 2020-10-23
+## [1.0.0] - 2020-10-23
 
 Initial release
