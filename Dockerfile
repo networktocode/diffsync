@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --upgrade pip \
-  && pip install poetry
+  && pip install poetry==1.5.1
 
 
 WORKDIR /local
