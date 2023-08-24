@@ -91,7 +91,7 @@ class DiffSyncModel(BaseModel):
     Can be set as a class attribute or an instance attribute as needed.
     """
 
-    diffsync: Optional["DiffSync"] = None
+    diffsync: Optional["Adapter"] = None
     """Optional: the DiffSync instance that owns this model instance."""
 
     _status: DiffSyncStatus = PrivateAttr(DiffSyncStatus.SUCCESS)
@@ -183,7 +183,7 @@ class DiffSyncModel(BaseModel):
         self._status_message = message
 
     @classmethod
-    def create_base(cls, diffsync: "DiffSync", ids: Dict, attrs: Dict) -> Optional[Self]:
+    def create_base(cls, diffsync: "Adapter", ids: Dict, attrs: Dict) -> Optional[Self]:
         """Instantiate this class, along with any platform-specific data creation.
 
         This method is not meant to be subclassed, users should redefine create() instead.
@@ -201,7 +201,7 @@ class DiffSyncModel(BaseModel):
         return model
 
     @classmethod
-    def create(cls, diffsync: "DiffSync", ids: Dict, attrs: Dict) -> Optional[Self]:
+    def create(cls, diffsync: "Adapter", ids: Dict, attrs: Dict) -> Optional[Self]:
         """Instantiate this class, along with any platform-specific data creation.
 
         Subclasses must call `super().create()` or `self.create_base()`; they may wish to then override the default status information
@@ -402,7 +402,7 @@ class DiffSyncModel(BaseModel):
         childs.remove(child.get_unique_id())
 
 
-class DiffSync:  # pylint: disable=too-many-public-methods
+class Adapter:  # pylint: disable=too-many-public-methods
     """Class for storing a group of DiffSyncModel instances and diffing/synchronizing to another DiffSync instance."""
 
     # In any subclass, you would add mapping of names to specific model classes here:
@@ -535,7 +535,7 @@ class DiffSync:  # pylint: disable=too-many-public-methods
 
     def sync_from(  # pylint: disable=too-many-arguments
         self,
-        source: "DiffSync",
+        source: "Adapter",
         diff_class: Type[Diff] = Diff,
         flags: DiffSyncFlags = DiffSyncFlags.NONE,
         callback: Optional[Callable[[StrType, int, int], None]] = None,
@@ -573,7 +573,7 @@ class DiffSync:  # pylint: disable=too-many-public-methods
 
     def sync_to(  # pylint: disable=too-many-arguments
         self,
-        target: "DiffSync",
+        target: "Adapter",
         diff_class: Type[Diff] = Diff,
         flags: DiffSyncFlags = DiffSyncFlags.NONE,
         callback: Optional[Callable[[StrType, int, int], None]] = None,
@@ -597,7 +597,7 @@ class DiffSync:  # pylint: disable=too-many-public-methods
 
     def sync_complete(
         self,
-        source: "DiffSync",
+        source: "Adapter",
         diff: Diff,
         flags: DiffSyncFlags = DiffSyncFlags.NONE,
         logger: Optional[structlog.BoundLogger] = None,
@@ -623,7 +623,7 @@ class DiffSync:  # pylint: disable=too-many-public-methods
 
     def diff_from(
         self,
-        source: "DiffSync",
+        source: "Adapter",
         diff_class: Type[Diff] = Diff,
         flags: DiffSyncFlags = DiffSyncFlags.NONE,
         callback: Optional[Callable[[StrType, int, int], None]] = None,
@@ -644,7 +644,7 @@ class DiffSync:  # pylint: disable=too-many-public-methods
 
     def diff_to(
         self,
-        target: "DiffSync",
+        target: "Adapter",
         diff_class: Type[Diff] = Diff,
         flags: DiffSyncFlags = DiffSyncFlags.NONE,
         callback: Optional[Callable[[StrType, int, int], None]] = None,
@@ -853,6 +853,9 @@ class DiffSync:  # pylint: disable=too-many-public-methods
         """
         return self.store.count(model=model)
 
+
+# For backwards-compatibility, keep around the old name
+DiffSync = Adapter
 
 # DiffSyncModel references DiffSync and DiffSync references DiffSyncModel. Break the typing loop:
 DiffSyncModel.update_forward_refs()

@@ -18,7 +18,7 @@ from typing import ClassVar, List, Optional, Tuple, Dict
 
 import pytest
 
-from diffsync import DiffSync, DiffSyncModel
+from diffsync import Adapter, DiffSyncModel
 from diffsync.diff import Diff, DiffElement
 from diffsync.exceptions import ObjectNotCreated, ObjectNotUpdated, ObjectNotDeleted
 
@@ -35,7 +35,7 @@ class ErrorProneModelMixin:
     _counter: ClassVar[int] = 0
 
     @classmethod
-    def create(cls, diffsync: DiffSync, ids: Dict, attrs: Dict):
+    def create(cls, diffsync: Adapter, ids: Dict, attrs: Dict):
         """As DiffSyncModel.create(), but periodically throw exceptions."""
         cls._counter += 1
         if not cls._counter % 5:
@@ -69,7 +69,7 @@ class ExceptionModelMixin:
     """Test class that always throws exceptions when creating/updating/deleting instances."""
 
     @classmethod
-    def create(cls, diffsync: DiffSync, ids: Dict, attrs: Dict):
+    def create(cls, diffsync: Adapter, ids: Dict, attrs: Dict):
         """As DiffSyncModel.create(), but always throw exceptions."""
         raise NotImplementedError
 
@@ -160,7 +160,7 @@ def make_interface():
 @pytest.fixture
 def generic_diffsync():
     """Provide a generic DiffSync instance."""
-    return DiffSync()
+    return Adapter()
 
 
 class UnusedModel(DiffSyncModel):
@@ -172,7 +172,7 @@ class UnusedModel(DiffSyncModel):
     name: str
 
 
-class GenericBackend(DiffSync):
+class GenericBackend(Adapter):
     """An example semi-abstract subclass of DiffSync."""
 
     site = Site  # to be overridden by subclasses

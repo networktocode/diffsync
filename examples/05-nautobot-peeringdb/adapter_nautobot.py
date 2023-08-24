@@ -2,7 +2,7 @@
 # pylint: disable=import-error,no-name-in-module
 import pynautobot
 from models import RegionModel, SiteModel
-from diffsync import DiffSync
+from diffsync import Adapter
 
 
 class RegionNautobotModel(RegionModel):
@@ -116,7 +116,7 @@ class SiteNautobotModel(SiteModel):
         return super().delete()
 
 
-class NautobotRemote(DiffSync):
+class NautobotRemote(Adapter):
     """DiffSync adapter class for loading data from a remote Nautobot instance using Python requests."""
 
     # Model classes used by this adapter class

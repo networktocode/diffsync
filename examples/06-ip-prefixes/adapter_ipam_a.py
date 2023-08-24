@@ -3,7 +3,7 @@ import os
 import ipaddress
 import yaml
 from models import Prefix  # pylint: disable=no-name-in-module
-from diffsync import DiffSync
+from diffsync import Adapter
 
 dirname = os.path.dirname(os.path.realpath(__file__))
 
@@ -50,7 +50,7 @@ class IpamAPrefix(Prefix):
         return super().delete()
 
 
-class IpamA(DiffSync):
+class IpamA(Adapter):
     """IPAM A DiffSync adapter implementation."""
 
     prefix = IpamAPrefix
