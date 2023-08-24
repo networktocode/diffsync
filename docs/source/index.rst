@@ -9,6 +9,7 @@ Welcome to DiffSync's documentation!
    getting_started/index
    core_engine/index
    examples/index
+   upgrading/index
    api/diffsync
    license/index
 
