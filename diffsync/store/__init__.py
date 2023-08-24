@@ -6,7 +6,7 @@ from diffsync.exceptions import ObjectNotFound
 
 if TYPE_CHECKING:
     from diffsync import DiffSyncModel
-    from diffsync import DiffSync
+    from diffsync import Adapter
 
 
 class BaseStore:
@@ -15,7 +15,7 @@ class BaseStore:
     def __init__(
         self,  # pylint: disable=unused-argument
         *args: Any,  # pylint: disable=unused-argument
-        diffsync: Optional["DiffSync"] = None,
+        diffsync: Optional["Adapter"] = None,
         name: str = "",
         **kwargs: Any,  # pylint: disable=unused-argument
     ) -> None:

@@ -16,7 +16,7 @@ limitations under the License.
 """
 
 # pylint: disable=wrong-import-order
-from diffsync import DiffSync
+from diffsync import Adapter
 from models import Site, Device, Interface  # pylint: disable=no-name-in-module
 
 DATA = {
@@ -35,7 +35,7 @@ DATA = {
 }
 
 
-class BackendB(DiffSync):
+class BackendB(Adapter):
     """Example of a DiffSync adapter implementation."""
 
     site = Site

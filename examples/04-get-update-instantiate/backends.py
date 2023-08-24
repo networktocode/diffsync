@@ -16,7 +16,7 @@ limitations under the License.
 """
 
 from models import Site, Device, Interface  # pylint: disable=no-name-in-module
-from diffsync import DiffSync
+from diffsync import Adapter
 
 BACKEND_DATA_A = [
     {
@@ -74,7 +74,7 @@ BACKEND_DATA_B = [
 ]
 
 
-class BackendA(DiffSync):
+class BackendA(Adapter):
     """Example of a DiffSync adapter implementation."""
 
     site = Site
@@ -104,7 +104,7 @@ class BackendA(DiffSync):
                     device.add_child(intf)
 
 
-class BackendB(DiffSync):
+class BackendB(Adapter):
     """Example of a DiffSync adapter implementation."""
 
     site = Site

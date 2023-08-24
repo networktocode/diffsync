@@ -18,7 +18,7 @@ from typing import List
 
 import pytest
 
-from diffsync import DiffSync, DiffSyncModel
+from diffsync import Adapter, DiffSyncModel
 from diffsync.enum import DiffSyncModelFlags
 from diffsync.exceptions import ObjectNotFound
 
@@ -141,7 +141,7 @@ def test_diffsync_diff_with_natural_deletion_order():
             call_order.append(self.name)
             return super().delete()
 
-    class TestBackend(DiffSync):  # pylint: disable=missing-class-docstring
+    class TestBackend(Adapter):  # pylint: disable=missing-class-docstring
         top_level = ["parent"]
 
         parent = TestModelParent

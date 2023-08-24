@@ -3,7 +3,7 @@ import pynautobot  # pylint: disable=import-error
 
 from models import Region, Country  # pylint: disable=no-name-in-module
 
-from diffsync import DiffSync
+from diffsync import Adapter
 
 
 # pylint: disable=no-member,too-few-public-methods
@@ -30,7 +30,7 @@ class NautobotCountry(Country):
     """Store the nautobot uuid in the object to allow update and delete of existing object."""
 
     @classmethod
-    def create(cls, diffsync: DiffSync, ids: dict, attrs: dict):
+    def create(cls, diffsync: Adapter, ids: dict, attrs: dict):
         """Create a country object in Nautobot.
 
         Args:

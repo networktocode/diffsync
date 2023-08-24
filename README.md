@@ -15,7 +15,7 @@ DiffSync is at its most useful when you have multiple sources or sets of data to
 
 # Overview of DiffSync
 
-DiffSync acts as an intermediate translation layer between all of the data sets you are diffing and/or syncing. In practical terms, this means that to use DiffSync, you will define a set of data models as well as the “adapters” needed to translate between each base data source and the data model. In Python terms, the adapters will be subclasses of the `DiffSync` class, and each data model class will be a subclass of the `DiffSyncModel` class.
+DiffSync acts as an intermediate translation layer between all of the data sets you are diffing and/or syncing. In practical terms, this means that to use DiffSync, you will define a set of data models as well as the “adapters” needed to translate between each base data source and the data model. In Python terms, the adapters will be subclasses of the `Adapter` class, and each data model class will be a subclass of the `DiffSyncModel` class.
 
 ![Diffsync Components](https://raw.githubusercontent.com/networktocode/diffsync/develop/docs/images/diffsync_components.png "Diffsync Components")
 
