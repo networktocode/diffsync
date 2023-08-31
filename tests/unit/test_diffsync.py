@@ -13,8 +13,8 @@ from .conftest import Site, Device, Interface, TrackedDiff, BackendA, PersonA
 
 
 def test_diffsync_default_name_type(generic_diffsync):
-    assert generic_diffsync.type == "DiffSync"
-    assert generic_diffsync.name == "DiffSync"
+    assert generic_diffsync.type == "Adapter"
+    assert generic_diffsync.name == "Adapter"
 
 
 def test_diffsync_generic_load_is_noop(generic_diffsync):

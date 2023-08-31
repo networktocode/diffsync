@@ -138,7 +138,7 @@ jobs:
       - name: "Check out repository code"
         uses: "actions/checkout@v2"
       - name: "Setup environment"
-        uses: "networktocode/gh-action-setup-poetry-environment@3ea5d3e"
+        uses: "networktocode/gh-action-setup-poetry-environment@3ea5d3ecf382cdcb0c74d4c0ff0629d95fce63c7"
         env:
           POETRY_VERSION: 1.5.1
         with:
