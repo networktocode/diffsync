@@ -5,7 +5,7 @@ from unittest import mock
 
 import pytest
 
-from diffsync import DiffSync, DiffSyncModel
+from diffsync import Adapter, DiffSyncModel
 from diffsync.enum import DiffSyncFlags, DiffSyncModelFlags
 from diffsync.exceptions import DiffClassMismatch, ObjectAlreadyExists, ObjectNotFound, ObjectCrudException
 
@@ -13,8 +13,8 @@ from .conftest import Site, Device, Interface, TrackedDiff, BackendA, PersonA
 
 
 def test_diffsync_default_name_type(generic_diffsync):
-    assert generic_diffsync.type == "DiffSync"
-    assert generic_diffsync.name == "DiffSync"
+    assert generic_diffsync.type == "Adapter"
+    assert generic_diffsync.name == "Adapter"
 
 
 def test_diffsync_generic_load_is_noop(generic_diffsync):
@@ -351,7 +351,7 @@ def test_diffsync_subclass_validation_name_mismatch():
     # pylint: disable=unused-variable
     with pytest.raises(AttributeError) as excinfo:
 
-        class BadElementName(DiffSync):
+        class BadElementName(Adapter):
             """DiffSync with a DiffSyncModel attribute whose name does not match the modelname."""
 
             dev_class = Device  # should be device = Device
@@ -365,7 +365,7 @@ def test_diffsync_subclass_validation_missing_top_level():
     # pylint: disable=unused-variable
     with pytest.raises(AttributeError) as excinfo:
 
-        class MissingTopLevel(DiffSync):
+        class MissingTopLevel(Adapter):
             """DiffSync whose top_level references an attribute that does not exist on the class."""
 
             top_level = ["missing"]
@@ -379,7 +379,7 @@ def test_diffsync_subclass_validation_top_level_not_diffsyncmodel():
     # pylint: disable=unused-variable
     with pytest.raises(AttributeError) as excinfo:
 
-        class TopLevelNotDiffSyncModel(DiffSync):
+        class TopLevelNotDiffSyncModel(Adapter):
             """DiffSync whose top_level references an attribute that is not a DiffSyncModel subclass."""
 
             age = 0

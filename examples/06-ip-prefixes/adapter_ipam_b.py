@@ -2,7 +2,7 @@
 import os
 import yaml
 from models import Prefix  # pylint: disable=no-name-in-module
-from diffsync import DiffSync
+from diffsync import Adapter
 
 dirname = os.path.dirname(os.path.realpath(__file__))
 
@@ -55,7 +55,7 @@ class IpamBPrefix(Prefix):
         return super().delete()
 
 
-class IpamB(DiffSync):
+class IpamB(Adapter):
     """IPAM A DiffSync adapter implementation."""
 
     prefix = IpamBPrefix
