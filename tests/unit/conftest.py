@@ -14,7 +14,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from typing import ClassVar, List, Mapping, Optional, Tuple
+from typing import ClassVar, List, Optional, Tuple, Dict
 
 import pytest
 
@@ -35,7 +35,7 @@ class ErrorProneModelMixin:
     _counter: ClassVar[int] = 0
 
     @classmethod
-    def create(cls, diffsync: DiffSync, ids: Mapping, attrs: Mapping):
+    def create(cls, diffsync: DiffSync, ids: Dict, attrs: Dict):
         """As DiffSyncModel.create(), but periodically throw exceptions."""
         cls._counter += 1
         if not cls._counter % 5:
@@ -44,7 +44,7 @@ class ErrorProneModelMixin:
             return None  # non-fatal error
         return super().create(diffsync, ids, attrs)  # type: ignore
 
-    def update(self, attrs: Mapping):
+    def update(self, attrs: Dict):
         """As DiffSyncModel.update(), but periodically throw exceptions."""
         # pylint: disable=protected-access
         self.__class__._counter += 1
@@ -69,11 +69,11 @@ class ExceptionModelMixin:
     """Test class that always throws exceptions when creating/updating/deleting instances."""
 
     @classmethod
-    def create(cls, diffsync: DiffSync, ids: Mapping, attrs: Mapping):
+    def create(cls, diffsync: DiffSync, ids: Dict, attrs: Dict):
         """As DiffSyncModel.create(), but always throw exceptions."""
         raise NotImplementedError
 
-    def update(self, attrs: Mapping):
+    def update(self, attrs: Dict):
         """As DiffSyncModel.update(), but always throw exceptions."""
         raise NotImplementedError
 

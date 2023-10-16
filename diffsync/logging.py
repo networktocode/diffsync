@@ -22,7 +22,7 @@ import structlog  # type: ignore
 from packaging import version
 
 
-def enable_console_logging(verbosity=0):
+def enable_console_logging(verbosity: int = 0) -> None:
     """Enable formatted logging to console with the specified verbosity.
 
     See https://www.structlog.org/en/stable/development.html as a reference
@@ -52,7 +52,7 @@ def enable_console_logging(verbosity=0):
     processors.append(structlog.dev.ConsoleRenderer())
 
     structlog.configure(
-        processors=processors,
+        processors=processors,  # type: ignore[arg-type]
         context_class=dict,
         logger_factory=structlog.stdlib.LoggerFactory(),
         wrapper_class=structlog.stdlib.BoundLogger,
@@ -60,7 +60,7 @@ def enable_console_logging(verbosity=0):
     )
 
 
-def _structlog_exception_formatter_required():
+def _structlog_exception_formatter_required() -> bool:
     """Determine if structlog exception formatter is needed.
 
     Return True if structlog exception formatter should be loaded

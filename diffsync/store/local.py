@@ -1,7 +1,7 @@
 """LocalStore module."""
 
 from collections import defaultdict
-from typing import List, Mapping, Text, Type, Union, TYPE_CHECKING, Dict, Set
+from typing import List, Type, Union, TYPE_CHECKING, Dict, Set, Any
 
 from diffsync.exceptions import ObjectNotFound, ObjectAlreadyExists
 from diffsync.store import BaseStore
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 class LocalStore(BaseStore):
     """LocalStore class."""
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Init method for LocalStore."""
         super().__init__(*args, **kwargs)
 
@@ -24,12 +24,12 @@ class LocalStore(BaseStore):
         """Get all the model names stored.
 
         Return:
-            Set[str]: Set of all the model names.
+            Set of all the model names.
         """
         return set(self._data.keys())
 
     def get(
-        self, *, model: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]], identifier: Union[Text, Mapping]
+        self, *, model: Union[str, "DiffSyncModel", Type["DiffSyncModel"]], identifier: Union[str, Dict]
     ) -> "DiffSyncModel":
         """Get one object from the data store based on its unique id.
 
@@ -49,14 +49,14 @@ class LocalStore(BaseStore):
             raise ObjectNotFound(f"{modelname} {uid} not present in {str(self)}")
         return self._data[modelname][uid]
 
-    def get_all(self, *, model: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]]) -> List["DiffSyncModel"]:
+    def get_all(self, *, model: Union[str, "DiffSyncModel", Type["DiffSyncModel"]]) -> List["DiffSyncModel"]:
         """Get all objects of a given type.
 
         Args:
             model: DiffSyncModel class or instance, or modelname string, that defines the type of the objects to retrieve
 
         Returns:
-            List[DiffSyncModel]: List of Object
+            List of Object
         """
         if isinstance(model, str):
             modelname = model
@@ -66,7 +66,7 @@ class LocalStore(BaseStore):
         return list(self._data[modelname].values())
 
     def get_by_uids(
-        self, *, uids: List[Text], model: Union[Text, "DiffSyncModel", Type["DiffSyncModel"]]
+        self, *, uids: List[str], model: Union[str, "DiffSyncModel", Type["DiffSyncModel"]]
     ) -> List["DiffSyncModel"]:
         """Get multiple objects from the store by their unique IDs/Keys and type.
 
@@ -89,11 +89,11 @@ class LocalStore(BaseStore):
             results.append(self._data[modelname][uid])
         return results
 
-    def add(self, *, obj: "DiffSyncModel"):
+    def add(self, *, obj: "DiffSyncModel") -> None:
         """Add a DiffSyncModel object to the store.
 
         Args:
-            obj (DiffSyncModel): Object to store
+            obj: Object to store
 
         Raises:
             ObjectAlreadyExists: if a different object with the same uid is already present.
@@ -113,11 +113,11 @@ class LocalStore(BaseStore):
 
         self._data[modelname][uid] = obj
 
-    def update(self, *, obj: "DiffSyncModel"):
+    def update(self, *, obj: "DiffSyncModel") -> None:
         """Update a DiffSyncModel object to the store.
 
         Args:
-            obj (DiffSyncModel): Object to update
+            obj: Object to update
         """
         modelname = obj.get_type()
         uid = obj.get_unique_id()
@@ -128,13 +128,13 @@ class LocalStore(BaseStore):
 
         self._data[modelname][uid] = obj
 
-    def remove_item(self, modelname: str, uid: str):
+    def remove_item(self, modelname: str, uid: str) -> None:
         """Remove one item from store."""
         if uid not in self._data[modelname]:
             raise ObjectNotFound(f"{modelname} {uid} not present in {str(self)}")
         del self._data[modelname][uid]
 
-    def count(self, *, model: Union[Text, "DiffSyncModel", Type["DiffSyncModel"], None] = None) -> int:
+    def count(self, *, model: Union[str, "DiffSyncModel", Type["DiffSyncModel"], None] = None) -> int:
         """Returns the number of elements of a specific model, or all elements in the store if unspecified."""
         if not model:
             return sum(len(entries) for entries in self._data.values())

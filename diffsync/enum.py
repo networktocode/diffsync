@@ -47,6 +47,13 @@ class DiffSyncModelFlags(enum.Flag):
     If this flag is set, the model will not be deleted from the target/"to" DiffSync.
     """
 
+    NATURAL_DELETION_ORDER = 0b10000
+    """When deleting, delete children before instances of this this element.
+
+    If this flag is set, the models children will be deleted from the target/"to" DiffSync before the models instances
+    themselves.
+    """
+
     SKIP_UNMATCHED_BOTH = SKIP_UNMATCHED_SRC | SKIP_UNMATCHED_DST
 
 
