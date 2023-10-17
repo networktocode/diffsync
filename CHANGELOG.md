@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.9.0 - 2023-10-16
+
+### Added
+
+- #220 - Implement DiffSyncModelFlags.NATURAL_DELETION_ORDER.
+
+### Changed
+
+- #219 - Type hinting overhaul 
+
 ## v1.8.0 - 2023-04-18
 
 ### Added
