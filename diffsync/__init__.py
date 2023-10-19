@@ -14,9 +14,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import sys
 from inspect import isclass
 from typing import Callable, ClassVar, Dict, List, Optional, Tuple, Type, Union, Any, Set
-from typing_extensions import Self
 
 from pydantic import BaseModel, PrivateAttr
 import structlog  # type: ignore
@@ -28,6 +28,11 @@ from diffsync.helpers import DiffSyncDiffer, DiffSyncSyncer
 from diffsync.store import BaseStore
 from diffsync.store.local import LocalStore
 from diffsync.utils import get_path, set_key, tree_string
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 # This workaround is used because we are defining a method called `str` in our class definition, which therefore renders
 # the builtin `str` type unusable.

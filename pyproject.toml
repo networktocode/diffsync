@@ -22,6 +22,8 @@ structlog = ">= 20.1.0, < 23.0.0"
 packaging = ">= 21.3, < 24.0"
 colorama = {version = "^0.4.3", optional = true}
 redis = {version = "^4.3", optional = true}
+# typing.Self introduced in 3.11
+typing-extensions = { version = ">=4.0.1", python = "<3.11" }
 
 [tool.poetry.extras]
 redis = ["redis"]
