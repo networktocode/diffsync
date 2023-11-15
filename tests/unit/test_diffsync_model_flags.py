@@ -162,3 +162,67 @@ def test_diffsync_diff_with_natural_deletion_order():
     source.remove(source.get("parent", {"name": "Test-Parent"}), remove_children=True)
     source.sync_to(destination)
     assert call_order == ["Test-Child", "Test-Parent"]
+
+
+def test_natural_deletion_order_with_noop_parent():
+    """Test whether children are recursed through when natural deletion order is set and the parent has no changes."""
+    call_order = []
+
+    class ChildModel(DiffSyncModel):
+        """Test child model that reports when its update method is called."""
+
+        _modelname = "child"
+        _identifiers = ("name",)
+        _attributes = ("attribute",)
+
+        name: str
+        attribute: str
+
+        def update(self, attrs):
+            call_order.append("Update on child")
+            return super().update(attrs)
+
+    class ParentModel(DiffSyncModel):
+        """Test parent model."""
+
+        _modelname = "parent"
+        _identifiers = ("name",)
+        _attributes = ("attribute",)
+        _children = {"child": "children"}
+
+        name: str
+        attribute: str
+        children: List[ChildModel] = []
+
+    class Adapter(DiffSync):
+        """Test adapter."""
+
+        top_level = ["parent"]
+
+        parent = ParentModel
+        child = ChildModel
+
+        def load(self, is_source=False) -> None:
+            """Test load method. Generate a difference with the is_source parameter."""
+            parent = self.parent(name="Test Parent", attribute="This doesn't change")
+            parent.model_flags |= DiffSyncModelFlags.NATURAL_DELETION_ORDER
+            self.add(parent)
+            if is_source:
+                child = self.child(name="Test Child", attribute="Attribute from source")
+                child.model_flags |= DiffSyncModelFlags.NATURAL_DELETION_ORDER
+                parent.add_child(child)
+                self.add(child)
+            else:
+                child = self.child(name="Test Child", attribute="Attribute from destination")
+                child.model_flags |= DiffSyncModelFlags.NATURAL_DELETION_ORDER
+                parent.add_child(child)
+                self.add(child)
+
+    source_adapter = Adapter()
+    source_adapter.load(is_source=True)
+    destination_adapter = Adapter()
+    destination_adapter.load()
+
+    source_adapter.sync_to(destination_adapter)
+
+    assert "Update on child" in call_order
