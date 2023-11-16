@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.10.0 - 2023-11-16
+
+### Fixed
+
+- #249 - Fixes natural deletion order flag
+- #247 - Fixes underspecified typing_extensions dependency
+
+### Changed
+
+- #247 - Deprecates Python 3.7
+
 ## v1.9.0 - 2023-10-16
 
 ### Added
