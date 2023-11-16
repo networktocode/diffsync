@@ -369,11 +369,13 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
             natural_deletion_order = bool(dst_model.model_flags & DiffSyncModelFlags.NATURAL_DELETION_ORDER)
             skip_children = bool(dst_model.model_flags & DiffSyncModelFlags.SKIP_CHILDREN_ON_DELETE)
 
+        # Recurse through children to delete if we are supposed to delete the current diff element
         changed = False
         if natural_deletion_order and self.action == DiffSyncActions.DELETE and not skip_children:
             for child in element.get_children():
                 changed |= self.sync_diff_element(child, parent_model=dst_model)
 
+        # Sync the current model - this will delete the current model if self.action is DELETE
         changed, modified_model = self.sync_model(src_model=src_model, dst_model=dst_model, ids=ids, attrs=attrs)
         dst_model = modified_model or dst_model
 
@@ -396,7 +398,7 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
 
         self.incr_elements_processed()
 
-        if not natural_deletion_order:
+        if not natural_deletion_order or self.action is not DiffSyncActions.DELETE:
             for child in element.get_children():
                 changed |= self.sync_diff_element(child, parent_model=dst_model)
 
