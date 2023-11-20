@@ -91,9 +91,6 @@ class DiffSyncModel(BaseModel):
     Can be set as a class attribute or an instance attribute as needed.
     """
 
-    diffsync: Optional["Adapter"] = None
-    """Optional: the DiffSync instance that owns this model instance."""
-
     _status: DiffSyncStatus = PrivateAttr(DiffSyncStatus.SUCCESS)
     """Status of the last attempt at creating/updating/deleting this model."""
 
@@ -216,7 +213,7 @@ class DiffSyncModel(BaseModel):
         """
         return cls.create_base(diffsync=diffsync, ids=ids, attrs=attrs)
 
-    def update_base(self, attrs: Dict) -> Optional[Self]:
+    def update_base(self, diffsync: "Adapter", attrs: Dict) -> Optional[Self]:
         """Base Update method to update the attributes of this instance, along with any platform-specific data updates.
 
         This method is not meant to be subclassed, users should redefine update() instead.
@@ -234,7 +231,7 @@ class DiffSyncModel(BaseModel):
         self.set_status(DiffSyncStatus.SUCCESS, "Updated successfully")
         return self
 
-    def update(self, attrs: Dict) -> Optional[Self]:
+    def update(self, diffsync: "Adapter", attrs: Dict) -> Optional[Self]:
         """Update the attributes of this instance, along with any platform-specific data updates.
 
         Subclasses must call `super().update()` or `self.update_base()`; they may wish to then override the default status information
@@ -250,9 +247,9 @@ class DiffSyncModel(BaseModel):
         Raises:
             ObjectNotUpdated: if an error occurred.
         """
-        return self.update_base(attrs=attrs)
+        return self.update_base(diffsync=diffsync, attrs=attrs)
 
-    def delete_base(self) -> Optional[Self]:
+    def delete_base(self, diffsync: "Adapter") -> Optional[Self]:
         """Base delete method Delete any platform-specific data corresponding to this instance.
 
         This method is not meant to be subclassed, users should redefine delete() instead.
@@ -263,7 +260,7 @@ class DiffSyncModel(BaseModel):
         self.set_status(DiffSyncStatus.SUCCESS, "Deleted successfully")
         return self
 
-    def delete(self) -> Optional[Self]:
+    def delete(self, diffsync: "Adapter") -> Optional[Self]:
         """Delete any platform-specific data corresponding to this instance.
 
         Subclasses must call `super().delete()` or `self.delete_base()`; they may wish to then override the default status information
@@ -276,7 +273,7 @@ class DiffSyncModel(BaseModel):
         Raises:
             ObjectNotDeleted: if an error occurred.
         """
-        return self.delete_base()
+        return self.delete_base(diffsync=diffsync)
 
     @classmethod
     def get_type(cls) -> StrType:
