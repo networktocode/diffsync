@@ -65,7 +65,6 @@ class RedisStore(BaseStore):
         pickled_object = self._store.get(key)
         if pickled_object:
             obj_result = loads(pickled_object)  # nosec
-            obj_result.diffsync = self.diffsync
             return obj_result
         raise ObjectNotFound(f"{key} not present in Cache")
 
@@ -178,7 +177,6 @@ class RedisStore(BaseStore):
 
         # Remove the diffsync object before sending to Redis
         obj_copy = copy.copy(obj)
-        obj_copy.diffsync = None
 
         self._store.set(object_key, dumps(obj_copy))
 
@@ -193,7 +191,6 @@ class RedisStore(BaseStore):
 
         object_key = self._get_key_for_object(modelname, uid)
         obj_copy = copy.copy(obj)
-        obj_copy.diffsync = None
 
         self._store.set(object_key, dumps(obj_copy))
 

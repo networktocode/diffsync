@@ -108,9 +108,6 @@ class LocalStore(BaseStore):
             # Return so we don't have to change anything on the existing object and underlying data
             return
 
-        if not obj.diffsync:
-            obj.diffsync = self.diffsync
-
         self._data[modelname][uid] = obj
 
     def update(self, *, obj: "DiffSyncModel") -> None:
