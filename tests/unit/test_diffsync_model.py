@@ -50,7 +50,7 @@ def test_diffsync_model_json_with_no_data(generic_diffsync_model):
 
 
 def test_diffsync_model_str_with_no_data(generic_diffsync_model):
-    assert generic_diffsync_model.str() == "diffsyncmodel: : {}"
+    assert generic_diffsync_model.str(diffsync=None) == "diffsyncmodel: : {}"
 
 
 def test_diffsync_model_subclass_getters(make_site, make_device, make_interface):
@@ -113,7 +113,7 @@ def test_diffsync_model_json_with_data(make_interface):
 def test_diffsync_model_str_with_data(make_interface):
     intf = make_interface()
     # str() only includes _attributes
-    assert intf.str() == "interface: device1__eth0: {'interface_type': 'ethernet', 'description': None}"
+    assert intf.str(diffsync=None) == "interface: device1__eth0: {'interface_type': 'ethernet', 'description': None}"
 
 
 def test_diffsync_model_subclass_add_remove(make_site, make_device, make_interface):
@@ -196,7 +196,7 @@ def test_diffsync_model_str_with_children(generic_diffsync, make_site, make_devi
     generic_diffsync.add(device1)
 
     assert (
-        site1.str()
+        site1.str(diffsync=generic_diffsync)
         == """\
 site: site1: {}
   devices
@@ -207,7 +207,7 @@ site: site1: {}
     )
 
     assert (
-        site1.str(include_children=False)
+        site1.str(diffsync=generic_diffsync, include_children=False)
         == """\
 site: site1: {}
   devices: ['device1']\
@@ -219,7 +219,6 @@ def test_diffsync_model_subclass_crud(generic_diffsync):
     """Test basic CRUD operations on generic DiffSyncModel subclasses."""
     device1 = Device.create(generic_diffsync, {"name": "device1"}, {"role": "spine"})
     assert isinstance(device1, Device)
-    assert device1.diffsync == generic_diffsync
     assert device1.name == "device1"
     assert device1.role == "spine"
 
@@ -229,18 +228,17 @@ def test_diffsync_model_subclass_crud(generic_diffsync):
         {"description": "some description"},
     )
     assert isinstance(device1_eth0, Interface)
-    assert device1_eth0.diffsync == generic_diffsync
     assert device1_eth0.name == "eth0"
     assert device1_eth0.device_name == "device1"
     assert device1_eth0.description == "some description"
 
-    device1 = device1.update({"site_name": "site1", "role": "leaf"})
+    device1 = device1.update(generic_diffsync, {"site_name": "site1", "role": "leaf"})
     assert isinstance(device1, Device)
     assert device1.name == "device1"
     assert device1.site_name == "site1"
     assert device1.role == "leaf"
 
-    device1_eth0 = device1_eth0.update({"description": ""})
+    device1_eth0 = device1_eth0.update(generic_diffsync, {"description": ""})
     assert isinstance(device1_eth0, Interface)
     assert device1_eth0.name == "eth0"
     assert device1_eth0.device_name == "device1"
@@ -248,10 +246,10 @@ def test_diffsync_model_subclass_crud(generic_diffsync):
 
     # TODO: negative tests - try to update identifiers with update(), for example
 
-    device1 = device1.delete()
+    device1 = device1.delete(generic_diffsync)
     assert isinstance(device1, Device)
 
-    device1_eth0.delete()
+    device1_eth0.delete(generic_diffsync)
     assert isinstance(device1_eth0, Interface)
 
 

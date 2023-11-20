@@ -95,9 +95,6 @@ class BaseStore:
 
         self.remove_item(modelname, uid)
 
-        if obj.diffsync:
-            obj.diffsync = None
-
         if remove_children:
             for child_type, child_fieldname in obj.get_children_mapping().items():
                 for child_id in getattr(obj, child_fieldname):

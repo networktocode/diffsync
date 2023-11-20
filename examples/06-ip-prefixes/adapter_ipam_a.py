@@ -26,9 +26,9 @@ class IpamAPrefix(Prefix):
 
         return super().create(diffsync, ids=ids, attrs=attrs)
 
-    def update(self, attrs):
+    def update(self, diffsync, attrs):
         """Update a Prefix record in IPAM A."""
-        for elem in self.diffsync.data:
+        for elem in diffsync.data:
             if elem["cidr"] == self.prefix:
                 if "vrf" in attrs:
                     elem["vrf"] = attrs["vrf"]
@@ -38,16 +38,16 @@ class IpamAPrefix(Prefix):
                     elem["customer_id"] = attrs["tenant"]
                 break
 
-        return super().update(attrs)
+        return super().update(diffsync, attrs)
 
-    def delete(self):
+    def delete(self, diffsync):
         """Delete a Prefix record in IPAM A."""
-        for index, elem in enumerate(self.diffsync.data):
+        for index, elem in enumerate(diffsync.data):
             if elem["cidr"] == self.prefix:
-                del self.diffsync.data[index]
+                del diffsync.data[index]
                 break
 
-        return super().delete()
+        return super().delete(diffsync)
 
 
 class IpamA(Adapter):

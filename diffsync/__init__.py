@@ -91,9 +91,6 @@ class DiffSyncModel(BaseModel):
     Can be set as a class attribute or an instance attribute as needed.
     """
 
-    diffsync: Optional["Adapter"] = None
-    """Optional: the DiffSync instance that owns this model instance."""
-
     _status: DiffSyncStatus = PrivateAttr(DiffSyncStatus.SUCCESS)
     """Status of the last attempt at creating/updating/deleting this model."""
 
@@ -152,7 +149,7 @@ class DiffSyncModel(BaseModel):
             kwargs["exclude_defaults"] = True
         return super().model_dump_json(**kwargs)
 
-    def str(self, include_children: bool = True, indent: int = 0) -> StrType:
+    def str(self, diffsync: "Adapter", include_children: bool = True, indent: int = 0) -> StrType:
         """Build a detailed string representation of this DiffSyncModel and optionally its children."""
         margin = " " * indent
         output = f"{margin}{self.get_type()}: {self.get_unique_id()}: {self.get_attrs()}"
@@ -161,13 +158,15 @@ class DiffSyncModel(BaseModel):
             child_ids = getattr(self, fieldname)
             if not child_ids:
                 output += ": []"
-            elif not self.diffsync or not include_children:
+            elif not diffsync or not include_children:
                 output += f": {child_ids}"
             else:
                 for child_id in child_ids:
                     try:
-                        child = self.diffsync.get(modelname, child_id)
-                        output += "\n" + child.str(include_children=include_children, indent=indent + 4)
+                        child = diffsync.get(modelname, child_id)
+                        output += "\n" + child.str(
+                            diffsync=diffsync, include_children=include_children, indent=indent + 4
+                        )
                     except ObjectNotFound:
                         output += f"\n{margin}    {child_id} (ERROR: details unavailable)"
         return output
@@ -191,7 +190,8 @@ class DiffSyncModel(BaseModel):
         Returns:
             DiffSyncModel: instance of this class.
         """
-        model = cls(**ids, diffsync=diffsync, **attrs)
+        # pylint: disable=unused-argument
+        model = cls(**ids, **attrs)
         model.set_status(DiffSyncStatus.SUCCESS, "Created successfully")
         return model
 
@@ -216,7 +216,7 @@ class DiffSyncModel(BaseModel):
         """
         return cls.create_base(diffsync=diffsync, ids=ids, attrs=attrs)
 
-    def update_base(self, attrs: Dict) -> Optional[Self]:
+    def update_base(self, diffsync: "Adapter", attrs: Dict) -> Optional[Self]:
         """Base Update method to update the attributes of this instance, along with any platform-specific data updates.
 
         This method is not meant to be subclassed, users should redefine update() instead.
@@ -227,6 +227,7 @@ class DiffSyncModel(BaseModel):
         Returns:
             DiffSyncModel: this instance.
         """
+        # pylint: disable=unused-argument
         for attr, value in attrs.items():
             # TODO: enforce that only attrs in self._attributes can be updated in this way?
             setattr(self, attr, value)
@@ -234,7 +235,7 @@ class DiffSyncModel(BaseModel):
         self.set_status(DiffSyncStatus.SUCCESS, "Updated successfully")
         return self
 
-    def update(self, attrs: Dict) -> Optional[Self]:
+    def update(self, diffsync: "Adapter", attrs: Dict) -> Optional[Self]:
         """Update the attributes of this instance, along with any platform-specific data updates.
 
         Subclasses must call `super().update()` or `self.update_base()`; they may wish to then override the default status information
@@ -250,9 +251,9 @@ class DiffSyncModel(BaseModel):
         Raises:
             ObjectNotUpdated: if an error occurred.
         """
-        return self.update_base(attrs=attrs)
+        return self.update_base(diffsync=diffsync, attrs=attrs)
 
-    def delete_base(self) -> Optional[Self]:
+    def delete_base(self, diffsync: "Adapter") -> Optional[Self]:
         """Base delete method Delete any platform-specific data corresponding to this instance.
 
         This method is not meant to be subclassed, users should redefine delete() instead.
@@ -260,10 +261,11 @@ class DiffSyncModel(BaseModel):
         Returns:
             DiffSyncModel: this instance.
         """
+        # pylint: disable=unused-argument
         self.set_status(DiffSyncStatus.SUCCESS, "Deleted successfully")
         return self
 
-    def delete(self) -> Optional[Self]:
+    def delete(self, diffsync: "Adapter") -> Optional[Self]:
         """Delete any platform-specific data corresponding to this instance.
 
         Subclasses must call `super().delete()` or `self.delete_base()`; they may wish to then override the default status information
@@ -276,7 +278,7 @@ class DiffSyncModel(BaseModel):
         Raises:
             ObjectNotDeleted: if an error occurred.
         """
-        return self.delete_base()
+        return self.delete_base(diffsync=diffsync)
 
     @classmethod
     def get_type(cls) -> StrType:
@@ -509,7 +511,7 @@ class Adapter:  # pylint: disable=too-many-public-methods
                 output += ": []"
             else:
                 for model in models:
-                    output += "\n" + model.str(indent=indent + 2)
+                    output += "\n" + model.str(diffsync=self, indent=indent + 2)
         return output
 
     def load_from_dict(self, data: Dict) -> None:

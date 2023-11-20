@@ -64,7 +64,7 @@ class NautobotCountry(Country):
         item = super().create(ids=ids, diffsync=diffsync, attrs=attrs)
         return item
 
-    def update(self, attrs: dict):
+    def update(self, diffsync: Adapter, attrs: dict):
         """Update a country object in Nautobot.
 
         Args:
@@ -77,8 +77,8 @@ class NautobotCountry(Country):
         Raises:
             ObjectNotUpdated: if an error occurred.
         """
-        # Retrive the pynautobot object from Nautobot since we only have the UUID internally
-        remote = self.diffsync.nautobot.dcim.regions.get(self.remote_id)
+        # Retrieve the pynautobot object from Nautobot since we only have the UUID internally
+        remote = diffsync.nautobot.dcim.regions.get(self.remote_id)
 
         # Convert the internal attrs to Nautobot format
         if "population" in attrs:
@@ -89,17 +89,17 @@ class NautobotCountry(Country):
         remote.save()
         print(f"Updated Country {self.slug} | {attrs}")
 
-        return super().update(attrs)
+        return super().update(diffsync, attrs)
 
-    def delete(self):
+    def delete(self, diffsync: Adapter):
         """Delete a country object in Nautobot.
 
         Returns:
             NautobotCountry: DiffSync object
         """
         # Retrieve the pynautobot object and delete the object in Nautobot
-        remote = self.diffsync.nautobot.dcim.regions.get(self.remote_id)
+        remote = diffsync.nautobot.dcim.regions.get(self.remote_id)
         remote.delete()
 
-        super().delete()
+        super().delete(diffsync)
         return self

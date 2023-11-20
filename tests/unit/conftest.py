@@ -44,7 +44,7 @@ class ErrorProneModelMixin:
             return None  # non-fatal error
         return super().create(diffsync, ids, attrs)  # type: ignore
 
-    def update(self, attrs: Dict):
+    def update(self, diffsync: Adapter, attrs: Dict):
         """As DiffSyncModel.update(), but periodically throw exceptions."""
         # pylint: disable=protected-access
         self.__class__._counter += 1
@@ -52,9 +52,9 @@ class ErrorProneModelMixin:
             raise ObjectNotUpdated("Random update error!")
         if not self.__class__._counter % 4:
             return None  # non-fatal error
-        return super().update(attrs)  # type: ignore
+        return super().update(diffsync, attrs)  # type: ignore
 
-    def delete(self):
+    def delete(self, diffsync: Adapter):
         """As DiffSyncModel.delete(), but periodically throw exceptions."""
         # pylint: disable=protected-access
         self.__class__._counter += 1
@@ -62,7 +62,7 @@ class ErrorProneModelMixin:
             raise ObjectNotDeleted("Random deletion error!")
         if not self.__class__._counter % 4:
             return None  # non-fatal error
-        return super().delete()  # type: ignore
+        return super().delete(diffsync)  # type: ignore
 
 
 class ExceptionModelMixin:
@@ -73,11 +73,11 @@ class ExceptionModelMixin:
         """As DiffSyncModel.create(), but always throw exceptions."""
         raise NotImplementedError
 
-    def update(self, attrs: Dict):
+    def update(self, diffsync: Adapter, attrs: Dict):
         """As DiffSyncModel.update(), but always throw exceptions."""
         raise NotImplementedError
 
-    def delete(self):
+    def delete(self, diffsync: Adapter):
         """As DiffSyncModel.delete(), but always throw exceptions."""
         raise NotImplementedError
 

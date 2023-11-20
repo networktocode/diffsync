@@ -186,15 +186,15 @@ class Device(DiffSyncModel):
         # Call the super().create() method to create the in-memory DiffSyncModel instance
         return super().create(ids=ids, diffsync=diffsync, attrs=attrs)
 
-    def update(self, attrs):
+    def update(self, diffsync, attrs):
         ## TODO add your own logic here to update the device on the remote system
         # Call the super().update() method to update the in-memory DiffSyncModel instance
-        return super().update(attrs)
+        return super().update(diffsync, attrs)
 
-    def delete(self):
+    def delete(self, diffsync):
         ## TODO add your own logic here to delete the device on the remote system
         # Call the super().delete() method to remove the DiffSyncModel instance from its parent DiffSync adapter
-        super().delete()
+        super().delete(diffsync)
         return self
 ```
 

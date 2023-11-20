@@ -30,13 +30,14 @@ class RegionNautobotModel(RegionModel):
 
         return super().create(diffsync, ids=ids, attrs=attrs)
 
-    def update(self, attrs):
+    def update(self, diffsync, attrs):
         """Update an existing Region record in remote Nautobot.
 
         Args:
+            diffsync (Adapter): Adapter this model instance belongs to
             attrs (dict): Updated values for this record's _attributes
         """
-        region = self.diffsync.nautobot_api.dcim.regions.get(name=self.name)
+        region = diffsync.nautobot_api.dcim.regions.get(name=self.name)
         data = {}
         if "slug" in attrs:
             data["slug"] = attrs["slug"]
@@ -44,18 +45,18 @@ class RegionNautobotModel(RegionModel):
             data["description"] = attrs["description"]
         if "parent_name" in attrs:
             if attrs["parent_name"]:
-                data["parent"] = str(self.diffsync.get(self.diffsync.region, attrs["parent_name"]).name)
+                data["parent"] = str(diffsync.get(diffsync.region, attrs["parent_name"]).name)
             else:
                 data["parent"] = None
 
         region.update(data=data)
 
-        return super().update(attrs)
+        return super().update(diffsync, attrs)
 
-    def delete(self):  # pylint: disable= useless-super-delegation
+    def delete(self, diffsync):  # pylint: disable= useless-super-delegation
         """Delete an existing Region record from remote Nautobot."""
         # Not implemented
-        return super().delete()
+        return super().delete(diffsync)
 
 
 class SiteNautobotModel(SiteModel):
@@ -81,13 +82,14 @@ class SiteNautobotModel(SiteModel):
         )
         return super().create(diffsync, ids=ids, attrs=attrs)
 
-    def update(self, attrs):
+    def update(self, diffsync, attrs):
         """Update an existing Site record in remote Nautobot.
 
         Args:
+            diffsync (Adapter): Adapter this model instance belongs to
             attrs (dict): Updated values for this record's _attributes
         """
-        site = self.diffsync.nautobot_api.dcim.sites.get(name=self.name)
+        site = diffsync.nautobot_api.dcim.sites.get(name=self.name)
 
         data = {}
         if "slug" in attrs:
@@ -108,12 +110,12 @@ class SiteNautobotModel(SiteModel):
 
         site.update(data=data)
 
-        return super().update(attrs)
+        return super().update(diffsync, attrs)
 
-    def delete(self):  # pylint: disable= useless-super-delegation
+    def delete(self, diffsync):  # pylint: disable= useless-super-delegation
         """Delete an existing Site record from remote Nautobot."""
         # Not implemented
-        return super().delete()
+        return super().delete(diffsync)
 
 
 class NautobotRemote(Adapter):

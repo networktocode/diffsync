@@ -427,11 +427,11 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
             elif self.action == DiffSyncActions.UPDATE:
                 if dst_model is None:
                     raise ObjectNotUpdated(f"Failed to update {self.model_class.get_type()} {ids} - not found!")
-                dst_model = dst_model.update(attrs=attrs)
+                dst_model = dst_model.update(diffsync=self.dst_diffsync, attrs=attrs)
             elif self.action == DiffSyncActions.DELETE:
                 if dst_model is None:
                     raise ObjectNotDeleted(f"Failed to delete {self.model_class.get_type()} {ids} - not found!")
-                dst_model = dst_model.delete()
+                dst_model = dst_model.delete(diffsync=self.dst_diffsync)
             else:
                 raise ObjectCrudException(f'Unknown action "{self.action}"!')
 
