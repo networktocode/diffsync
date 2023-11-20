@@ -125,9 +125,9 @@ def test_diffsync_diff_with_natural_deletion_order():
 
         name: str
 
-        def delete(self):
+        def delete(self, diffsync: Adapter):
             call_order.append(self.name)
-            return super().delete()
+            return super().delete(diffsync)
 
     class TestModelParent(DiffSyncModel):  # pylint: disable=missing-class-docstring
         _modelname = "parent"
@@ -137,9 +137,9 @@ def test_diffsync_diff_with_natural_deletion_order():
         name: str
         children: List[TestModelChild] = []
 
-        def delete(self):
+        def delete(self, diffsync: Adapter):
             call_order.append(self.name)
-            return super().delete()
+            return super().delete(diffsync)
 
     class TestBackend(Adapter):  # pylint: disable=missing-class-docstring
         top_level = ["parent"]

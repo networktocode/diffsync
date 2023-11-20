@@ -961,7 +961,7 @@ def test_diffsync_sync_skip_children_on_delete(backend_a):
     class NoDeleteInterface(Interface):
         """Interface that shouldn't be deleted directly."""
 
-        def delete(self):
+        def delete(self, diffsync):
             raise RuntimeError("Don't delete me, bro!")
 
     class NoDeleteInterfaceDiffSync(BackendA):
