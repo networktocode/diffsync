@@ -149,7 +149,7 @@ class DiffSyncModel(BaseModel):
             kwargs["exclude_defaults"] = True
         return super().model_dump_json(**kwargs)
 
-    def str(self, include_children: bool = True, indent: int = 0) -> StrType:
+    def str(self, diffsync: "Adapter", include_children: bool = True, indent: int = 0) -> StrType:
         """Build a detailed string representation of this DiffSyncModel and optionally its children."""
         margin = " " * indent
         output = f"{margin}{self.get_type()}: {self.get_unique_id()}: {self.get_attrs()}"
@@ -158,13 +158,15 @@ class DiffSyncModel(BaseModel):
             child_ids = getattr(self, fieldname)
             if not child_ids:
                 output += ": []"
-            elif not self.diffsync or not include_children:
+            elif not diffsync or not include_children:
                 output += f": {child_ids}"
             else:
                 for child_id in child_ids:
                     try:
-                        child = self.diffsync.get(modelname, child_id)
-                        output += "\n" + child.str(include_children=include_children, indent=indent + 4)
+                        child = diffsync.get(modelname, child_id)
+                        output += "\n" + child.str(
+                            diffsync=diffsync, include_children=include_children, indent=indent + 4
+                        )
                     except ObjectNotFound:
                         output += f"\n{margin}    {child_id} (ERROR: details unavailable)"
         return output
@@ -188,7 +190,8 @@ class DiffSyncModel(BaseModel):
         Returns:
             DiffSyncModel: instance of this class.
         """
-        model = cls(**ids, diffsync=diffsync, **attrs)
+        # pylint: disable=unused-argument
+        model = cls(**ids, **attrs)
         model.set_status(DiffSyncStatus.SUCCESS, "Created successfully")
         return model
 
@@ -224,6 +227,7 @@ class DiffSyncModel(BaseModel):
         Returns:
             DiffSyncModel: this instance.
         """
+        # pylint: disable=unused-argument
         for attr, value in attrs.items():
             # TODO: enforce that only attrs in self._attributes can be updated in this way?
             setattr(self, attr, value)
@@ -257,6 +261,7 @@ class DiffSyncModel(BaseModel):
         Returns:
             DiffSyncModel: this instance.
         """
+        # pylint: disable=unused-argument
         self.set_status(DiffSyncStatus.SUCCESS, "Deleted successfully")
         return self
 
@@ -506,7 +511,7 @@ class Adapter:  # pylint: disable=too-many-public-methods
                 output += ": []"
             else:
                 for model in models:
-                    output += "\n" + model.str(indent=indent + 2)
+                    output += "\n" + model.str(diffsync=self, indent=indent + 2)
         return output
 
     def load_from_dict(self, data: Dict) -> None:
