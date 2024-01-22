@@ -17,6 +17,7 @@ limitations under the License.
 import sys
 from inspect import isclass
 from typing import Callable, ClassVar, Dict, List, Optional, Tuple, Type, Union, Any, Set
+import warnings
 
 from pydantic import ConfigDict, BaseModel, PrivateAttr
 import structlog  # type: ignore
@@ -854,8 +855,15 @@ class Adapter:  # pylint: disable=too-many-public-methods
         return self.store.count(model=model)
 
 
-# For backwards-compatibility, keep around the old name
-DiffSync = Adapter
+def DiffSync(*args: Any, **kwargs: Any) -> Adapter:  # noqa  pylint: disable=invalid-name
+    """For backwards-compatibility, keep around the old name."""
 
-# DiffSyncModel references DiffSync and DiffSync references DiffSyncModel. Break the typing loop:
+    warnings.warn(
+        "'diffsync.DiffSync' is deprecated and will be removed with 2.1, use 'diffsync.Adapter' instead.",
+        DeprecationWarning,
+    )
+    return Adapter(*args, **kwargs)
+
+
+# DiffSyncModel references Adapter and Adapter references DiffSyncModel. Break the typing loop:
 DiffSyncModel.model_rebuild()
