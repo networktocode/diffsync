@@ -9,11 +9,11 @@ class RegionNautobotModel(RegionModel):
     """Implementation of Region create/update/delete methods for updating remote Nautobot data."""
 
     @classmethod
-    def create(cls, diffsync, ids, attrs):
+    def create(cls, adapter, ids, attrs):
         """Create a new Region record in remote Nautobot.
 
         Args:
-            diffsync (NautobotRemote): DiffSync adapter owning this Region
+            adapter (NautobotRemote): DiffSync adapter owning this Region
             ids (dict): Initial values for this model's _identifiers
             attrs (dict): Initial values for this model's _attributes
         """
@@ -24,11 +24,11 @@ class RegionNautobotModel(RegionModel):
         if attrs["description"]:
             data["description"] = attrs["description"]
         if attrs["parent_name"]:
-            data["parent"] = str(diffsync.get(diffsync.region, attrs["parent_name"]).pk)
+            data["parent"] = str(adapter.get(adapter.region, attrs["parent_name"]).pk)
 
-        diffsync.nautobot_api.dcim.regions.create(**data)
+        adapter.nautobot_api.dcim.regions.create(**data)
 
-        return super().create(diffsync, ids=ids, attrs=attrs)
+        return super().create(adapter, ids=ids, attrs=attrs)
 
     def update(self, attrs):
         """Update an existing Region record in remote Nautobot.
@@ -36,7 +36,7 @@ class RegionNautobotModel(RegionModel):
         Args:
             attrs (dict): Updated values for this record's _attributes
         """
-        region = self.diffsync.nautobot_api.dcim.regions.get(name=self.name)
+        region = self.adapter.nautobot_api.dcim.regions.get(name=self.name)
         data = {}
         if "slug" in attrs:
             data["slug"] = attrs["slug"]
@@ -44,7 +44,7 @@ class RegionNautobotModel(RegionModel):
             data["description"] = attrs["description"]
         if "parent_name" in attrs:
             if attrs["parent_name"]:
-                data["parent"] = str(self.diffsync.get(self.diffsync.region, attrs["parent_name"]).name)
+                data["parent"] = str(self.adapter.get(self.adapter.region, attrs["parent_name"]).name)
             else:
                 data["parent"] = None
 
@@ -62,15 +62,15 @@ class SiteNautobotModel(SiteModel):
     """Implementation of Site create/update/delete methods for updating remote Nautobot data."""
 
     @classmethod
-    def create(cls, diffsync, ids, attrs):
+    def create(cls, adapter, ids, attrs):
         """Create a new Site in remote Nautobot.
 
         Args:
-            diffsync (NautobotRemote): DiffSync adapter owning this Site
+            adapter (NautobotRemote): DiffSync adapter owning this Site
             ids (dict): Initial values for this model's _identifiers
             attrs (dict): Initial values for this model's _attributes
         """
-        diffsync.nautobot_api.dcim.sites.create(
+        adapter.nautobot_api.dcim.sites.create(
             name=ids["name"],
             slug=attrs["slug"],
             description=attrs["description"],
@@ -79,7 +79,7 @@ class SiteNautobotModel(SiteModel):
             latitude=attrs["latitude"],
             longitude=attrs["longitude"],
         )
-        return super().create(diffsync, ids=ids, attrs=attrs)
+        return super().create(adapter, ids=ids, attrs=attrs)
 
     def update(self, attrs):
         """Update an existing Site record in remote Nautobot.
@@ -87,7 +87,7 @@ class SiteNautobotModel(SiteModel):
         Args:
             attrs (dict): Updated values for this record's _attributes
         """
-        site = self.diffsync.nautobot_api.dcim.sites.get(name=self.name)
+        site = self.adapter.nautobot_api.dcim.sites.get(name=self.name)
 
         data = {}
         if "slug" in attrs:

@@ -159,41 +159,41 @@ def test_diffsync_model_subclass_add_remove(make_site, make_device, make_interfa
         device1.remove_child(device1_eth0)
 
 
-def test_diffsync_model_dict_with_children(generic_diffsync, make_site, make_device, make_interface):
-    site1 = make_site(diffsync=generic_diffsync)
-    device1 = make_device(diffsync=generic_diffsync)
-    device1_eth0 = make_interface(diffsync=generic_diffsync)
+def test_diffsync_model_dict_with_children(generic_adapter, make_site, make_device, make_interface):
+    site1 = make_site(diffsync=generic_adapter)
+    device1 = make_device(diffsync=generic_adapter)
+    device1_eth0 = make_interface(diffsync=generic_adapter)
     site1.add_child(device1)
     device1.add_child(device1_eth0)
     # test error handling - diffsync knows about site and device but not interface
-    generic_diffsync.add(site1)
-    generic_diffsync.add(device1)
+    generic_adapter.add(site1)
+    generic_adapter.add(device1)
 
     assert site1.dict() == {"devices": ["device1"], "model_flags": DiffSyncModelFlags.NONE, "name": "site1"}
 
 
-def test_diffsync_model_json_with_children(generic_diffsync, make_site, make_device, make_interface):
-    site1 = make_site(diffsync=generic_diffsync)
-    device1 = make_device(diffsync=generic_diffsync)
-    device1_eth0 = make_interface(diffsync=generic_diffsync)
+def test_diffsync_model_json_with_children(generic_adapter, make_site, make_device, make_interface):
+    site1 = make_site(diffsync=generic_adapter)
+    device1 = make_device(diffsync=generic_adapter)
+    device1_eth0 = make_interface(diffsync=generic_adapter)
     site1.add_child(device1)
     device1.add_child(device1_eth0)
     # test error handling - diffsync knows about site and device but not interface
-    generic_diffsync.add(site1)
-    generic_diffsync.add(device1)
+    generic_adapter.add(site1)
+    generic_adapter.add(device1)
 
     assert site1.json() == '{"name":"site1","devices":["device1"]}'
 
 
-def test_diffsync_model_str_with_children(generic_diffsync, make_site, make_device, make_interface):
-    site1 = make_site(diffsync=generic_diffsync)
-    device1 = make_device(diffsync=generic_diffsync)
-    device1_eth0 = make_interface(diffsync=generic_diffsync)
+def test_diffsync_model_str_with_children(generic_adapter, make_site, make_device, make_interface):
+    site1 = make_site(diffsync=generic_adapter)
+    device1 = make_device(diffsync=generic_adapter)
+    device1_eth0 = make_interface(diffsync=generic_adapter)
     site1.add_child(device1)
     device1.add_child(device1_eth0)
     # test error handling - diffsync knows about site and device but not interface
-    generic_diffsync.add(site1)
-    generic_diffsync.add(device1)
+    generic_adapter.add(site1)
+    generic_adapter.add(device1)
 
     assert (
         site1.str()
@@ -215,21 +215,21 @@ site: site1: {}
     )
 
 
-def test_diffsync_model_subclass_crud(generic_diffsync):
+def test_diffsync_model_subclass_crud(generic_adapter):
     """Test basic CRUD operations on generic DiffSyncModel subclasses."""
-    device1 = Device.create(generic_diffsync, {"name": "device1"}, {"role": "spine"})
+    device1 = Device.create(generic_adapter, {"name": "device1"}, {"role": "spine"})
     assert isinstance(device1, Device)
-    assert device1.diffsync == generic_diffsync
+    assert device1.adapter == generic_adapter
     assert device1.name == "device1"
     assert device1.role == "spine"
 
     device1_eth0 = Interface.create(
-        generic_diffsync,
+        generic_adapter,
         {"name": "eth0", "device_name": "device1"},
         {"description": "some description"},
     )
     assert isinstance(device1_eth0, Interface)
-    assert device1_eth0.diffsync == generic_diffsync
+    assert device1_eth0.adapter == generic_adapter
     assert device1_eth0.name == "eth0"
     assert device1_eth0.device_name == "device1"
     assert device1_eth0.description == "some description"

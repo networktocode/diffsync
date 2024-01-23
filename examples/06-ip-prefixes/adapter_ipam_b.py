@@ -11,9 +11,9 @@ class IpamBPrefix(Prefix):
     """Implementation of Prefix create/update/delete methods for IPAM B."""
 
     @classmethod
-    def create(cls, diffsync, ids, attrs):
+    def create(cls, adapter, ids, attrs):
         """Create a Prefix record in IPAM B."""
-        diffsync.data.append(
+        adapter.data.append(
             {
                 "network": ids["prefix"].split("/")[0],
                 "prefix_length": int(ids["prefix"].split("/")[1]),
@@ -23,14 +23,14 @@ class IpamBPrefix(Prefix):
             }
         )
 
-        return super().create(diffsync, ids=ids, attrs=attrs)
+        return super().create(adapter, ids=ids, attrs=attrs)
 
     def update(self, attrs):
         """Update a Prefix record in IPAM B."""
         network = self.prefix.split("/")[0]
         prefix_length = int(self.prefix.split("/")[1])
 
-        for elem in self.diffsync.data:
+        for elem in self.adapter.data:
             if elem["network"] == network and elem["prefix_length"] == prefix_length:
                 if "vrf" in attrs:
                     elem["vrf"] = attrs["vrf"]
@@ -47,9 +47,9 @@ class IpamBPrefix(Prefix):
         network = self.prefix.split("/")[0]
         prefix_length = int(self.prefix.split("/")[1])
 
-        for index, elem in enumerate(self.diffsync.data):
+        for index, elem in enumerate(self.adapter.data):
             if elem["network"] == network and elem["prefix_length"] == prefix_length:
-                del self.diffsync.data[index]
+                del self.adapter.data[index]
                 break
 
         return super().delete()
