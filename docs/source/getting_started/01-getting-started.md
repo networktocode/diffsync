@@ -181,10 +181,10 @@ class Device(DiffSyncModel):
     [...]
 
     @classmethod
-    def create(cls, diffsync, ids, attrs):
+    def create(cls, adapter, ids, attrs):
         ## TODO add your own logic here to create the device on the remote system
         # Call the super().create() method to create the in-memory DiffSyncModel instance
-        return super().create(ids=ids, diffsync=diffsync, attrs=attrs)
+        return super().create(ids=ids, adapter=adapter, attrs=attrs)
 
     def update(self, attrs):
         ## TODO add your own logic here to update the device on the remote system

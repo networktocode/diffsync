@@ -35,14 +35,14 @@ class ErrorProneModelMixin:
     _counter: ClassVar[int] = 0
 
     @classmethod
-    def create(cls, diffsync: Adapter, ids: Dict, attrs: Dict):
+    def create(cls, adapter: Adapter, ids: Dict, attrs: Dict):
         """As DiffSyncModel.create(), but periodically throw exceptions."""
         cls._counter += 1
         if not cls._counter % 5:
             raise ObjectNotCreated("Random creation error!")
         if not cls._counter % 4:
             return None  # non-fatal error
-        return super().create(diffsync, ids, attrs)  # type: ignore
+        return super().create(adapter, ids, attrs)  # type: ignore
 
     def update(self, attrs: Dict):
         """As DiffSyncModel.update(), but periodically throw exceptions."""
@@ -69,7 +69,7 @@ class ExceptionModelMixin:
     """Test class that always throws exceptions when creating/updating/deleting instances."""
 
     @classmethod
-    def create(cls, diffsync: Adapter, ids: Dict, attrs: Dict):
+    def create(cls, adapter: Adapter, ids: Dict, attrs: Dict):
         """As DiffSyncModel.create(), but always throw exceptions."""
         raise NotImplementedError
 
@@ -158,8 +158,8 @@ def make_interface():
 
 
 @pytest.fixture
-def generic_diffsync():
-    """Provide a generic DiffSync instance."""
+def generic_adapter():
+    """Provide a generic Adapter instance."""
     return Adapter()
 
 
@@ -173,7 +173,7 @@ class UnusedModel(DiffSyncModel):
 
 
 class GenericBackend(Adapter):
-    """An example semi-abstract subclass of DiffSync."""
+    """An example semi-abstract subclass of Adapter."""
 
     site = Site  # to be overridden by subclasses
     device = Device

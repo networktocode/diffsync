@@ -108,8 +108,8 @@ class LocalStore(BaseStore):
             # Return so we don't have to change anything on the existing object and underlying data
             return
 
-        if not obj.diffsync:
-            obj.diffsync = self.diffsync
+        if not obj.adapter:
+            obj.adapter = self.adapter
 
         self._data[modelname][uid] = obj
 

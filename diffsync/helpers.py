@@ -425,7 +425,7 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
             if self.action == DiffSyncActions.CREATE:
                 if dst_model is not None:
                     raise ObjectNotCreated(f"Failed to create {self.model_class.get_type()} {ids} - it already exists!")
-                dst_model = self.model_class.create(diffsync=self.dst_diffsync, ids=ids, attrs=attrs)
+                dst_model = self.model_class.create(adapter=self.dst_diffsync, ids=ids, attrs=attrs)
             elif self.action == DiffSyncActions.UPDATE:
                 if dst_model is None:
                     raise ObjectNotUpdated(f"Failed to update {self.model_class.get_type()} {ids} - not found!")

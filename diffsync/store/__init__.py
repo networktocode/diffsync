@@ -15,12 +15,12 @@ class BaseStore:
     def __init__(
         self,  # pylint: disable=unused-argument
         *args: Any,  # pylint: disable=unused-argument
-        diffsync: Optional["Adapter"] = None,
+        adapter: Optional["Adapter"] = None,
         name: str = "",
         **kwargs: Any,  # pylint: disable=unused-argument
     ) -> None:
         """Init method for BaseStore."""
-        self.diffsync = diffsync
+        self.adapter = adapter
         self.name = name or self.__class__.__name__
         self._log = structlog.get_logger().new(store=self)
 
@@ -95,8 +95,8 @@ class BaseStore:
 
         self.remove_item(modelname, uid)
 
-        if obj.diffsync:
-            obj.diffsync = None
+        if obj.adapter:
+            obj.adapter = None
 
         if remove_children:
             for child_type, child_fieldname in obj.get_children_mapping().items():
@@ -243,9 +243,9 @@ class BaseStore:
         """Get object class and model name for a model."""
         if isinstance(model, str):
             modelname = model
-            if not hasattr(self.diffsync, model):
+            if not hasattr(self.adapter, model):
                 return None, modelname
-            object_class = getattr(self.diffsync, model)
+            object_class = getattr(self.adapter, model)
         else:
             object_class = model
             modelname = model.get_type()
