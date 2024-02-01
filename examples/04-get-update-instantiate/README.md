@@ -1,12 +1,12 @@
 # Example 4 - Using get or update helpers
 
-This example aims to expand on [Example 1](https://github.com/networktocode/diffsync/tree/main/examples/01-multiple-data-sources/README.md) that will take advantage of two new helper methods on the `DiffSync` class; `get_or_instantiate` and `update_or_instantiate`.
+This example aims to expand on [Example 1](https://github.com/networktocode/diffsync/tree/main/examples/01-multiple-data-sources/README.md) that will take advantage of two new helper methods on the `Adapter` class; `get_or_instantiate` and `update_or_instantiate`.
 
 Both methods act similar to Django's `get_or_create` function to return the object and then a boolean to identify whether the object was created or not. Let's dive into each of them.
 
 ## get_or_instantiate
 
-The following arguments are supported: model (`DiffSyncModel`), ids (dictionary), and attrs (dictionary). The `model` and `ids` are used to find an existing object. If the object does not currently exist within the `DiffSync` adapter, it will then use `model`, `ids`, and `attrs` to add the object.
+The following arguments are supported: model (`DiffSyncModel`), ids (dictionary), and attrs (dictionary). The `model` and `ids` are used to find an existing object. If the object does not currently exist within the `Adapter` adapter, it will then use `model`, `ids`, and `attrs` to add the object.
 
 It will then return a tuple that can be unpacked.
 
@@ -69,4 +69,4 @@ BACKEND_DATA_A = [
                     device.add_child(intf)
 ```
 
-The new methods are helpful due to having devices that are part of the same site. As we iterate over the data and load it into the `DiffSync` adapter, we would have to account for `ObjectAlreadyExists` exceptions when we go to add each duplicate site we encounter within the data or possibly several other models depending how complex the synchronization of data is between backends.
+The new methods are helpful due to having devices that are part of the same site. As we iterate over the data and load it into the `Adapter` adapter, we would have to account for `ObjectAlreadyExists` exceptions when we go to add each duplicate site we encounter within the data or possibly several other models depending how complex the synchronization of data is between backends.

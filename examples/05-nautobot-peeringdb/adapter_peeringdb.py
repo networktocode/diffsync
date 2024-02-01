@@ -5,7 +5,7 @@ import requests
 from slugify import slugify
 import pycountry
 from models import RegionModel, SiteModel
-from diffsync import DiffSync
+from diffsync import Adapter
 from diffsync.exceptions import ObjectNotFound
 
 
@@ -13,7 +13,7 @@ PEERINGDB_URL = "https://peeringdb.com/"
 PEERINGDB_API_KEY = os.environ.get("PEERINGDB_API_KEY", "").strip()
 
 
-class PeeringDB(DiffSync):
+class PeeringDB(Adapter):
     """DiffSync adapter using requests to communicate with PeeringDB."""
 
     # Model classes used by this adapter class

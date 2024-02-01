@@ -38,8 +38,8 @@ class Device(DiffSyncModel):
     _children = {"interface": "interfaces", "site": "sites"}
 
     name: str
-    site_name: Optional[str]  # note that this attribute is NOT included in _attributes
-    role: Optional[str]  # note that this attribute is NOT included in _attributes
+    site_name: Optional[str] = None  # note that this attribute is NOT included in _attributes
+    role: Optional[str] = None  # note that this attribute is NOT included in _attributes
     interfaces: List = []
     sites: List = []
 
@@ -55,4 +55,4 @@ class Interface(DiffSyncModel):
     name: str
     device_name: str
 
-    description: Optional[str]
+    description: Optional[str] = None

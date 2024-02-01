@@ -3,7 +3,7 @@ import pynautobot  # pylint: disable=import-error
 
 from models import Region, Country  # pylint: disable=no-name-in-module
 
-from diffsync import DiffSync
+from diffsync import Adapter
 
 
 # pylint: disable=no-member,too-few-public-methods
@@ -30,11 +30,11 @@ class NautobotCountry(Country):
     """Store the nautobot uuid in the object to allow update and delete of existing object."""
 
     @classmethod
-    def create(cls, diffsync: DiffSync, ids: dict, attrs: dict):
+    def create(cls, adapter: Adapter, ids: dict, attrs: dict):
         """Create a country object in Nautobot.
 
         Args:
-            diffsync: The master data store for other DiffSyncModel instances that we might need to reference
+            adapter: The master data store for other DiffSyncModel instances that we might need to reference
             ids: Dictionary of unique-identifiers needed to create the new object
             attrs: Dictionary of additional attributes to set on the new object
 
@@ -43,11 +43,11 @@ class NautobotCountry(Country):
         """
         # Retrieve the parent region in internal cache to access its UUID
         #  because the UUID is required to associate the object to its parent region in Nautobot
-        region = diffsync.get(diffsync.region, attrs.get("region"))
+        region = adapter.get(adapter.region, attrs.get("region"))
 
         # Create the new country in Nautobot and attach it to its parent
         try:
-            country = diffsync.nautobot.dcim.regions.create(
+            country = adapter.nautobot.dcim.regions.create(
                 slug=ids.get("slug"),
                 name=attrs.get("name"),
                 custom_fields=dict(population=attrs.get("population")),
@@ -61,7 +61,7 @@ class NautobotCountry(Country):
 
         # Add the newly created remote_id and create the internal object for this resource.
         attrs["remote_id"] = country.id
-        item = super().create(ids=ids, diffsync=diffsync, attrs=attrs)
+        item = super().create(ids=ids, adapter=adapter, attrs=attrs)
         return item
 
     def update(self, attrs: dict):
@@ -78,7 +78,7 @@ class NautobotCountry(Country):
             ObjectNotUpdated: if an error occurred.
         """
         # Retrive the pynautobot object from Nautobot since we only have the UUID internally
-        remote = self.diffsync.nautobot.dcim.regions.get(self.remote_id)
+        remote = self.adapter.nautobot.dcim.regions.get(self.remote_id)
 
         # Convert the internal attrs to Nautobot format
         if "population" in attrs:
@@ -98,7 +98,7 @@ class NautobotCountry(Country):
             NautobotCountry: DiffSync object
         """
         # Retrieve the pynautobot object and delete the object in Nautobot
-        remote = self.diffsync.nautobot.dcim.regions.get(self.remote_id)
+        remote = self.adapter.nautobot.dcim.regions.get(self.remote_id)
         remote.delete()
 
         super().delete()

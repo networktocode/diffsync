@@ -3,7 +3,7 @@ import os
 import ipaddress
 import yaml
 from models import Prefix  # pylint: disable=no-name-in-module
-from diffsync import DiffSync
+from diffsync import Adapter
 
 dirname = os.path.dirname(os.path.realpath(__file__))
 
@@ -12,9 +12,9 @@ class IpamAPrefix(Prefix):
     """Implementation of Prefix create/update/delete methods for IPAM A."""
 
     @classmethod
-    def create(cls, diffsync, ids, attrs):
+    def create(cls, adapter, ids, attrs):
         """Create a Prefix record in IPAM A."""
-        diffsync.data.append(
+        adapter.data.append(
             {
                 "cidr": ids["prefix"],
                 "family": ipaddress.ip_address(ids["prefix"].split("/")[0]).version,
@@ -24,11 +24,11 @@ class IpamAPrefix(Prefix):
             }
         )
 
-        return super().create(diffsync, ids=ids, attrs=attrs)
+        return super().create(adapter, ids=ids, attrs=attrs)
 
     def update(self, attrs):
         """Update a Prefix record in IPAM A."""
-        for elem in self.diffsync.data:
+        for elem in self.adapter.data:
             if elem["cidr"] == self.prefix:
                 if "vrf" in attrs:
                     elem["vrf"] = attrs["vrf"]
@@ -42,15 +42,15 @@ class IpamAPrefix(Prefix):
 
     def delete(self):
         """Delete a Prefix record in IPAM A."""
-        for index, elem in enumerate(self.diffsync.data):
+        for index, elem in enumerate(self.adapter.data):
             if elem["cidr"] == self.prefix:
-                del self.diffsync.data[index]
+                del self.adapter.data[index]
                 break
 
         return super().delete()
 
 
-class IpamA(DiffSync):
+class IpamA(Adapter):
     """IPAM A DiffSync adapter implementation."""
 
     prefix = IpamAPrefix
