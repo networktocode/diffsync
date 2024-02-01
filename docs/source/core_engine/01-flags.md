@@ -34,12 +34,12 @@ diff = nautobot.diff_from(local, flags=flags)
 Model flags are stored in the attribute `model_flags` of each model and are usually set when the data is being loaded into the adapter.
 
 ```python
-from diffsync import DiffSync
+from diffsync import Adapter
 from diffsync.enum import DiffSyncModelFlags
 from model import MyDeviceModel
 
-class MyAdapter(DiffSync):
 
+class MyAdapter(Adapter):
     device = MyDeviceModel
 
     def load(self, data):

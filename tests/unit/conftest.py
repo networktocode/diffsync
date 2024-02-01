@@ -18,7 +18,7 @@ from typing import ClassVar, List, Optional, Tuple, Dict
 
 import pytest
 
-from diffsync import DiffSync, DiffSyncModel
+from diffsync import Adapter, DiffSyncModel
 from diffsync.diff import Diff, DiffElement
 from diffsync.exceptions import ObjectNotCreated, ObjectNotUpdated, ObjectNotDeleted
 
@@ -35,14 +35,14 @@ class ErrorProneModelMixin:
     _counter: ClassVar[int] = 0
 
     @classmethod
-    def create(cls, diffsync: DiffSync, ids: Dict, attrs: Dict):
+    def create(cls, adapter: Adapter, ids: Dict, attrs: Dict):
         """As DiffSyncModel.create(), but periodically throw exceptions."""
         cls._counter += 1
         if not cls._counter % 5:
             raise ObjectNotCreated("Random creation error!")
         if not cls._counter % 4:
             return None  # non-fatal error
-        return super().create(diffsync, ids, attrs)  # type: ignore
+        return super().create(adapter, ids, attrs)  # type: ignore
 
     def update(self, attrs: Dict):
         """As DiffSyncModel.update(), but periodically throw exceptions."""
@@ -69,7 +69,7 @@ class ExceptionModelMixin:
     """Test class that always throws exceptions when creating/updating/deleting instances."""
 
     @classmethod
-    def create(cls, diffsync: DiffSync, ids: Dict, attrs: Dict):
+    def create(cls, adapter: Adapter, ids: Dict, attrs: Dict):
         """As DiffSyncModel.create(), but always throw exceptions."""
         raise NotImplementedError
 
@@ -115,7 +115,7 @@ class Device(DiffSyncModel):
     _children = {"interface": "interfaces"}
 
     name: str
-    site_name: Optional[str]  # note this is not included in _attributes
+    site_name: Optional[str] = None  # note this is not included in _attributes
     role: str
     interfaces: List = []
 
@@ -143,7 +143,7 @@ class Interface(DiffSyncModel):
     name: str
 
     interface_type: str = "ethernet"
-    description: Optional[str]
+    description: Optional[str] = None
 
 
 @pytest.fixture
@@ -158,9 +158,9 @@ def make_interface():
 
 
 @pytest.fixture
-def generic_diffsync():
-    """Provide a generic DiffSync instance."""
-    return DiffSync()
+def generic_adapter():
+    """Provide a generic Adapter instance."""
+    return Adapter()
 
 
 class UnusedModel(DiffSyncModel):
@@ -172,8 +172,8 @@ class UnusedModel(DiffSyncModel):
     name: str
 
 
-class GenericBackend(DiffSync):
-    """An example semi-abstract subclass of DiffSync."""
+class GenericBackend(Adapter):
+    """An example semi-abstract subclass of Adapter."""
 
     site = Site  # to be overridden by subclasses
     device = Device

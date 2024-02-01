@@ -1,5 +1,5 @@
 To be able to properly compare different datasets, DiffSync relies on a shared data model that both systems must use.
-Specifically, each system or dataset must provide a `DiffSync` "adapter" subclass, which in turn represents its dataset as instances of one or more `DiffSyncModel` data model classes.
+Specifically, each system or dataset must provide a `Adapter` "adapter" subclass, which in turn represents its dataset as instances of one or more `DiffSyncModel` data model classes.
 
 When comparing two systems, DiffSync detects the intersection between the two systems (which data models they have in common, and which attributes are shared between each pair of data models) and uses this intersection to compare and/or synchronize the data.
 
@@ -41,24 +41,24 @@ Currently the relationships between models are very loose by design. Instead of 
 
 # Define your system adapter with DiffSync
 
-A `DiffSync` "adapter" subclass must reference each model available at the top of the object by its modelname and must have a `top_level` attribute defined to indicate how the diff and the synchronization should be done. In the example below, `"site"` is the only top level object so the synchronization engine will only check all known `Site` instances and all children of each Site. In this case, as shown in the code above, `Device`s are children of `Site`s, so this is exactly the intended logic.
+A `Adapter` "adapter" subclass must reference each model available at the top of the object by its modelname and must have a `top_level` attribute defined to indicate how the diff and the synchronization should be done. In the example below, `"site"` is the only top level object so the synchronization engine will only check all known `Site` instances and all children of each Site. In this case, as shown in the code above, `Device`s are children of `Site`s, so this is exactly the intended logic.
 
 ```python
-from diffsync import DiffSync
+from diffsync import Adapter
 
-class BackendA(DiffSync):
 
+class BackendA(Adapter):
     site = Site
     device = Device
 
     top_level = ["site"]
 ```
 
-It's up to the implementer to populate the `DiffSync`'s internal cache with the appropriate data. In the example below we are using the `load()` method to populate the cache but it's not mandatory, it could be done differently.
+It's up to the implementer to populate the `Adapter`'s internal cache with the appropriate data. In the example below we are using the `load()` method to populate the cache but it's not mandatory, it could be done differently.
 
 ## Model Processing Ordering Logic
 
-The models will be processed in a specfic order as defined by `top_level` atttribute on the `DiffSync` object and then the `_children` attribute on the `DiffSyncModel`. The processing algorithm is technically a "Preorder Tree Traversal", which means that "a parent node is processed before any of its child nodes is done." This can be described as:
+The models will be processed in a specfic order as defined by `top_level` atttribute on the `Adapter` object and then the `_children` attribute on the `DiffSyncModel`. The processing algorithm is technically a "Preorder Tree Traversal", which means that "a parent node is processed before any of its child nodes is done." This can be described as:
 
 - Start with the first element of the first model in `top_level` and process it.
 - If that model has `_children` set on it, for each child of each child model, in order:
@@ -145,7 +145,7 @@ NetworkImporterAdapter
 >>> 
 ```
 
-# Store data in a `DiffSync` object
+# Store data in a `Adapter` object
 
 To add a site to the local cache/store, you need to pass a valid `DiffSyncModel` object to the `add()` function.
 
@@ -174,17 +174,17 @@ convenient to manage individual records (as in a database) or modify the entire 
 ## Manage individual records
 
 To update individual records in a remote system, you need to extend your `DiffSyncModel` class(es) to define your own `create`, `update` and/or `delete` methods for each model.
-A `DiffSyncModel` instance stores a reference to its parent `DiffSync` adapter instance in case you need to use it to look up other model instances from the `DiffSync`'s cache.
+A `DiffSyncModel` instance stores a reference to its parent `Adapter` adapter instance in case you need to use it to look up other model instances from the `Adapter`'s cache.
 
 ```python
 class Device(DiffSyncModel):
     [...]
 
     @classmethod
-    def create(cls, diffsync, ids, attrs):
+    def create(cls, adapter, ids, attrs):
         ## TODO add your own logic here to create the device on the remote system
         # Call the super().create() method to create the in-memory DiffSyncModel instance
-        return super().create(ids=ids, diffsync=diffsync, attrs=attrs)
+        return super().create(ids=ids, adapter=adapter, attrs=attrs)
 
     def update(self, attrs):
         ## TODO add your own logic here to update the device on the remote system

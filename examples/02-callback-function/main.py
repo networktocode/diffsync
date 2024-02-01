@@ -17,7 +17,7 @@ limitations under the License.
 """
 import random
 
-from diffsync import DiffSync, DiffSyncModel
+from diffsync import Adapter, DiffSyncModel
 from diffsync.logging import enable_console_logging
 
 
@@ -30,7 +30,7 @@ class Number(DiffSyncModel):
     number: int
 
 
-class DiffSync1(DiffSync):
+class Adapter1(Adapter):
     """DiffSync adapter that contains a number of Numbers constructed in order."""
 
     number = Number
@@ -43,7 +43,7 @@ class DiffSync1(DiffSync):
             self.add(Number(number=(i + 1)))
 
 
-class DiffSync2(DiffSync):
+class Adapter2(Adapter):
     """DiffSync adapter that contains a number of Numbers spread randomly across a range."""
 
     number = Number
@@ -69,11 +69,11 @@ def main():
     enable_console_logging(verbosity=0)  # Show WARNING and ERROR logs only
 
     # Create a DiffSync1 instance and load it with records numbered 1-100
-    ds1 = DiffSync1()
+    ds1 = Adapter1()
     ds1.load(count=100)
 
     # Create a DiffSync2 instance and load it with 100 random records in the range 1-200
-    ds2 = DiffSync2()
+    ds2 = Adapter2()
     ds2.load(count=100)
 
     # Identify and attempt to resolve the differences between the two,

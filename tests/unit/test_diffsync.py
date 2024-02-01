@@ -1,357 +1,357 @@
-"""Unit tests for the DiffSync class."""
+"""Unit tests for the Adapter class."""
 # pylint: disable=too-many-lines
 
 from unittest import mock
 
 import pytest
 
-from diffsync import DiffSync, DiffSyncModel
+from diffsync import Adapter, DiffSyncModel
 from diffsync.enum import DiffSyncFlags, DiffSyncModelFlags
 from diffsync.exceptions import DiffClassMismatch, ObjectAlreadyExists, ObjectNotFound, ObjectCrudException
 
 from .conftest import Site, Device, Interface, TrackedDiff, BackendA, PersonA
 
 
-def test_diffsync_default_name_type(generic_diffsync):
-    assert generic_diffsync.type == "DiffSync"
-    assert generic_diffsync.name == "DiffSync"
+def test_diffsync_default_name_type(generic_adapter):
+    assert generic_adapter.type == "Adapter"
+    assert generic_adapter.name == "Adapter"
 
 
-def test_diffsync_generic_load_is_noop(generic_diffsync):
-    generic_diffsync.load()
-    assert generic_diffsync.count() == 0
+def test_diffsync_generic_load_is_noop(generic_adapter):
+    generic_adapter.load()
+    assert generic_adapter.count() == 0
 
 
-def test_diffsync_dict_with_no_data(generic_diffsync):
-    assert generic_diffsync.dict() == {}
+def test_diffsync_dict_with_no_data(generic_adapter):
+    assert generic_adapter.dict() == {}
 
 
-def test_diffsync_str_with_no_data(generic_diffsync):
-    assert generic_diffsync.str() == ""
+def test_diffsync_str_with_no_data(generic_adapter):
+    assert generic_adapter.str() == ""
 
 
-def test_diffsync_len_with_no_data(generic_diffsync):
-    assert len(generic_diffsync) == 0
+def test_diffsync_len_with_no_data(generic_adapter):
+    assert len(generic_adapter) == 0
 
 
-def test_diffsync_diff_self_with_no_data_has_no_diffs(generic_diffsync):
-    assert generic_diffsync.diff_from(generic_diffsync).has_diffs() is False
-    assert generic_diffsync.diff_to(generic_diffsync).has_diffs() is False
+def test_diffsync_diff_self_with_no_data_has_no_diffs(generic_adapter):
+    assert generic_adapter.diff_from(generic_adapter).has_diffs() is False
+    assert generic_adapter.diff_to(generic_adapter).has_diffs() is False
 
 
-def test_diffsync_sync_self_with_no_data_is_noop(generic_diffsync):
-    generic_diffsync.sync_complete = mock.Mock()
-    generic_diffsync.sync_from(generic_diffsync)
-    diff = generic_diffsync.sync_to(generic_diffsync)
+def test_diffsync_sync_self_with_no_data_is_noop(generic_adapter):
+    generic_adapter.sync_complete = mock.Mock()
+    generic_adapter.sync_from(generic_adapter)
+    diff = generic_adapter.sync_to(generic_adapter)
     # Check if the returning Diff object has diffs
     assert not diff.has_diffs()
     # sync_complete() should only be called if something actually changed
-    assert not generic_diffsync.sync_complete.called
+    assert not generic_adapter.sync_complete.called
 
 
-def test_diffsync_get_with_no_data_fails(generic_diffsync):
+def test_diffsync_get_with_no_data_fails(generic_adapter):
     with pytest.raises(ObjectNotFound):
-        generic_diffsync.get("anything", "myname")
+        generic_adapter.get("anything", "myname")
     with pytest.raises(ObjectNotFound):
-        generic_diffsync.get(DiffSyncModel, "")
+        generic_adapter.get(DiffSyncModel, "")
 
 
-def test_diffsync_get_all_with_no_data_is_empty_list(generic_diffsync):
-    assert not list(generic_diffsync.get_all("anything"))
-    assert not list(generic_diffsync.get_all(DiffSyncModel))
+def test_diffsync_get_all_with_no_data_is_empty_list(generic_adapter):
+    assert not list(generic_adapter.get_all("anything"))
+    assert not list(generic_adapter.get_all(DiffSyncModel))
 
 
-def test_diffsync_get_by_uids_with_no_data(generic_diffsync):
-    assert not generic_diffsync.get_by_uids([], "anything")
-    assert not generic_diffsync.get_by_uids([], DiffSyncModel)
+def test_diffsync_get_by_uids_with_no_data(generic_adapter):
+    assert not generic_adapter.get_by_uids([], "anything")
+    assert not generic_adapter.get_by_uids([], DiffSyncModel)
     with pytest.raises(ObjectNotFound):
-        generic_diffsync.get_by_uids(["any", "another"], "anything")
+        generic_adapter.get_by_uids(["any", "another"], "anything")
     with pytest.raises(ObjectNotFound):
-        generic_diffsync.get_by_uids(["any", "another"], DiffSyncModel)
+        generic_adapter.get_by_uids(["any", "another"], DiffSyncModel)
 
 
-def test_diffsync_add_no_raises_existing_same_object(generic_diffsync):
+def test_diffsync_add_no_raises_existing_same_object(generic_adapter):
     person = PersonA(name="Mikhail Yohman")
 
     modelname = person.get_type()
     uid = person.get_unique_id()
 
     # First attempt at adding object
-    generic_diffsync.add(person)
-    assert modelname in generic_diffsync.get_all_model_names()
-    assert any(uid == obj.get_unique_id() for obj in generic_diffsync.get_all(modelname))
+    generic_adapter.add(person)
+    assert modelname in generic_adapter.get_all_model_names()
+    assert any(uid == obj.get_unique_id() for obj in generic_adapter.get_all(modelname))
 
-    assert person == generic_diffsync.get(modelname, uid)
+    assert person == generic_adapter.get(modelname, uid)
 
     # Attempt to add again and make sure it doesn't raise an exception
-    generic_diffsync.add(person)
-    assert person is generic_diffsync.get(modelname, uid)
-    assert person is generic_diffsync.get(PersonA, "Mikhail Yohman")
+    generic_adapter.add(person)
+    assert person is generic_adapter.get(modelname, uid)
+    assert person is generic_adapter.get(PersonA, "Mikhail Yohman")
 
 
-def test_diffsync_add_raises_already_exists_with_updated_object(generic_diffsync):
+def test_diffsync_add_raises_already_exists_with_updated_object(generic_adapter):
     intf = Interface(device_name="device1", name="eth0")
     # A DiffSync can store arbitrary DiffSyncModel objects, even if it doesn't know about them at definition time.
-    generic_diffsync.add(intf)
+    generic_adapter.add(intf)
     # Create new interface with same identifiers so it's technically the same object, but set additional attribute
     new_intf = Interface(device_name="device1", name="eth0", interface_type="1000base-t")
     with pytest.raises(ObjectAlreadyExists) as error:
-        generic_diffsync.add(new_intf)
+        generic_adapter.add(new_intf)
     error_model = error.value.existing_object
     assert isinstance(error_model, DiffSyncModel)
     assert new_intf is error_model
 
 
-def test_diffsync_get_or_instantiate_create_non_existent_object(generic_diffsync):
-    generic_diffsync.interface = Interface
+def test_diffsync_get_or_instantiate_create_non_existent_object(generic_adapter):
+    generic_adapter.interface = Interface
     intf_identifiers = {"device_name": "device1", "name": "eth1"}
 
     # Assert that the object does not currently exist.
     with pytest.raises(ObjectNotFound):
-        generic_diffsync.get(Interface, intf_identifiers)
+        generic_adapter.get(Interface, intf_identifiers)
 
-    obj, created = generic_diffsync.get_or_instantiate(Interface, intf_identifiers)
+    obj, created = generic_adapter.get_or_instantiate(Interface, intf_identifiers)
     assert created
-    assert obj is generic_diffsync.get(Interface, intf_identifiers)
-    assert obj is generic_diffsync.get("interface", intf_identifiers)
+    assert obj is generic_adapter.get(Interface, intf_identifiers)
+    assert obj is generic_adapter.get("interface", intf_identifiers)
 
 
-def test_diffsync_get_or_instantiate_retrieve_existing_object(generic_diffsync):
+def test_diffsync_get_or_instantiate_retrieve_existing_object(generic_adapter):
     intf_identifiers = {"device_name": "device1", "name": "eth1"}
     intf = Interface(**intf_identifiers)
-    generic_diffsync.add(intf)
+    generic_adapter.add(intf)
 
-    obj, created = generic_diffsync.get_or_instantiate(Interface, intf_identifiers)
+    obj, created = generic_adapter.get_or_instantiate(Interface, intf_identifiers)
     assert obj is intf
     assert not created
 
 
-def test_diffsync_get_or_instantiate_retrieve_existing_object_w_attrs(generic_diffsync):
+def test_diffsync_get_or_instantiate_retrieve_existing_object_w_attrs(generic_adapter):
     intf_identifiers = {"device_name": "device1", "name": "eth1"}
     intf_attrs = {"interface_type": "1000base-t", "description": "Testing"}
     intf = Interface(**intf_identifiers)
-    generic_diffsync.add(intf)
+    generic_adapter.add(intf)
 
-    obj, created = generic_diffsync.get_or_instantiate(Interface, intf_identifiers, intf_attrs)
+    obj, created = generic_adapter.get_or_instantiate(Interface, intf_identifiers, intf_attrs)
     assert obj is intf
     assert not created
     assert obj.interface_type == "ethernet"
     assert obj.description is None
 
 
-def test_diffsync_get_or_instantiate_retrieve_create_non_existent_w_attrs(generic_diffsync):
-    generic_diffsync.interface = Interface
+def test_diffsync_get_or_instantiate_retrieve_create_non_existent_w_attrs(generic_adapter):
+    generic_adapter.interface = Interface
     intf_identifiers = {"device_name": "device1", "name": "eth1"}
     intf_attrs = {"interface_type": "1000base-t", "description": "Testing"}
 
-    obj, created = generic_diffsync.get_or_instantiate(Interface, intf_identifiers, intf_attrs)
+    obj, created = generic_adapter.get_or_instantiate(Interface, intf_identifiers, intf_attrs)
     assert created
     assert obj.interface_type == "1000base-t"
     assert obj.description == "Testing"
-    assert obj is generic_diffsync.get(Interface, intf_identifiers)
-    assert obj is generic_diffsync.get("interface", intf_identifiers)
+    assert obj is generic_adapter.get(Interface, intf_identifiers)
+    assert obj is generic_adapter.get("interface", intf_identifiers)
 
 
-def test_diffsync_get_or_instantiate_retrieve_existing_object_wo_attrs(generic_diffsync):
+def test_diffsync_get_or_instantiate_retrieve_existing_object_wo_attrs(generic_adapter):
     intf_identifiers = {"device_name": "device1", "name": "eth1"}
     intf = Interface(**intf_identifiers)
-    generic_diffsync.add(intf)
+    generic_adapter.add(intf)
 
-    obj, created = generic_diffsync.get_or_instantiate(Interface, intf_identifiers)
+    obj, created = generic_adapter.get_or_instantiate(Interface, intf_identifiers)
     assert obj is intf
     assert not created
     assert obj.interface_type == "ethernet"
     assert obj.description is None
 
 
-def test_diffsync_get_or_add_model_instance_create_non_existent_object(generic_diffsync):
-    generic_diffsync.interface = Interface
+def test_diffsync_get_or_add_model_instance_create_non_existent_object(generic_adapter):
+    generic_adapter.interface = Interface
     intf_identifiers = {"device_name": "device1", "name": "eth1"}
-    intf = generic_diffsync.interface(**intf_identifiers)
+    intf = generic_adapter.interface(**intf_identifiers)
 
     # Assert that the object does not currently exist.
     with pytest.raises(ObjectNotFound):
-        generic_diffsync.get(Interface, intf_identifiers)
+        generic_adapter.get(Interface, intf_identifiers)
 
-    obj, created = generic_diffsync.get_or_add_model_instance(intf)
+    obj, created = generic_adapter.get_or_add_model_instance(intf)
     assert created
-    assert obj is generic_diffsync.get(Interface, intf_identifiers)
-    assert obj is generic_diffsync.get("interface", intf_identifiers)
+    assert obj is generic_adapter.get(Interface, intf_identifiers)
+    assert obj is generic_adapter.get("interface", intf_identifiers)
 
 
-def test_diffsync_get_or_add_model_instance_retrieve_existing_object(generic_diffsync):
+def test_diffsync_get_or_add_model_instance_retrieve_existing_object(generic_adapter):
     intf_identifiers = {"device_name": "device1", "name": "eth1"}
     intf = Interface(**intf_identifiers)
-    generic_diffsync.add(intf)
+    generic_adapter.add(intf)
 
-    obj, created = generic_diffsync.get_or_add_model_instance(intf)
+    obj, created = generic_adapter.get_or_add_model_instance(intf)
     assert obj is intf
     assert not created
 
 
-def test_diffsync_get_or_add_model_instance_retrieve_existing_object_w_attrs(generic_diffsync):
+def test_diffsync_get_or_add_model_instance_retrieve_existing_object_w_attrs(generic_adapter):
     intf_identifiers = {"device_name": "device1", "name": "eth1"}
     intf_attrs = {"interface_type": "ethernet"}
     intf_combine = {**intf_identifiers, **intf_attrs}
     intf = Interface(**intf_combine)
-    generic_diffsync.add(intf)
+    generic_adapter.add(intf)
 
-    obj, created = generic_diffsync.get_or_add_model_instance(intf)
+    obj, created = generic_adapter.get_or_add_model_instance(intf)
     assert obj is intf
     assert not created
     assert obj.interface_type == "ethernet"
     assert obj.description is None
 
 
-def test_diffsync_get_or_add_model_instance_retrieve_create_non_existent_w_attrs(generic_diffsync):
-    generic_diffsync.interface = Interface
+def test_diffsync_get_or_add_model_instance_retrieve_create_non_existent_w_attrs(generic_adapter):
+    generic_adapter.interface = Interface
     intf_identifiers = {"device_name": "device1", "name": "eth1"}
     intf_attrs = {"interface_type": "1000base-t", "description": "Testing"}
     intf_combine = {**intf_identifiers, **intf_attrs}
     intf = Interface(**intf_combine)
 
-    obj, created = generic_diffsync.get_or_add_model_instance(intf)
+    obj, created = generic_adapter.get_or_add_model_instance(intf)
     assert created
     assert obj.interface_type == "1000base-t"
     assert obj.description == "Testing"
-    assert obj is generic_diffsync.get(Interface, intf_identifiers)
-    assert obj is generic_diffsync.get("interface", intf_identifiers)
+    assert obj is generic_adapter.get(Interface, intf_identifiers)
+    assert obj is generic_adapter.get("interface", intf_identifiers)
 
 
-def test_diffsync_get_or_add_model_instance_retrieve_existing_object_wo_attrs(generic_diffsync):
+def test_diffsync_get_or_add_model_instance_retrieve_existing_object_wo_attrs(generic_adapter):
     intf_identifiers = {"device_name": "device1", "name": "eth1"}
     intf = Interface(**intf_identifiers)
-    generic_diffsync.add(intf)
+    generic_adapter.add(intf)
 
-    obj, created = generic_diffsync.get_or_add_model_instance(intf)
+    obj, created = generic_adapter.get_or_add_model_instance(intf)
     assert obj is intf
     assert not created
     assert obj.interface_type == "ethernet"
     assert obj.description is None
 
 
-def test_diffsync_update_or_instantiate_retrieve_existing_object_w_updated_attrs(generic_diffsync):
+def test_diffsync_update_or_instantiate_retrieve_existing_object_w_updated_attrs(generic_adapter):
     intf_identifiers = {"device_name": "device1", "name": "eth1"}
     intf_attrs = {"interface_type": "1000base-t", "description": "Testing"}
     intf = Interface(**intf_identifiers)
-    generic_diffsync.add(intf)
+    generic_adapter.add(intf)
 
-    obj, created = generic_diffsync.update_or_instantiate(Interface, intf_identifiers, intf_attrs)
+    obj, created = generic_adapter.update_or_instantiate(Interface, intf_identifiers, intf_attrs)
     assert obj is intf
     assert not created
     assert obj.interface_type == "1000base-t"
     assert obj.description == "Testing"
 
 
-def test_diffsync_update_or_instantiate_create_object(generic_diffsync):
+def test_diffsync_update_or_instantiate_create_object(generic_adapter):
     intf_identifiers = {"device_name": "device1", "name": "eth1"}
 
-    obj, created = generic_diffsync.update_or_instantiate(Interface, intf_identifiers, {})
+    obj, created = generic_adapter.update_or_instantiate(Interface, intf_identifiers, {})
     assert created
     assert obj.interface_type == "ethernet"
     assert obj.description is None
 
 
-def test_diffsync_update_or_instantiate_create_object_w_attrs(generic_diffsync):
+def test_diffsync_update_or_instantiate_create_object_w_attrs(generic_adapter):
     intf_identifiers = {"device_name": "device1", "name": "eth1"}
     intf_attrs = {"interface_type": "1000base-t", "description": "Testing"}
 
-    obj, created = generic_diffsync.update_or_instantiate(Interface, intf_identifiers, intf_attrs)
+    obj, created = generic_adapter.update_or_instantiate(Interface, intf_identifiers, intf_attrs)
     assert created
     assert obj.interface_type == "1000base-t"
     assert obj.description == "Testing"
 
 
-def test_diffsync_update_or_add_model_instance_retrieve_existing_object_w_updated_attrs(generic_diffsync):
+def test_diffsync_update_or_add_model_instance_retrieve_existing_object_w_updated_attrs(generic_adapter):
     intf_identifiers = {"device_name": "device1", "name": "eth1"}
     intf_attrs = {"interface_type": "1000base-t", "description": "Testing"}
     intf_combine = {**intf_identifiers, **intf_attrs}
     intf = Interface(**intf_combine)
-    generic_diffsync.add(intf)
+    generic_adapter.add(intf)
 
-    obj, created = generic_diffsync.update_or_add_model_instance(intf)
+    obj, created = generic_adapter.update_or_add_model_instance(intf)
     assert obj is intf
     assert not created
     assert obj.interface_type == "1000base-t"
     assert obj.description == "Testing"
 
 
-def test_diffsync_update_or_add_model_instance_create_object(generic_diffsync):
+def test_diffsync_update_or_add_model_instance_create_object(generic_adapter):
     intf_identifiers = {"device_name": "device1", "name": "eth1"}
     intf = Interface(**intf_identifiers)
 
-    obj, created = generic_diffsync.update_or_add_model_instance(intf)
+    obj, created = generic_adapter.update_or_add_model_instance(intf)
     assert created
     assert obj.interface_type == "ethernet"
     assert obj.description is None
 
 
-def test_diffsync_update_or_add_model_instance_create_object_w_attrs(generic_diffsync):
+def test_diffsync_update_or_add_model_instance_create_object_w_attrs(generic_adapter):
     intf_identifiers = {"device_name": "device1", "name": "eth1"}
     intf_attrs = {"interface_type": "1000base-t", "description": "Testing"}
     intf_combine = {**intf_identifiers, **intf_attrs}
     intf = Interface(**intf_combine)
 
-    obj, created = generic_diffsync.update_or_add_model_instance(intf)
+    obj, created = generic_adapter.update_or_add_model_instance(intf)
     assert created
     assert obj.interface_type == "1000base-t"
     assert obj.description == "Testing"
 
 
-def test_diffsync_get_with_generic_model(generic_diffsync, generic_diffsync_model):
-    generic_diffsync.add(generic_diffsync_model)
+def test_diffsync_get_with_generic_model(generic_adapter, generic_diffsync_model):
+    generic_adapter.add(generic_diffsync_model)
     # The generic_diffsync_model has an empty identifier/unique-id
-    assert generic_diffsync.get(DiffSyncModel, "") == generic_diffsync_model
-    assert generic_diffsync.get(DiffSyncModel.get_type(), "") == generic_diffsync_model
+    assert generic_adapter.get(DiffSyncModel, "") == generic_diffsync_model
+    assert generic_adapter.get(DiffSyncModel.get_type(), "") == generic_diffsync_model
     # DiffSync doesn't know how to construct a uid str for a "diffsyncmodel" (it needs the class or instance, not a str)
     with pytest.raises(ValueError):
-        generic_diffsync.get(DiffSyncModel.get_type(), {})
+        generic_adapter.get(DiffSyncModel.get_type(), {})
     # Wrong object-type - no match
     with pytest.raises(ObjectNotFound):
-        generic_diffsync.get("", "")
+        generic_adapter.get("", "")
     # Wrong unique-id - no match
     with pytest.raises(ObjectNotFound):
-        generic_diffsync.get(DiffSyncModel, "myname")
+        generic_adapter.get(DiffSyncModel, "myname")
 
 
-def test_diffsync_get_all_with_generic_model(generic_diffsync, generic_diffsync_model):
-    generic_diffsync.add(generic_diffsync_model)
-    assert list(generic_diffsync.get_all(DiffSyncModel)) == [generic_diffsync_model]
-    assert list(generic_diffsync.get_all(DiffSyncModel.get_type())) == [generic_diffsync_model]
+def test_diffsync_get_all_with_generic_model(generic_adapter, generic_diffsync_model):
+    generic_adapter.add(generic_diffsync_model)
+    assert list(generic_adapter.get_all(DiffSyncModel)) == [generic_diffsync_model]
+    assert list(generic_adapter.get_all(DiffSyncModel.get_type())) == [generic_diffsync_model]
     # Wrong object-type - no match
-    assert not list(generic_diffsync.get_all("anything"))
+    assert not list(generic_adapter.get_all("anything"))
 
 
-def test_diffsync_get_by_uids_with_generic_model(generic_diffsync, generic_diffsync_model):
-    generic_diffsync.add(generic_diffsync_model)
-    assert generic_diffsync.get_by_uids([""], DiffSyncModel) == [generic_diffsync_model]
-    assert generic_diffsync.get_by_uids([""], DiffSyncModel.get_type()) == [generic_diffsync_model]
+def test_diffsync_get_by_uids_with_generic_model(generic_adapter, generic_diffsync_model):
+    generic_adapter.add(generic_diffsync_model)
+    assert generic_adapter.get_by_uids([""], DiffSyncModel) == [generic_diffsync_model]
+    assert generic_adapter.get_by_uids([""], DiffSyncModel.get_type()) == [generic_diffsync_model]
     # Wrong unique-id - no match
     with pytest.raises(ObjectNotFound):
-        generic_diffsync.get_by_uids(["myname"], DiffSyncModel)
+        generic_adapter.get_by_uids(["myname"], DiffSyncModel)
     # Valid unique-id mixed in with unknown ones
     with pytest.raises(ObjectNotFound):
-        generic_diffsync.get_by_uids(["aname", "", "anothername"], DiffSyncModel)
+        generic_adapter.get_by_uids(["aname", "", "anothername"], DiffSyncModel)
 
 
-def test_diffsync_remove_with_generic_model(generic_diffsync, generic_diffsync_model):
-    generic_diffsync.add(generic_diffsync_model)
-    generic_diffsync.remove(generic_diffsync_model)
+def test_diffsync_remove_with_generic_model(generic_adapter, generic_diffsync_model):
+    generic_adapter.add(generic_diffsync_model)
+    generic_adapter.remove(generic_diffsync_model)
     with pytest.raises(ObjectNotFound):
-        generic_diffsync.remove(generic_diffsync_model)
+        generic_adapter.remove(generic_diffsync_model)
 
     with pytest.raises(ObjectNotFound):
-        generic_diffsync.get(DiffSyncModel, "")
-    assert not list(generic_diffsync.get_all(DiffSyncModel))
+        generic_adapter.get(DiffSyncModel, "")
+    assert not list(generic_adapter.get_all(DiffSyncModel))
     with pytest.raises(ObjectNotFound):
-        generic_diffsync.get_by_uids([""], DiffSyncModel)
+        generic_adapter.get_by_uids([""], DiffSyncModel)
 
 
 def test_diffsync_subclass_validation_name_mismatch():
     # pylint: disable=unused-variable
     with pytest.raises(AttributeError) as excinfo:
 
-        class BadElementName(DiffSync):
+        class BadElementName(Adapter):
             """DiffSync with a DiffSyncModel attribute whose name does not match the modelname."""
 
             dev_class = Device  # should be device = Device
@@ -365,7 +365,7 @@ def test_diffsync_subclass_validation_missing_top_level():
     # pylint: disable=unused-variable
     with pytest.raises(AttributeError) as excinfo:
 
-        class MissingTopLevel(DiffSync):
+        class MissingTopLevel(Adapter):
             """DiffSync whose top_level references an attribute that does not exist on the class."""
 
             top_level = ["missing"]
@@ -379,7 +379,7 @@ def test_diffsync_subclass_validation_top_level_not_diffsyncmodel():
     # pylint: disable=unused-variable
     with pytest.raises(AttributeError) as excinfo:
 
-        class TopLevelNotDiffSyncModel(DiffSync):
+        class TopLevelNotDiffSyncModel(Adapter):
             """DiffSync whose top_level references an attribute that is not a DiffSyncModel subclass."""
 
             age = 0

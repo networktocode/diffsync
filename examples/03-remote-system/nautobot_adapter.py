@@ -4,7 +4,7 @@ import pynautobot  # pylint: disable=import-error
 
 from nautobot_models import NautobotCountry, NautobotRegion
 
-from diffsync import DiffSync
+from diffsync import Adapter
 
 # pylint: disable=attribute-defined-outside-init
 
@@ -22,7 +22,7 @@ CUSTOM_FIELDS = [
 ]
 
 
-class NautobotAdapter(DiffSync):
+class NautobotAdapter(Adapter):
     """Example of a DiffSync adapter implementation using pynautobot to communicate with a remote Nautobot system."""
 
     # We are using NautobotCountry and NautobotRegion instead of Region and Country

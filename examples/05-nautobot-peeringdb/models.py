@@ -21,8 +21,8 @@ class RegionModel(DiffSyncModel):
     # Data type declarations for all identifiers and attributes
     name: str
     slug: str
-    description: Optional[str]
-    parent_name: Optional[str]  # may be None
+    description: Optional[str] = None
+    parent_name: Optional[str] = None
     sites: List = []
 
     # Not in _attributes or _identifiers, hence not included in diff calculations
@@ -49,10 +49,10 @@ class SiteModel(DiffSyncModel):
     name: str
     slug: str
     status_slug: str
-    region_name: Optional[str]  # may be None
-    description: Optional[str]
-    latitude: Optional[float]
-    longitude: Optional[float]
+    region_name: Optional[str] = None
+    description: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
     # Not in _attributes or _identifiers, hence not included in diff calculations
     pk: Optional[Union[UUID, int]]

@@ -26,7 +26,7 @@ from .utils import intersection, symmetric_difference
 
 if TYPE_CHECKING:  # pragma: no cover
     # For type annotation purposes, we have a circular import loop between __init__.py and this file.
-    from . import DiffSync, DiffSyncModel  # pylint: disable=cyclic-import
+    from . import Adapter, DiffSyncModel  # pylint: disable=cyclic-import
 
 
 class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
@@ -37,8 +37,8 @@ class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        src_diffsync: "DiffSync",
-        dst_diffsync: "DiffSync",
+        src_diffsync: "Adapter",
+        dst_diffsync: "Adapter",
         flags: DiffSyncFlags,
         diff_class: Type[Diff] = Diff,
         callback: Optional[Callable[[str, int, int], None]] = None,
@@ -288,8 +288,8 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
     def __init__(  # pylint: disable=too-many-arguments
         self,
         diff: Diff,
-        src_diffsync: "DiffSync",
-        dst_diffsync: "DiffSync",
+        src_diffsync: "Adapter",
+        dst_diffsync: "Adapter",
         flags: DiffSyncFlags,
         callback: Optional[Callable[[str, int, int], None]] = None,
     ):
@@ -425,7 +425,7 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
             if self.action == DiffSyncActions.CREATE:
                 if dst_model is not None:
                     raise ObjectNotCreated(f"Failed to create {self.model_class.get_type()} {ids} - it already exists!")
-                dst_model = self.model_class.create(diffsync=self.dst_diffsync, ids=ids, attrs=attrs)
+                dst_model = self.model_class.create(adapter=self.dst_diffsync, ids=ids, attrs=attrs)
             elif self.action == DiffSyncActions.UPDATE:
                 if dst_model is None:
                     raise ObjectNotUpdated(f"Failed to update {self.model_class.get_type()} {ids} - not found!")

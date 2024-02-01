@@ -4,13 +4,13 @@ import json
 from slugify import slugify  # pylint: disable=import-error
 
 from models import Region, Country  # pylint: disable=no-name-in-module
-from diffsync import DiffSync
+from diffsync import Adapter
 
 
 COUNTRIES_FILE = "countries.json"
 
 
-class LocalAdapter(DiffSync):
+class LocalAdapter(Adapter):
     """DiffSync Adapter to Load the list of regions and countries from a local JSON file."""
 
     # Define all data models that this adapter makes use of.
