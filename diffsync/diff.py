@@ -77,7 +77,7 @@ class Diff:
         """
         for group in self.groups():
             for child in self.children[group].values():
-                if child.has_diffs(include_children=True):
+                if child.has_diffs():
                     return True
 
         return False
@@ -138,7 +138,7 @@ class Diff:
         for group in self.groups():
             group_heading_added = False
             for child in self.children[group].values():
-                if child.has_diffs(include_children=True):
+                if child.has_diffs():
                     if not group_heading_added:
                         output.append(f"{margin}{group}")
                         group_heading_added = True
@@ -152,7 +152,7 @@ class Diff:
         """Build a dictionary representation of this Diff."""
         result = OrderedDefaultDict[str, Dict](dict)
         for child in self.get_children():
-            if child.has_diffs(include_children=True):
+            if child.has_diffs():
                 result[child.type][child.name] = child.dict()
         return dict(result)
 
@@ -305,23 +305,12 @@ class DiffElement:  # pylint: disable=too-many-instance-attributes
             return {"+": {key: self.source_attrs[key] for key in self.get_attrs_keys()}}
         return {}
 
-    def add_child(self, element: "DiffElement") -> None:
-        """Attach a child object of type DiffElement.
-
-        Childs are saved in a Diff object and are organized by type and name.
-        """
-        self.child_diff.add(element)
-
     def get_children(self) -> Iterator["DiffElement"]:
         """Iterate over all child DiffElements of this one."""
         yield from self.child_diff.get_children()
 
-    def has_diffs(self, include_children: bool = True) -> bool:
-        """Check whether this element (or optionally any of its children) has some diffs.
-
-        Args:
-          include_children: If True, recursively check children for diffs as well.
-        """
+    def has_diffs(self) -> bool:
+        """Check whether this element (or optionally any of its children) has some diffs."""
         if (self.source_attrs is not None and self.dest_attrs is None) or (
             self.source_attrs is None and self.dest_attrs is not None
         ):
@@ -330,10 +319,6 @@ class DiffElement:  # pylint: disable=too-many-instance-attributes
             for attr_key in self.get_attrs_keys():
                 if self.source_attrs.get(attr_key) != self.dest_attrs.get(attr_key):
                     return True
-
-        if include_children:
-            if self.child_diff.has_diffs():
-                return True
 
         return False
 

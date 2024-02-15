@@ -87,7 +87,6 @@ class Site(DiffSyncModel):
 
     _modelname = "site"
     _identifiers = ("name",)
-    _children = {"device": "devices"}
 
     name: str
     devices: List = []
@@ -112,7 +111,6 @@ class Device(DiffSyncModel):
     _modelname = "device"
     _identifiers = ("name",)
     _attributes: ClassVar[Tuple[str, ...]] = ("role",)
-    _children = {"interface": "interfaces"}
 
     name: str
     site_name: Optional[str] = None  # note this is not included in _attributes
@@ -136,7 +134,7 @@ class Interface(DiffSyncModel):
 
     _modelname = "interface"
     _identifiers = ("device_name", "name")
-    _shortname = ("name",)
+    _shortname = ("device_name", "name",)
     _attributes = ("interface_type", "description")
 
     device_name: str
@@ -180,7 +178,7 @@ class GenericBackend(Adapter):
     interface = Interface
     unused = UnusedModel
 
-    top_level = ["site", "unused"]
+    top_level = ["site", "device", "interface", "unused"]
 
     DATA: dict = {}
 
@@ -193,12 +191,10 @@ class GenericBackend(Adapter):
             for device_name, device_data in site_data.items():
                 device = self.device(name=device_name, role=device_data["role"], site_name=site_name)
                 self.add(device)
-                site.add_child(device)
 
                 for intf_name, desc in device_data["interfaces"].items():
                     intf = self.interface(name=intf_name, device_name=device_name, description=desc)
                     self.add(intf)
-                    device.add_child(intf)
 
 
 class SiteA(Site):
@@ -253,7 +249,6 @@ class BackendA(GenericBackend):
         super().load()
         person = self.person(name="Glenn Matthews")
         self.add(person)
-        self.get("site", "rdu").add_child(person)
 
 
 @pytest.fixture
@@ -397,7 +392,6 @@ class BackendB(GenericBackend):
         super().load()
         place = self.place(name="Statue of Liberty")
         self.add(place)
-        self.get("site", "nyc").add_child(place)
 
 
 @pytest.fixture
@@ -433,16 +427,16 @@ def diff_with_children():
     person_element_2.add_attrs(dest={})
     diff.add(person_element_2)
 
-    # device_element has no diffs of its own, but has a child intf_element
+    # device_element has no diffs of its own
     device_element = DiffElement("device", "device1", {"name": "device1"})
     diff.add(device_element)
 
-    # intf_element exists in both source and dest as a child of device_element, and has differing attrs
+    # intf_element exists in both source and dest and has differing attrs
     intf_element = DiffElement("interface", "eth0", {"device_name": "device1", "name": "eth0"})
     source_attrs = {"interface_type": "ethernet", "description": "my interface"}
     dest_attrs = {"description": "your interface"}
     intf_element.add_attrs(source=source_attrs, dest=dest_attrs)
-    device_element.add_child(intf_element)
+    diff.add(intf_element)
 
     # address_element exists in both source and dest but has no diffs
     address_element = DiffElement("address", "RTP", {"name": "RTP"})

@@ -65,7 +65,7 @@ class DiffSyncModel(BaseModel):
 
     This class has several underscore-prefixed class variables that subclasses should set as desired; see below.
 
-    NOTE: The groupings _identifiers, _attributes, and _children are mutually exclusive; any given field name can
+    NOTE: The groupings _identifiers and _attributes are mutually exclusive; any given field name can
     be included in **at most** one of these three tuples.
     """
 
@@ -91,20 +91,11 @@ class DiffSyncModel(BaseModel):
     _attributes: ClassVar[Tuple[str, ...]] = ()
     """Optional: list of additional model fields (beyond those in `_identifiers`) that are relevant to this model.
 
-    Only the fields in `_attributes` (as well as any `_children` fields, see below) will be considered
-    for the purposes of Diff calculation.
+    Only the fields in `_attributes` will be considered for the purposes of Diff calculation.
     A model may define additional fields (not included in `_attributes`) for its internal use;
     a common example would be a locally significant database primary key or id value.
 
     Note: inclusion in `_attributes` is mutually exclusive from inclusion in `_identifiers`; a field cannot be in both!
-    """
-
-    _children: ClassVar[Dict[str, str]] = {}
-    """Optional: dict of `{_modelname: field_name}` entries describing how to store "child" models in this model.
-
-    When calculating a Diff or performing a sync, DiffSync will automatically recurse into these child models.
-
-    Note: inclusion in `_children` is mutually exclusive from inclusion in `_identifiers` or `_attributes`.
     """
 
     model_flags: DiffSyncModelFlags = DiffSyncModelFlags.NONE
@@ -141,20 +132,11 @@ class DiffSyncModel(BaseModel):
         for attr in cls._attributes:
             if attr not in cls.model_fields:
                 raise AttributeError(f"_attributes {cls._attributes} references missing or un-annotated attr {attr}")
-        for attr in cls._children.values():
-            if attr not in cls.model_fields:
-                raise AttributeError(f"_children {cls._children} references missing or un-annotated attr {attr}")
 
-        # Any given field can only be in one of (_identifiers, _attributes, _children)
+        # Any given field can only be in one of (_identifiers, _attributes)
         id_attr_overlap = set(cls._identifiers).intersection(cls._attributes)
         if id_attr_overlap:
             raise AttributeError(f"Fields {id_attr_overlap} are included in both _identifiers and _attributes.")
-        id_child_overlap = set(cls._identifiers).intersection(cls._children.values())
-        if id_child_overlap:
-            raise AttributeError(f"Fields {id_child_overlap} are included in both _identifiers and _children.")
-        attr_child_overlap = set(cls._attributes).intersection(cls._children.values())
-        if attr_child_overlap:
-            raise AttributeError(f"Fields {attr_child_overlap} are included in both _attributes and _children.")
 
     def __repr__(self) -> str:
         return f'{self.get_type()} "{self.get_unique_id()}"'
@@ -176,24 +158,10 @@ class DiffSyncModel(BaseModel):
             kwargs["exclude_defaults"] = True
         return super().model_dump_json(**kwargs)
 
-    def str(self, include_children: bool = True, indent: int = 0) -> StrType:
-        """Build a detailed string representation of this DiffSyncModel and optionally its children."""
+    def str(self, indent: int = 0) -> StrType:
+        """Build a detailed string representation of this DiffSyncModel."""
         margin = " " * indent
         output = f"{margin}{self.get_type()}: {self.get_unique_id()}: {self.get_attrs()}"
-        for modelname, fieldname in self._children.items():
-            output += f"\n{margin}  {fieldname}"
-            child_ids = getattr(self, fieldname)
-            if not child_ids:
-                output += ": []"
-            elif not self.adapter or not include_children:
-                output += f": {child_ids}"
-            else:
-                for child_id in child_ids:
-                    try:
-                        child = self.adapter.get(modelname, child_id)
-                        output += "\n" + child.str(include_children=include_children, indent=indent + 4)
-                    except ObjectNotFound:
-                        output += f"\n{margin}    {child_id} (ERROR: details unavailable)"
         return output
 
     def set_status(self, status: DiffSyncStatus, message: StrType = "") -> None:
@@ -320,11 +288,6 @@ class DiffSyncModel(BaseModel):
         """
         return "__".join(str(identifiers[key]) for key in cls._identifiers)
 
-    @classmethod
-    def get_children_mapping(cls) -> Dict[StrType, StrType]:
-        """Get the mapping of types to fieldnames for child models of this model."""
-        return cls._children
-
     def get_identifiers(self) -> Dict:
         """Get a dict of all identifiers (primary keys) and their values for this object.
 
@@ -372,56 +335,6 @@ class DiffSyncModel(BaseModel):
     def get_status(self) -> Tuple[DiffSyncStatus, StrType]:
         """Get the status of the last create/update/delete operation on this object, and any associated message."""
         return self._status, self._status_message
-
-    def add_child(self, child: "DiffSyncModel") -> None:
-        """Add a child reference to an object.
-
-        The child object isn't stored, only its unique id.
-        The name of the target attribute is defined in `_children` per object type
-
-        Raises:
-            ObjectStoreWrongType: if the type is not part of `_children`
-            ObjectAlreadyExists: if the unique id is already stored
-        """
-        child_type = child.get_type()
-
-        if child_type not in self._children:
-            raise ObjectStoreWrongType(
-                f"Unable to store {child_type} as a child of {self.get_type()}; "
-                f"valid types are {sorted(self._children.keys())}"
-            )
-
-        attr_name = self._children[child_type]
-        childs = getattr(self, attr_name)
-        if child.get_unique_id() in childs:
-            raise ObjectAlreadyExists(
-                f"Already storing a {child_type} with unique_id {child.get_unique_id()}",
-                child,
-            )
-        childs.append(child.get_unique_id())
-
-    def remove_child(self, child: "DiffSyncModel") -> None:
-        """Remove a child reference from an object.
-
-        The name of the storage attribute is defined in `_children` per object type.
-
-        Raises:
-            ObjectStoreWrongType: if the child model type is not part of `_children`
-            ObjectNotFound: if the child wasn't previously present.
-        """
-        child_type = child.get_type()
-
-        if child_type not in self._children:
-            raise ObjectStoreWrongType(
-                f"Unable to find and delete {child_type} as a child of {self.get_type()}; "
-                f"valid types are {sorted(self._children.keys())}"
-            )
-
-        attr_name = self._children[child_type]
-        childs = getattr(self, attr_name)
-        if child.get_unique_id() not in childs:
-            raise ObjectNotFound(f"{child} was not found as a child in {attr_name}")
-        childs.remove(child.get_unique_id())
 
 
 class Adapter:  # pylint: disable=too-many-public-methods
@@ -788,12 +701,6 @@ class Adapter:  # pylint: disable=too-many-public-methods
             model_obj = getattr(cls, key)
             if not get_path(output_dict, key):
                 set_key(output_dict, [key])
-            if hasattr(model_obj, "_children"):
-                children = getattr(model_obj, "_children")
-                for child_key in list(children.keys()):
-                    path = get_path(output_dict, key) or [key]
-                    path.append(child_key)
-                    set_key(output_dict, path)
         if as_dict:
             return output_dict
         return tree_string(output_dict, cls.__name__)
@@ -820,17 +727,16 @@ class Adapter:  # pylint: disable=too-many-public-methods
         """
         return self.store.update(obj=obj)
 
-    def remove(self, obj: DiffSyncModel, remove_children: bool = False) -> None:
+    def remove(self, obj: DiffSyncModel) -> None:
         """Remove a DiffSyncModel object from the store.
 
         Args:
             obj: object to remove
-            remove_children: If True, also recursively remove any children of this object
 
         Raises:
             ObjectNotFound: if the object is not present
         """
-        return self.store.remove(obj=obj, remove_children=remove_children)
+        return self.store.remove(obj=obj)
 
     def get_or_instantiate(
         self, model: Type[DiffSyncModel], ids: Dict, attrs: Optional[Dict] = None

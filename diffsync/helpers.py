@@ -75,8 +75,6 @@ class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
         self.diff = self.diff_class()
 
         skipped_types = symmetric_difference(self.dst_diffsync.top_level, self.src_diffsync.top_level)
-        # This won't count everything, since these top-level types may have child types which are
-        # implicitly also skipped as well, but we don't want to waste too much time on this calculation.
         for skipped_type in skipped_types:
             if skipped_type in self.dst_diffsync.top_level:
                 self.incr_models_processed(len(self.dst_diffsync.get_all(skipped_type)))
@@ -226,58 +224,7 @@ class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
 
         self.incr_models_processed(delta)
 
-        # Recursively diff the children of src_obj and dst_obj and attach the resulting diffs to the diff_element
-        self.diff_child_objects(diff_element, src_obj, dst_obj)
-
         return diff_element
-
-    def diff_child_objects(
-        self,
-        diff_element: DiffElement,
-        src_obj: Optional["DiffSyncModel"],
-        dst_obj: Optional["DiffSyncModel"],
-    ) -> DiffElement:
-        """For all children of the given DiffSyncModel pair, diff recursively, adding diffs to the given diff_element.
-
-        Helper method to `calculate_diffs`, usually doesn't need to be called directly.
-
-        These helper methods work in a recursive cycle:
-        diff_object_list -> diff_object_pair -> diff_child_objects -> diff_object_list -> etc.
-        """
-        children_mapping: Dict[str, str]
-        if src_obj and dst_obj:
-            # Get the subset of child types common to both src_obj and dst_obj
-            src_mapping = src_obj.get_children_mapping()
-            dst_mapping = dst_obj.get_children_mapping()
-            children_mapping = {}
-            for child_type, child_fieldname in src_mapping.items():
-                if child_type in dst_mapping:
-                    children_mapping[child_type] = child_fieldname
-                else:
-                    self.incr_models_processed(len(getattr(src_obj, child_fieldname)))
-            for child_type, child_fieldname in dst_mapping.items():
-                if child_type not in src_mapping:
-                    self.incr_models_processed(len(getattr(dst_obj, child_fieldname)))
-        elif src_obj:
-            children_mapping = src_obj.get_children_mapping()
-        elif dst_obj:
-            children_mapping = dst_obj.get_children_mapping()
-        else:
-            raise RuntimeError("Called with neither src_obj nor dest_obj??")
-
-        for child_type, child_fieldname in children_mapping.items():
-            # for example, child_type == "device" and child_fieldname == "devices"
-
-            # for example, getattr(src_obj, "devices") --> list of device uids
-            #          --> src_diffsync.get_by_uids(<list of device uids>, "device") --> list of device instances
-            src_objs = self.src_diffsync.get_by_uids(getattr(src_obj, child_fieldname), child_type) if src_obj else []
-            dst_objs = self.dst_diffsync.get_by_uids(getattr(dst_obj, child_fieldname), child_type) if dst_obj else []
-
-            for child_diff_element in self.diff_object_list(src=src_objs, dst=dst_objs):
-                diff_element.add_child(child_diff_element)
-
-        return diff_element
-
 
 class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
     """Helper class implementing data synchronization logic for DiffSync.

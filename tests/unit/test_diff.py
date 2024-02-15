@@ -102,11 +102,9 @@ def test_diff_str_with_diffs(diff_with_children):
 person
   person: Jimbo MISSING in dest
   person: Sully MISSING in source
-device
-  device: device1
-    interface
-      interface: eth0
-        description    source(my interface)    dest(your interface)\
+interface
+  interface: eth0
+    description    source(my interface)    dest(your interface)\
 """
     )
 
@@ -114,11 +112,7 @@ device
 def test_diff_dict_with_diffs(diff_with_children):
     # Since the address element has no diffs, we don't have any "address" entry in the diff dict:
     assert diff_with_children.dict() == {
-        "device": {
-            "device1": {
-                "interface": {"eth0": {"+": {"description": "my interface"}, "-": {"description": "your interface"}}}
-            }
-        },
+        "interface": {"eth0": {"+": {"description": "my interface"}, "-": {"description": "your interface"}}},
         "person": {"Jimbo": {"+": {}}, "Sully": {"-": {}}},
     }
 
@@ -144,7 +138,7 @@ def test_order_children_default(backend_a, backend_b):
     # Validating default order method
     diff_a_b = backend_a.diff_from(backend_b, diff_class=MyDiff)
     children = diff_a_b.get_children()
-    children_names = [child.name for child in children]
+    children_names = [child.name for child in children if child.type == "site"]
     assert children_names == ["atl", "nyc", "rdu", "sfo"]
 
 
@@ -163,5 +157,5 @@ def test_order_children_custom(backend_a, backend_b):
 
     diff_a_b = backend_a.diff_from(backend_b, diff_class=MyDiff)
     children = diff_a_b.get_children()
-    children_names = [child.name for child in children]
+    children_names = [child.name for child in children if child.type == "site"]
     assert children_names == ["sfo", "rdu", "nyc", "atl"]
