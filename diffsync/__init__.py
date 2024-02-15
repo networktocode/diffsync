@@ -425,7 +425,7 @@ class DiffSyncModel(BaseModel):
 
 
 class Adapter:  # pylint: disable=too-many-public-methods
-    """Class for storing a group of DiffSyncModel instances and diffing/synchronizing to another DiffSync instance."""
+    """Class for storing a group of DiffSyncModel instances and diffing/synchronizing to another Adapter instance."""
 
     # In any subclass, you would add mapping of names to specific model classes here:
     # modelname1 = MyModelClass1
@@ -835,7 +835,7 @@ class Adapter:  # pylint: disable=too-many-public-methods
     def get_or_instantiate(
         self, model: Type[DiffSyncModel], ids: Dict, attrs: Optional[Dict] = None
     ) -> Tuple[DiffSyncModel, bool]:
-        """Attempt to get the object with provided identifiers or instantiate it with provided identifiers and attrs.
+        """Attempt to get the object with provided identifiers or instantiate and add it with provided identifiers and attrs.
 
         Args:
             model: The DiffSyncModel to get or create.
@@ -848,7 +848,7 @@ class Adapter:  # pylint: disable=too-many-public-methods
         return self.store.get_or_instantiate(model=model, ids=ids, attrs=attrs)
 
     def get_or_add_model_instance(self, obj: DiffSyncModel) -> Tuple[DiffSyncModel, bool]:
-        """Attempt to get the object with provided obj identifiers or instantiate obj.
+        """Attempt to get the object with provided obj identifiers or add obj.
 
         Args:
             obj: An obj of the DiffSyncModel to get or add.
