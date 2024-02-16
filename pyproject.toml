@@ -42,7 +42,7 @@ mypy = "*"
 pytest-cov = "*"
 pytest-structlog = "*"
 coverage = {extras = ["toml"], version = "*"}
-Sphinx = "^6.0.0"
+Sphinx = "*"
 m2r2 = "*"
 sphinx-rtd-theme = "*"
 toml = "*"
