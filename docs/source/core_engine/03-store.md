@@ -6,7 +6,7 @@ The `store` is a class attribute in the `Adapter` class, but all the store opera
 
 ## Use the `LocalStore` Backend
 
-When you initialize the `Diffsync` Adapter class, there is an optional keyed-argument, `internal_storage_engine`, defaulting to the `LocalStore` class.
+When you initialize the `Adapter` class, there is an optional keyed-argument, `internal_storage_engine`, defaulting to the `LocalStore` class.
 
 ```python
 >> > from diffsync import Adapter
