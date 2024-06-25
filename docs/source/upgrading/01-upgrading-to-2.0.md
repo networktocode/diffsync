@@ -2,9 +2,9 @@
 
 With diffsync 2.0, there a couple of breaking changes. What they are and how to deal with them is described in this document.
 
-## Rename of the `diffsync.Diffsync` class to `diffsync.Adapter`
+## Rename of the `diffsync.DiffSync` class to `diffsync.Adapter`
 
-The main diffsync class `diffsync.Diffsync` has been renamed to `diffsync.Adapter` as we have found that this is the verbiage that is most often used by users and explains the intent of the class clearer. The old name will still be around until 2.1, but is considered deprecated at this point.
+The main diffsync class `diffsync.DiffSync` has been renamed to `diffsync.Adapter` as we have found that this is the verbiage that is most often used by users and explains the intent of the class clearer. The old name will still be around until 2.1, but is considered deprecated at this point.
 
 As a consequence, a lot of fields have been renamed all across diffsync. To the end user, this will most prominently appear in the signature of the `create` method, where you will have to rename the `diffsync` parameter to `adapter`.
 

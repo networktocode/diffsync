@@ -480,7 +480,7 @@ class Adapter:  # pylint: disable=too-many-public-methods
                 raise AttributeError(f'top_level references attribute "{name}" but it is not a DiffSyncModel subclass!')
 
     def __str__(self) -> StrType:
-        """String representation of a DiffSync."""
+        """String representation of an Adapter."""
         if self.type != self.name:
             return f'{self.type} "{self.name}"'
         return self.type
@@ -526,7 +526,7 @@ class Adapter:  # pylint: disable=too-many-public-methods
         return data
 
     def str(self, indent: int = 0) -> StrType:
-        """Build a detailed string representation of this DiffSync."""
+        """Build a detailed string representation of this Adapter."""
         margin = " " * indent
         output = ""
         for modelname in self.top_level:
