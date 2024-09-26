@@ -29,7 +29,6 @@ from typing import (
     Set,
 )
 from typing_extensions import deprecated
-import warnings
 
 from pydantic import ConfigDict, BaseModel, PrivateAttr
 import structlog  # type: ignore
