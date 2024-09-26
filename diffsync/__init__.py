@@ -28,6 +28,7 @@ from typing import (
     Any,
     Set,
 )
+from typing_extensions import deprecated
 import warnings
 
 from pydantic import ConfigDict, BaseModel, PrivateAttr
@@ -894,14 +895,9 @@ class Adapter:  # pylint: disable=too-many-public-methods
         return self.store.count(model=model)
 
 
-def DiffSync(*args: Any, **kwargs: Any) -> Adapter:  # noqa  pylint: disable=invalid-name
+@deprecated("'diffsync.DiffSync' is deprecated and will be removed with 2.1, use 'diffsync.Adapter' instead.")
+class DiffSync(Adapter):
     """For backwards-compatibility, keep around the old name."""
-
-    warnings.warn(
-        "'diffsync.DiffSync' is deprecated and will be removed with 2.1, use 'diffsync.Adapter' instead.",
-        DeprecationWarning,
-    )
-    return Adapter(*args, **kwargs)
 
 
 # DiffSyncModel references Adapter and Adapter references DiffSyncModel. Break the typing loop:
