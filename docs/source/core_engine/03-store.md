@@ -1,12 +1,12 @@
 # Store backends
 
-By default, `Diffsync` supports a local memory storage. All the loaded models from the adapters will be stored in memory, and become available for the diff calculation and sync process. This default behavior works well when executing all the steps in the same process, having access to the same memory space. However, if you want to scale out the execution of the tasks, running it in different processes or in totally different workers, a more distributed memory support is necessary.
+By default, DiffSync supports a local memory storage. All the loaded models from the adapters will be stored in memory, and become available for the diff calculation and sync process. This default behavior works well when executing all the steps in the same process, having access to the same memory space. However, if you want to scale out the execution of the tasks, running it in different processes or in totally different workers, a more distributed memory support is necessary.
 
 The `store` is a class attribute in the `Adapter` class, but all the store operations in that class are abstracted in the following methods: `get_all_model_names`, `get`, `get_by_uids`, `add`, `update`, `remove`, `get_or_instantiate`, `update_or_instantiate` and `count`.
 
 ## Use the `LocalStore` Backend
 
-When you initialize the `Diffsync` Adapter class, there is an optional keyed-argument, `internal_storage_engine`, defaulting to the `LocalStore` class.
+When you initialize the `Adapter` class, there is an optional keyed-argument, `internal_storage_engine`, defaulting to the `LocalStore` class.
 
 ```python
 >> > from diffsync import Adapter

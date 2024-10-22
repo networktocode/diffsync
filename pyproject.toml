@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "diffsync"
-version = "2.0.0"
+version = "2.0.1"
 description = "Library to easily sync/diff/update 2 different data sources"
 authors = ["Network to Code, LLC <info@networktocode.com>"]
 license = "Apache-2.0"
@@ -18,7 +18,7 @@ include = [
 [tool.poetry.dependencies]
 python = ">=3.8,<4.0"
 pydantic = "^2.0.0"
-structlog = ">= 20.1.0, < 23.0.0"
+structlog = ">= 20.1.0"
 packaging = ">= 21.3, < 24.0"
 colorama = {version = "^0.4.3", optional = true}
 redis = {version = "^4.3", optional = true}
@@ -42,7 +42,7 @@ mypy = "*"
 pytest-cov = "*"
 pytest-structlog = "*"
 coverage = {extras = ["toml"], version = "*"}
-Sphinx = "*"
+Sphinx = "^6.0.0"
 m2r2 = "*"
 sphinx-rtd-theme = "*"
 toml = "*"

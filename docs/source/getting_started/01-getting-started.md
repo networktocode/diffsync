@@ -97,7 +97,7 @@ class Cable(DiffSyncModel):
     [...]
 
 
-class Nautobot(DiffSync):
+class Nautobot(Adapter):
     site = Site
     device = Device
     interface = Interface
@@ -121,7 +121,7 @@ Would result in processing in the following order for each element until there i
         - ip_address
 - cable
 
-> Note: This applies to the actual diff sync (`Diffsync.sync_from/Diffsync.sync_to`), and not the loading of the data (`Diffsync.load`), which is up to the developer to determine the order.
+> Note: This applies to the actual diff sync (`Adapter.sync_from` and `Adapter.sync_to`), and not the loading of the data (`Adapter.load`), which is up to the developer to determine the order.
 
 This can be visualized here in the included diagram.
 
@@ -129,7 +129,7 @@ This can be visualized here in the included diagram.
 
 ### Mapping Tree Traversal with `get_tree_traversal` method
 
-For your convenience, there is a helper method that will provide a mapping of the order. The `DiffSync.get_tree_traversal()` class method will return a tree-like string, or optionally a dictionary when passing the `as_dict=True` parameter.
+For your convenience, there is a helper method that will provide a mapping of the order. The `Adapter.get_tree_traversal()` class method will return a tree-like string, or optionally a dictionary when passing the `as_dict=True` parameter.
 
 ```python
 >>> from nautobot_device_onboarding.network_importer.adapters.network_device.adapter import NetworkImporterAdapter
@@ -150,7 +150,7 @@ NetworkImporterAdapter
 To add a site to the local cache/store, you need to pass a valid `DiffSyncModel` object to the `add()` function.
 
 ```python
-class BackendA(DiffSync):
+class BackendA(Adapter):
     [...]
 
     def load(self):
@@ -203,14 +203,14 @@ class Device(DiffSyncModel):
 If you prefer to update the entire remote system with the final state after performing all individual create/update/delete operations (as might be the case if your "remote system" is a single YAML or JSON file), the easiest place to implement this logic is in the `sync_complete()` callback method that is automatically invoked by DiffSync upon completion of a sync operation.
 
 ```python
-class BackendA(DiffSync):
+class BackendA(Adapter):
     [...]
 
-    def sync_complete(self, source: DiffSync, diff: Diff, flags: DiffSyncFlags, logger: structlog.BoundLogger):
+    def sync_complete(self, source: Adapter, diff: Diff, flags: DiffSyncFlags, logger: structlog.BoundLogger):
         ## TODO add your own logic to update the remote system now.
         # The various parameters passed to this method are for your convenience in implementing more complex logic, and
         # can be ignored if you do not need them.
         #
-        # The default DiffSync.sync_complete() method does nothing, but it's always a good habit to call super():
+        # The default Adapter.sync_complete() method does nothing, but it's always a good habit to call super():
         super().sync_complete(source, diff, flags, logger)
 ```

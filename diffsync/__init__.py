@@ -28,7 +28,7 @@ from typing import (
     Any,
     Set,
 )
-import warnings
+from typing_extensions import deprecated
 
 from pydantic import ConfigDict, BaseModel, PrivateAttr
 import structlog  # type: ignore
@@ -425,7 +425,7 @@ class DiffSyncModel(BaseModel):
 
 
 class Adapter:  # pylint: disable=too-many-public-methods
-    """Class for storing a group of DiffSyncModel instances and diffing/synchronizing to another DiffSync instance."""
+    """Class for storing a group of DiffSyncModel instances and diffing/synchronizing to another Adapter instance."""
 
     # In any subclass, you would add mapping of names to specific model classes here:
     # modelname1 = MyModelClass1
@@ -480,7 +480,7 @@ class Adapter:  # pylint: disable=too-many-public-methods
                 raise AttributeError(f'top_level references attribute "{name}" but it is not a DiffSyncModel subclass!')
 
     def __str__(self) -> StrType:
-        """String representation of a DiffSync."""
+        """String representation of an Adapter."""
         if self.type != self.name:
             return f'{self.type} "{self.name}"'
         return self.type
@@ -526,7 +526,7 @@ class Adapter:  # pylint: disable=too-many-public-methods
         return data
 
     def str(self, indent: int = 0) -> StrType:
-        """Build a detailed string representation of this DiffSync."""
+        """Build a detailed string representation of this Adapter."""
         margin = " " * indent
         output = ""
         for modelname in self.top_level:
@@ -835,7 +835,7 @@ class Adapter:  # pylint: disable=too-many-public-methods
     def get_or_instantiate(
         self, model: Type[DiffSyncModel], ids: Dict, attrs: Optional[Dict] = None
     ) -> Tuple[DiffSyncModel, bool]:
-        """Attempt to get the object with provided identifiers or instantiate it with provided identifiers and attrs.
+        """Attempt to get the object with provided identifiers or instantiate and add it with provided identifiers and attrs.
 
         Args:
             model: The DiffSyncModel to get or create.
@@ -848,7 +848,7 @@ class Adapter:  # pylint: disable=too-many-public-methods
         return self.store.get_or_instantiate(model=model, ids=ids, attrs=attrs)
 
     def get_or_add_model_instance(self, obj: DiffSyncModel) -> Tuple[DiffSyncModel, bool]:
-        """Attempt to get the object with provided obj identifiers or instantiate obj.
+        """Attempt to get the object with provided obj identifiers or add obj.
 
         Args:
             obj: An obj of the DiffSyncModel to get or add.
@@ -894,14 +894,9 @@ class Adapter:  # pylint: disable=too-many-public-methods
         return self.store.count(model=model)
 
 
-def DiffSync(*args: Any, **kwargs: Any) -> Adapter:  # noqa  pylint: disable=invalid-name
+@deprecated("'diffsync.DiffSync' is deprecated and will be removed with 2.1, use 'diffsync.Adapter' instead.")
+class DiffSync(Adapter):
     """For backwards-compatibility, keep around the old name."""
-
-    warnings.warn(
-        "'diffsync.DiffSync' is deprecated and will be removed with 2.1, use 'diffsync.Adapter' instead.",
-        DeprecationWarning,
-    )
-    return Adapter(*args, **kwargs)
 
 
 # DiffSyncModel references Adapter and Adapter references DiffSyncModel. Break the typing loop:

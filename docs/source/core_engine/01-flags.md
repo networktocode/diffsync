@@ -24,8 +24,8 @@ diff = nautobot.diff_from(local, flags=flags)
 | Name | Description | Binary Value |
 |---|---|---|
 | CONTINUE_ON_FAILURE | Continue synchronizing even if failures are encountered when syncing individual models. | 0b1 |
-| SKIP_UNMATCHED_SRC | Ignore objects that only exist in the source/"from" DiffSync when determining diffs and syncing.  If this flag is set, no new objects will be created in the target/"to" DiffSync. | 0b10 |
-| SKIP_UNMATCHED_DST | Ignore objects that only exist in the target/"to" DiffSync when determining diffs and syncing.  If this flag is set, no objects will be deleted from the target/"to" DiffSync. | 0b100 |
+| SKIP_UNMATCHED_SRC | Ignore objects that only exist in the source/"from" adapter when determining diffs and syncing. If this flag is set, no new objects will be created in the target/"to" adapter. | 0b10 |
+| SKIP_UNMATCHED_DST | Ignore objects that only exist in the target/"to" adapter when determining diffs and syncing. If this flag is set, no objects will be deleted from the target/"to" adapter. | 0b100 |
 | SKIP_UNMATCHED_BOTH | Convenience value combining both SKIP_UNMATCHED_SRC and SKIP_UNMATCHED_DST into a single flag | 0b110 |
 | LOG_UNCHANGED_RECORDS | If this flag is set, a log message will be generated during synchronization for each model, even unchanged ones. | 0b1000 |
 
@@ -57,8 +57,8 @@ class MyAdapter(Adapter):
 |---|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---|
 | IGNORE | Do not render diffs containing this model; do not make any changes to this model when synchronizing.  Can be used to indicate a model instance that exists but should not be changed by DiffSync. | 0b1 |
 | SKIP_CHILDREN_ON_DELETE | When deleting this model, do not recursively delete its children. Can be used for the case where deletion of a model results in the automatic deletion of all its children.                       | 0b10 |
-| SKIP_UNMATCHED_SRC | Ignore the model if it only exists in the source/"from" DiffSync when determining diffs and syncing. If this flag is set, no new model will be created in the target/"to" DiffSync.               | 0b100 |
-| SKIP_UNMATCHED_DST | Ignore the model if it only exists in the target/"to" DiffSync when determining diffs and syncing. If this flag is set, the model will not be deleted from the target/"to" DiffSync.              | 0b1000 |
+| SKIP_UNMATCHED_SRC | Ignore the model if it only exists in the source/"from" adapter when determining diffs and syncing. If this flag is set, no new model will be created in the target/"to" adapter. | 0b100 |
+| SKIP_UNMATCHED_DST | Ignore the model if it only exists in the target/"to" adapter when determining diffs and syncing. If this flag is set, the model will not be deleted from the target/"to" adapter. | 0b1000 |
 | SKIP_UNMATCHED_BOTH | Convenience value combining both SKIP_UNMATCHED_SRC and SKIP_UNMATCHED_DST into a single flag                                                                                                     | 0b1100 |
 | NATURAL_DELETION_ORDER | When deleting, delete children before instances of this model.                                                                                                                                    | 0b10000 |
 
