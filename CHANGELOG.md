@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2.0.1]
+
+### Changed
+
+- #276 - Removed upper version bound for `structlog` dependency
+
+### Fixed
+
+- #281 - Properly deprecated `DiffSync` class name
+- #273 - Properly capitalized `DiffSync` in documentation
+- #273 - Removed more mentions of `DiffSync` in favor of `Adapter`
+- #274 - Fixed doc section title for getting started
+- #269 - Fixed wording for a couple of docstrings
+- #265 - Fixed readthedocs build
+
 ## [2.0.0]
 
 ### Changed
