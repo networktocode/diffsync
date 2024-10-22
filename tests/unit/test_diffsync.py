@@ -835,7 +835,7 @@ def test_diffsync_remove_missing_child(log, backend_a):
     backend_a.remove(rdu_spine1, remove_children=True)
     assert log.has(
         "Unable to remove child element as it was not found!",
-        store=backend_a.store,
+        store=backend_a._store,
         parent_id=str(rdu_spine1),
         parent_type=rdu_spine1.get_type(),
         child_id=str(rdu_spine1_eth0),
