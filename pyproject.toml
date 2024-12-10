@@ -30,7 +30,7 @@ redis = ["redis"]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"
-pyyaml = "*"
+pyyaml = ">= 6.0.1"
 black = "*"
 pylint = "*"
 pydocstyle = "*"
