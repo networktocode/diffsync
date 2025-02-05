@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "diffsync"
-version = "2.0.1"
+version = "2.0.0"
 description = "Library to easily sync/diff/update 2 different data sources"
 authors = ["Network to Code, LLC <info@networktocode.com>"]
 license = "Apache-2.0"
@@ -30,7 +30,7 @@ redis = ["redis"]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"
-pyyaml = ">= 6.0.1"
+pyyaml = "*"
 black = "*"
 pylint = "*"
 pydocstyle = "*"
