@@ -13,7 +13,7 @@ on:  # yamllint disable
   pull_request: ~
 jobs:
   validate_renovate:
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-24.04"
     steps:
       - name: "Check out repository code"
         uses: "actions/checkout@v2"
@@ -22,7 +22,7 @@ jobs:
         with:
           pattern: "renovate.json"
   black:
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-24.04"
     env:
       INVOKE_LOCAL: "True"
     steps:
@@ -33,7 +33,7 @@ jobs:
       - name: "Linting: black"
         run: "poetry run invoke black"
   bandit:
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-24.04"
     env:
       INVOKE_LOCAL: "True"
     steps:
@@ -46,7 +46,7 @@ jobs:
     needs:
       - "black"
   pydocstyle:
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-24.04"
     env:
       INVOKE_LOCAL: "True"
     steps:
@@ -59,7 +59,7 @@ jobs:
     needs:
       - "black"
   flake8:
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-24.04"
     env:
       INVOKE_LOCAL: "True"
     steps:
@@ -72,7 +72,7 @@ jobs:
     needs:
       - "black"
   mypy:
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-24.04"
     env:
       INVOKE_LOCAL: "True"
     steps:
@@ -85,7 +85,7 @@ jobs:
     needs:
       - "black"
   yamllint:
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-24.04"
     env:
       INVOKE_LOCAL: "True"
     steps:
@@ -98,7 +98,7 @@ jobs:
     needs:
       - "black"
   build:
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-24.04"
     steps:
       - name: "Check out repository code"
         uses: "actions/checkout@v2"
@@ -113,7 +113,7 @@ jobs:
       - "yamllint"
       - "mypy"
   pylint:
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-24.04"
     steps:
       - name: "Check out repository code"
         uses: "actions/checkout@v2"
@@ -131,7 +131,7 @@ jobs:
       matrix:
         python-version: ["3.8", "3.9", "3.10", "3.11"]
         poetry-version: ["1.5.1"]
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-24.04"
     env:
       PYTHON_VER: "${{ matrix.python-version }}"
     steps:
@@ -154,7 +154,7 @@ jobs:
       - "pylint"
   publish_gh:
     name: "Publish to GitHub"
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-24.04"
     if: "startsWith(github.ref, 'refs/tags/v')"
     steps:
       - name: "Check out repository code"
@@ -183,7 +183,7 @@ jobs:
       - "unittest"
   publish_pypi:
     name: "Push Package to PyPI"
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-24.04"
     if: "startsWith(github.ref, 'refs/tags/v')"
     steps:
       - name: "Check out repository code"
@@ -212,7 +212,7 @@ jobs:
       - "publish_gh"
       - "publish_pypi"
     name: "Send notification to the Slack"
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-24.04"
     env:
       SLACK_WEBHOOK_URL: "${{ secrets.SLACK_WEBHOOK_URL }}"
       SLACK_MESSAGE: >-
