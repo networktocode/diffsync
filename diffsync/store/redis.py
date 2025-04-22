@@ -1,4 +1,5 @@
 """RedisStore module."""
+
 import copy
 import uuid
 from pickle import loads, dumps  # nosec

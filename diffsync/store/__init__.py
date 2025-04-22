@@ -1,4 +1,5 @@
 """BaseStore module."""
+
 from typing import Dict, List, Tuple, Type, Union, TYPE_CHECKING, Optional, Set, Any
 import structlog  # type: ignore
 

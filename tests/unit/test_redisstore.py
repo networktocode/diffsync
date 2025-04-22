@@ -1,4 +1,5 @@
 """Testing of RedisStore."""
+
 import pytest
 from diffsync.store.redis import RedisStore
 from diffsync.exceptions import ObjectStoreException

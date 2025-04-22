@@ -1,4 +1,5 @@
 """DiffSync adapter to load data from a local file."""
+
 import json
 
 from slugify import slugify  # pylint: disable=import-error

@@ -1,4 +1,5 @@
 """DiffSync adapter class for PeeringDB."""
+
 # pylint: disable=import-error,no-name-in-module
 import os
 import requests
