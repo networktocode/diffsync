@@ -19,7 +19,7 @@ include = [
 python = ">=3.8,<4.0"
 pydantic = "^2.0.0"
 structlog = ">= 20.1.0"
-packaging = ">= 21.3, < 24.0"
+packaging = ">= 21.3"
 colorama = {version = "^0.4.3", optional = true}
 redis = {version = "^4.3", optional = true}
 # typing.Self introduced in 3.11
