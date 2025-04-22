@@ -168,7 +168,7 @@ class RedisStore(BaseStore):
 
         existing_obj_binary = self._store.get(object_key)
         if existing_obj_binary:
-            existing_obj = loads(existing_obj_binary)  # noqa: B301
+            existing_obj = loads(existing_obj_binary)  # nosec
             existing_obj_dict = existing_obj.dict()
 
             if existing_obj_dict != obj.dict():
