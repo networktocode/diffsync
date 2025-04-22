@@ -1,11 +1,9 @@
 """Extension of the Base model for the Nautobot DiffSync Adapter to manage the CRUD operations."""
 
 import pynautobot  # pylint: disable=import-error
-
-from models import Region, Country  # pylint: disable=no-name-in-module
+from models import Country, Region  # pylint: disable=no-name-in-module
 
 from diffsync import Adapter
-
 
 # pylint: disable=no-member,too-few-public-methods
 
@@ -51,7 +49,7 @@ class NautobotCountry(Country):
             country = adapter.nautobot.dcim.regions.create(
                 slug=ids.get("slug"),
                 name=attrs.get("name"),
-                custom_fields=dict(population=attrs.get("population")),
+                custom_fields={"population": attrs.get("population")},
                 parent=region.remote_id,
             )
             print(f"Created country : {ids} | {attrs} | {country.id}")

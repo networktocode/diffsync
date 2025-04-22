@@ -15,6 +15,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+
 import random
 
 from diffsync import Adapter, DiffSyncModel
@@ -40,7 +41,7 @@ class Adapter1(Adapter):
     def load(self, count):  # pylint: disable=arguments-differ
         """Construct Numbers from 1 to count."""
         for i in range(count):
-            self.add(Number(number=(i + 1)))
+            self.add(Number(number=i + 1))
 
 
 class Adapter2(Adapter):

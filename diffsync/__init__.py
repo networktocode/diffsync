@@ -18,29 +18,29 @@ limitations under the License.
 import sys
 from inspect import isclass
 from typing import (
+    Any,
     Callable,
     ClassVar,
     Dict,
     List,
     Optional,
+    Set,
     Tuple,
     Type,
     Union,
-    Any,
-    Set,
 )
+
+import structlog  # type: ignore
+from pydantic import BaseModel, ConfigDict, PrivateAttr
 from typing_extensions import deprecated
 
-from pydantic import ConfigDict, BaseModel, PrivateAttr
-import structlog  # type: ignore
-
 from diffsync.diff import Diff
-from diffsync.enum import DiffSyncModelFlags, DiffSyncFlags, DiffSyncStatus
+from diffsync.enum import DiffSyncFlags, DiffSyncModelFlags, DiffSyncStatus
 from diffsync.exceptions import (
     DiffClassMismatch,
     ObjectAlreadyExists,
-    ObjectStoreWrongType,
     ObjectNotFound,
+    ObjectStoreWrongType,
 )
 from diffsync.helpers import DiffSyncDiffer, DiffSyncSyncer
 from diffsync.store import BaseStore
@@ -134,16 +134,16 @@ class DiffSyncModel(BaseModel):
         """
         # Make sure that any field referenced by name actually exists on the model
         for attr in cls._identifiers:
-            if attr not in cls.model_fields and not hasattr(cls, attr):
+            if attr not in cls.model_fields and not hasattr(cls, attr):  # pylint: disable=unsupported-membership-test
                 raise AttributeError(f"_identifiers {cls._identifiers} references missing or un-annotated attr {attr}")
         for attr in cls._shortname:
-            if attr not in cls.model_fields:
+            if attr not in cls.model_fields:  # pylint: disable=unsupported-membership-test
                 raise AttributeError(f"_shortname {cls._shortname} references missing or un-annotated attr {attr}")
         for attr in cls._attributes:
-            if attr not in cls.model_fields:
+            if attr not in cls.model_fields:  # pylint: disable=unsupported-membership-test
                 raise AttributeError(f"_attributes {cls._attributes} references missing or un-annotated attr {attr}")
         for attr in cls._children.values():
-            if attr not in cls.model_fields:
+            if attr not in cls.model_fields:  # pylint: disable=unsupported-membership-test
                 raise AttributeError(f"_children {cls._children} references missing or un-annotated attr {attr}")
 
         # Any given field can only be in one of (_identifiers, _attributes, _children)

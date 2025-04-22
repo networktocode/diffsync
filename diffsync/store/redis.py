@@ -24,7 +24,7 @@ REDIS_DIFFSYNC_ROOT_LABEL = "diffsync"
 class RedisStore(BaseStore):
     """RedisStore class."""
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         *args: Any,
         store_id: Optional[str] = None,
