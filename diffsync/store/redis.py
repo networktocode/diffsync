@@ -2,8 +2,8 @@
 
 import copy
 import uuid
-from pickle import loads, dumps  # nosec
-from typing import List, Type, Union, TYPE_CHECKING, Set, Any, Optional, Dict
+from pickle import dumps, loads  # nosec
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Type, Union
 
 try:
     from redis import Redis
@@ -12,7 +12,7 @@ except ImportError as ierr:
     print("Redis is not installed. Have you installed diffsync with redis extra? `pip install diffsync[redis]`")
     raise ierr
 
-from diffsync.exceptions import ObjectNotFound, ObjectStoreException, ObjectAlreadyExists
+from diffsync.exceptions import ObjectAlreadyExists, ObjectNotFound, ObjectStoreException
 from diffsync.store import BaseStore
 
 if TYPE_CHECKING:
@@ -168,7 +168,7 @@ class RedisStore(BaseStore):
 
         existing_obj_binary = self._store.get(object_key)
         if existing_obj_binary:
-            existing_obj = loads(existing_obj_binary)
+            existing_obj = loads(existing_obj_binary)  # noqa: B301
             existing_obj_dict = existing_obj.dict()
 
             if existing_obj_dict != obj.dict():

@@ -2,13 +2,14 @@
 
 # pylint: disable=import-error,no-name-in-module
 import os
-import requests
-from slugify import slugify
+
 import pycountry
+import requests
 from models import RegionModel, SiteModel
+from slugify import slugify
+
 from diffsync import Adapter
 from diffsync.exceptions import ObjectNotFound
-
 
 PEERINGDB_URL = "https://peeringdb.com/"
 PEERINGDB_API_KEY = os.environ.get("PEERINGDB_API_KEY", "").strip()
@@ -35,7 +36,7 @@ class PeeringDB(Adapter):
         if PEERINGDB_API_KEY:
             headers["Authorization"] = f"Api-Key {PEERINGDB_API_KEY}"
 
-        ix_data = requests.get(f"{PEERINGDB_URL}/api/ix/{self.ix_id}", headers=headers).json()
+        ix_data = requests.get(f"{PEERINGDB_URL}/api/ix/{self.ix_id}", headers=headers, timeout=60).json()
 
         for fac in ix_data["data"][0]["fac_set"]:
             # PeeringDB has no Region entity, so we must avoid duplicates
