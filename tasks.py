@@ -49,7 +49,7 @@ def is_truthy(arg):
 
 
 # Can be set to a separate Python version to be used for launching or building image
-PYTHON_VER = os.getenv("PYTHON_VER", "3.8")
+PYTHON_VER = os.getenv("PYTHON_VER", "3.9")
 # Name of the docker image/image
 NAME = os.getenv("IMAGE_NAME", f"diffsync-py{PYTHON_VER}")
 # Tag for the image
