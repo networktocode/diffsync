@@ -15,14 +15,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from collections.abc import Iterable as ABCIterable, Mapping as ABCMapping
-from typing import Callable, List, Optional, Tuple, Type, TYPE_CHECKING, Dict, Iterable
+from collections.abc import Iterable as ABCIterable
+from collections.abc import Mapping as ABCMapping
+from typing import TYPE_CHECKING, Callable, Dict, Iterable, List, Optional, Tuple, Type
 
 import structlog  # type: ignore
 
 from .diff import Diff, DiffElement
-from .enum import DiffSyncModelFlags, DiffSyncFlags, DiffSyncStatus, DiffSyncActions
-from .exceptions import ObjectNotFound, ObjectNotCreated, ObjectNotUpdated, ObjectNotDeleted, ObjectCrudException
+from .enum import DiffSyncActions, DiffSyncFlags, DiffSyncModelFlags, DiffSyncStatus
+from .exceptions import ObjectCrudException, ObjectNotCreated, ObjectNotDeleted, ObjectNotFound, ObjectNotUpdated
 from .utils import intersection, symmetric_difference
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -36,7 +37,7 @@ class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
     Independent from Diff and DiffElement as those classes are purely data objects, while this stores some state.
     """
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(  # pylint: disable=too-many-arguments, too-many-positional-arguments
         self,
         src_diffsync: "Adapter",
         dst_diffsync: "Adapter",
@@ -115,9 +116,9 @@ class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
 
             combined_dict = {}
             for uid in dict_src:
-                combined_dict[uid] = (dict_src.get(uid), dict_dst.get(uid))
+                combined_dict[uid] = (dict_src.get(uid), dict_dst.get(uid))  # type: ignore
             for uid in dict_dst:
-                combined_dict[uid] = (dict_src.get(uid), dict_dst.get(uid))
+                combined_dict[uid] = (dict_src.get(uid), dict_dst.get(uid))  # type: ignore
         else:
             # In the future we might support set, etc...
             raise TypeError(f"Type combination {type(src)}/{type(dst)} is not supported... for now")
@@ -138,7 +139,7 @@ class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
 
     @staticmethod
     def validate_objects_for_diff(
-        object_pairs: Iterable[Tuple[Optional["DiffSyncModel"], Optional["DiffSyncModel"]]]
+        object_pairs: Iterable[Tuple[Optional["DiffSyncModel"], Optional["DiffSyncModel"]]],
     ) -> None:
         """Check whether all DiffSyncModels in the given dictionary are valid for comparison to one another.
 
@@ -286,7 +287,7 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
     Independent from DiffSync and DiffSyncModel as those classes are purely data objects, while this stores some state.
     """
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(  # pylint: disable=too-many-arguments, too-many-positional-arguments
         self,
         diff: Diff,
         src_diffsync: "Adapter",

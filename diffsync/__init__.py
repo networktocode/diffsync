@@ -70,7 +70,7 @@ class DiffSyncModel(BaseModel):
     be included in **at most** one of these three tuples.
     """
 
-    _modelname: ClassVar[str] = "diffsyncmodel"
+    _modelname: ClassVar[str] = "diffsyncmodel"  # pylint: disable=used-before-assignment
     """Name of this model, used by DiffSync to store and look up instances of this model or its equivalents.
 
     Lowercase by convention; typically corresponds to the class name, but that is not enforced.
@@ -432,7 +432,7 @@ class Adapter:  # pylint: disable=too-many-public-methods
     # modelname1 = MyModelClass1
     # modelname2 = MyModelClass2
 
-    type: Optional[str] = None
+    type: Optional[str] = None  # pylint: disable=used-before-assignment
     """Type of the object, will default to the name of the class if not provided."""
 
     top_level: ClassVar[List[str]] = []
@@ -558,7 +558,7 @@ class Adapter:  # pylint: disable=too-many-public-methods
     # Synchronization between DiffSync instances
     # ------------------------------------------------------------------------------
 
-    def sync_from(  # pylint: disable=too-many-arguments
+    def sync_from(  # pylint: disable=too-many-arguments, too-many-positional-arguments
         self,
         source: "Adapter",
         diff_class: Type[Diff] = Diff,
@@ -602,7 +602,7 @@ class Adapter:  # pylint: disable=too-many-public-methods
 
         return diff
 
-    def sync_to(  # pylint: disable=too-many-arguments
+    def sync_to(  # pylint: disable=too-many-arguments, too-many-positional-arguments
         self,
         target: "Adapter",
         diff_class: Type[Diff] = Diff,

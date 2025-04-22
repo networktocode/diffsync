@@ -86,7 +86,7 @@ def run_cmd(context, exec_cmd, name=NAME, image_ver=IMAGE_VER, local=INVOKE_LOCA
 @task
 def build(
     context, name=NAME, python_ver=PYTHON_VER, image_ver=IMAGE_VER, nocache=False, forcerm=False
-):  # pylint: disable=too-many-arguments
+):  # pylint: disable=too-many-arguments, too-many-positional-arguments
     """This will build an image with the provided name and python version.
 
     Args:

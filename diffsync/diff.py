@@ -105,8 +105,7 @@ class Diff:
 
         Since children is already an OrderedDefaultDict, this method is not doing anything special.
         """
-        for child in children.values():  # pylint: disable=use-yield-from
-            yield child
+        yield from children.values()
 
     def summary(self) -> Dict[StrType, int]:
         """Build a dict summary of this Diff and its child DiffElements."""
@@ -161,7 +160,7 @@ class Diff:
 class DiffElement:  # pylint: disable=too-many-instance-attributes
     """DiffElement object, designed to represent a single item/object that may or may not have any diffs."""
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-positional-arguments
         self,
         obj_type: StrType,
         name: StrType,
