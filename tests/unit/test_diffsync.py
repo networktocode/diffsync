@@ -1,4 +1,5 @@
 """Unit tests for the Adapter class."""
+
 # pylint: disable=too-many-lines
 
 from unittest import mock

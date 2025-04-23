@@ -14,32 +14,33 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+
 import sys
 from inspect import isclass
 from typing import (
+    Any,
     Callable,
     ClassVar,
     Dict,
     List,
     Optional,
+    Set,
     Tuple,
     Type,
     Union,
-    Any,
-    Set,
 )
+
+import structlog  # type: ignore
+from pydantic import BaseModel, ConfigDict, PrivateAttr
 from typing_extensions import deprecated
 
-from pydantic import ConfigDict, BaseModel, PrivateAttr
-import structlog  # type: ignore
-
 from diffsync.diff import Diff
-from diffsync.enum import DiffSyncModelFlags, DiffSyncFlags, DiffSyncStatus
+from diffsync.enum import DiffSyncFlags, DiffSyncModelFlags, DiffSyncStatus
 from diffsync.exceptions import (
     DiffClassMismatch,
     ObjectAlreadyExists,
-    ObjectStoreWrongType,
     ObjectNotFound,
+    ObjectStoreWrongType,
 )
 from diffsync.helpers import DiffSyncDiffer, DiffSyncSyncer
 from diffsync.store import BaseStore
@@ -69,7 +70,7 @@ class DiffSyncModel(BaseModel):
     be included in **at most** one of these three tuples.
     """
 
-    _modelname: ClassVar[str] = "diffsyncmodel"
+    _modelname: ClassVar[str] = "diffsyncmodel"  # pylint: disable=used-before-assignment
     """Name of this model, used by DiffSync to store and look up instances of this model or its equivalents.
 
     Lowercase by convention; typically corresponds to the class name, but that is not enforced.
@@ -133,16 +134,16 @@ class DiffSyncModel(BaseModel):
         """
         # Make sure that any field referenced by name actually exists on the model
         for attr in cls._identifiers:
-            if attr not in cls.model_fields and not hasattr(cls, attr):
+            if attr not in cls.model_fields and not hasattr(cls, attr):  # pylint: disable=unsupported-membership-test
                 raise AttributeError(f"_identifiers {cls._identifiers} references missing or un-annotated attr {attr}")
         for attr in cls._shortname:
-            if attr not in cls.model_fields:
+            if attr not in cls.model_fields:  # pylint: disable=unsupported-membership-test
                 raise AttributeError(f"_shortname {cls._shortname} references missing or un-annotated attr {attr}")
         for attr in cls._attributes:
-            if attr not in cls.model_fields:
+            if attr not in cls.model_fields:  # pylint: disable=unsupported-membership-test
                 raise AttributeError(f"_attributes {cls._attributes} references missing or un-annotated attr {attr}")
         for attr in cls._children.values():
-            if attr not in cls.model_fields:
+            if attr not in cls.model_fields:  # pylint: disable=unsupported-membership-test
                 raise AttributeError(f"_children {cls._children} references missing or un-annotated attr {attr}")
 
         # Any given field can only be in one of (_identifiers, _attributes, _children)
@@ -431,7 +432,7 @@ class Adapter:  # pylint: disable=too-many-public-methods
     # modelname1 = MyModelClass1
     # modelname2 = MyModelClass2
 
-    type: Optional[str] = None
+    type: Optional[str] = None  # pylint: disable=used-before-assignment
     """Type of the object, will default to the name of the class if not provided."""
 
     top_level: ClassVar[List[str]] = []
@@ -557,7 +558,7 @@ class Adapter:  # pylint: disable=too-many-public-methods
     # Synchronization between DiffSync instances
     # ------------------------------------------------------------------------------
 
-    def sync_from(  # pylint: disable=too-many-arguments
+    def sync_from(  # pylint: disable=too-many-arguments, too-many-positional-arguments
         self,
         source: "Adapter",
         diff_class: Type[Diff] = Diff,
@@ -601,7 +602,7 @@ class Adapter:  # pylint: disable=too-many-public-methods
 
         return diff
 
-    def sync_to(  # pylint: disable=too-many-arguments
+    def sync_to(  # pylint: disable=too-many-arguments, too-many-positional-arguments
         self,
         target: "Adapter",
         diff_class: Type[Diff] = Diff,

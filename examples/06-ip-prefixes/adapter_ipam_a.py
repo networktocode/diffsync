@@ -1,4 +1,5 @@
 """IPAM A adapter."""
+
 import os
 import ipaddress
 import yaml

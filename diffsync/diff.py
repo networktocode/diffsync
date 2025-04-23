@@ -16,11 +16,11 @@ limitations under the License.
 """
 
 from functools import total_ordering
-from typing import Any, Iterator, Optional, Type, List, Dict, Iterable
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Type
 
-from .exceptions import ObjectAlreadyExists
-from .utils import intersection, OrderedDefaultDict
 from .enum import DiffSyncActions
+from .exceptions import ObjectAlreadyExists
+from .utils import OrderedDefaultDict, intersection
 
 # This workaround is used because we are defining a method called `str` in our class definition, which therefore renders
 # the builtin `str` type unusable.
@@ -105,8 +105,7 @@ class Diff:
 
         Since children is already an OrderedDefaultDict, this method is not doing anything special.
         """
-        for child in children.values():
-            yield child
+        yield from children.values()
 
     def summary(self) -> Dict[StrType, int]:
         """Build a dict summary of this Diff and its child DiffElements."""
@@ -161,7 +160,7 @@ class Diff:
 class DiffElement:  # pylint: disable=too-many-instance-attributes
     """DiffElement object, designed to represent a single item/object that may or may not have any diffs."""
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-positional-arguments
         self,
         obj_type: StrType,
         name: StrType,

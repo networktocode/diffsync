@@ -1,4 +1,5 @@
 """DiffSyncModel subclasses for Nautobot-PeeringDB data sync."""
+
 from typing import Optional, Union, List
 from uuid import UUID
 
