@@ -14,9 +14,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+
 import os
 import sys
 from distutils.util import strtobool
+
 from invoke import task  # type: ignore
 
 try:
@@ -47,7 +49,7 @@ def is_truthy(arg):
 
 
 # Can be set to a separate Python version to be used for launching or building image
-PYTHON_VER = os.getenv("PYTHON_VER", "3.8")
+PYTHON_VER = os.getenv("PYTHON_VER", "3.9")
 # Name of the docker image/image
 NAME = os.getenv("IMAGE_NAME", f"diffsync-py{PYTHON_VER}")
 # Tag for the image
@@ -84,7 +86,7 @@ def run_cmd(context, exec_cmd, name=NAME, image_ver=IMAGE_VER, local=INVOKE_LOCA
 @task
 def build(
     context, name=NAME, python_ver=PYTHON_VER, image_ver=IMAGE_VER, nocache=False, forcerm=False
-):  # pylint: disable=too-many-arguments
+):  # pylint: disable=too-many-arguments, too-many-positional-arguments
     """This will build an image with the provided name and python version.
 
     Args:

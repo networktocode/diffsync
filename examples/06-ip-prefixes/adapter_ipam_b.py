@@ -1,4 +1,5 @@
 """IPAM B adapter."""
+
 import os
 import yaml
 from models import Prefix  # pylint: disable=no-name-in-module

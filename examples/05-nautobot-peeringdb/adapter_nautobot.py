@@ -1,4 +1,5 @@
 """DiffSync adapter class for Nautobot."""
+
 # pylint: disable=import-error,no-name-in-module
 import pynautobot
 from models import RegionModel, SiteModel

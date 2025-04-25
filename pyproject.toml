@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "diffsync"
-version = "2.0.1"
+version = "2.1.0"
 description = "Library to easily sync/diff/update 2 different data sources"
 authors = ["Network to Code, LLC <info@networktocode.com>"]
 license = "Apache-2.0"
@@ -16,10 +16,10 @@ include = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.8,<4.0"
+python = ">=3.9,<4.0"
 pydantic = "^2.0.0"
 structlog = ">= 20.1.0"
-packaging = ">= 21.3, < 24.0"
+packaging = ">= 21.3"
 colorama = {version = "^0.4.3", optional = true}
 redis = {version = "^4.3", optional = true}
 # typing.Self introduced in 3.11
@@ -30,7 +30,7 @@ redis = ["redis"]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"
-pyyaml = "*"
+pyyaml = ">= 6.0.1"
 black = "*"
 pylint = "*"
 pydocstyle = "*"
@@ -84,7 +84,6 @@ no-docstring-rgx="^(_|test_)"
 # Pylint and Black disagree about how to format multi-line arrays; Black wins.
 disable = """,
     line-too-long,
-    bad-continuation,
     """
 
 [tool.pylint.miscellaneous]

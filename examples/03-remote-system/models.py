@@ -1,4 +1,5 @@
 """Main DiffSync models for example3."""
+
 from typing import List, Optional
 from diffsync import DiffSyncModel
 
