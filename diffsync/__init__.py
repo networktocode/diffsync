@@ -16,6 +16,7 @@ limitations under the License.
 """
 
 import sys
+from copy import deepcopy
 from inspect import isclass
 from typing import (
     Any,
@@ -479,6 +480,13 @@ class Adapter:  # pylint: disable=too-many-public-methods
             value = getattr(cls, name)
             if not isclass(value) or not issubclass(value, DiffSyncModel):
                 raise AttributeError(f'top_level references attribute "{name}" but it is not a DiffSyncModel subclass!')
+
+    def __new__(cls, **kwargs):
+        """"""
+        meta_kwargs = deepcopy(kwargs)
+        instance = super().__new__(cls)
+        instance._meta_kwargs = meta_kwargs
+        return instance
 
     def __str__(self) -> StrType:
         """String representation of an Adapter."""
