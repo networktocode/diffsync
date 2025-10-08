@@ -481,8 +481,8 @@ class Adapter:  # pylint: disable=too-many-public-methods
             if not isclass(value) or not issubclass(value, DiffSyncModel):
                 raise AttributeError(f'top_level references attribute "{name}" but it is not a DiffSyncModel subclass!')
 
-    def __new__(cls, **kwargs):
-        """"""
+    def __new__(cls, **kwargs):  # type: ignore[no-untyped-def]
+        """Document keyword arguments that were used to initialize Adapter."""
         meta_kwargs = deepcopy(kwargs)
         instance = super().__new__(cls)
         instance._meta_kwargs = meta_kwargs
