@@ -61,7 +61,7 @@ StrType = str
 class DiffSyncModel(BaseModel):
     """Base class for all DiffSync object models.
 
-    Note that read-only APIs of this class are implemented as `get_*()` functions rather than as properties;
+    Note that read-only APIs of this class are implemented as `get_*()` methods rather than as properties;
     this is intentional as specific model classes may want to use these names (`type`, `keys`, `attrs`, etc.)
     as model attributes and we want to avoid any ambiguity or collisions.
 

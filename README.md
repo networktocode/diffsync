@@ -70,7 +70,7 @@ $ pip install git+https://github.com/networktocode/diffsync.git@main
 # Contributing
 Pull requests are welcomed and automatically built and tested against multiple versions of Python through GitHub Actions.
 
-The project is following Network to Code software development guidelines and are leveraging the following:
+The project is following Network to Code software development guidelines and is leveraging the following:
 
 - Black, Pylint, Bandit, flake8, and pydocstyle, mypy for Python linting, formatting and type hint checking.
 - pytest, coverage, and unittest for unit tests.

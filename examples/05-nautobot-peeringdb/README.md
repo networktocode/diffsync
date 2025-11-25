@@ -2,7 +2,7 @@
 
 ## Context
 
-The goal of this example is to synchronize some data from [PeeringDB](https://www.peeringdb.com/), that as the name suggests is a DB where peering entities define their facilities and presence to facilitate peering, towards [Nautobot Demo](https://demo.nautobot.com/) that is a always on demo service for [Nautobot](https://nautobot.readthedocs.io/), an open source Source of Truth.
+The goal of this example is to synchronize some data from [PeeringDB](https://www.peeringdb.com/), as the name suggests that is a DB where peering entities define their facilities and presence to facilitate peering, towards [Nautobot Demo](https://demo.nautobot.com/) that is an always on demo service for [Nautobot](https://nautobot.readthedocs.io/), an open source Source of Truth.
 
 In Peering DB there is a model that defines a `Facility` and you can get information about the actual data center and the city where it is placed. In Nautobot, this information could be mapped to the `Region` and `Site` models, where `Region` can depend from other `Region` and also contain `Site` as children. For instance, Barcelona is in Spain and Spain is in Europe, and all of them are `Regions`. And, finally, the actual datacenter will refer to the `Region` where it is placed.
 
