@@ -1,0 +1,7 @@
+---
+"diffsync":
+  python_ver: "3.10"
+  local: false
+  # image_name: "diffsync"
+  # image_ver: "latest"
+  # pwd: "."
