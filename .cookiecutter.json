@@ -1,0 +1,30 @@
+{
+    "cookiecutter": {
+        "codeowner_github_usernames": "@glennmatthews @michalis1 @jdrew82",
+        "full_name": "Network to Code, LLC",
+        "email": "info@networktocode.com",
+        "github_org": "networktocode",
+        "description": "Library to easily sync/diff/update 2 different data sources",
+        "project_name": "diffsync",
+        "project_slug": "diffsync",
+        "repo_url": "https://github.com/networktocode/diffsync",
+        "base_url": "diffsync",
+        "project_python_name": "diffsync",
+        "project_python_base_version": "3.10",
+        "project_with_config_settings": "no",
+        "generate_docs": "yes",
+        "version": "2.2.0",
+        "original_publish_year": "2025",
+        "_drift_manager": {
+            "template": "git@github.com:networktocode-llc/cookiecutter-ntc.git",
+            "template_dir": "python",
+            "template_ref": "main",
+            "cookie_dir": "",
+            "pull_request_strategy": "create",
+            "post_actions": [],
+            "draft": false,
+            "baked_commit_ref": "",
+            "drift_managed_branch": "develop"
+        }
+    }
+}
