@@ -148,9 +148,7 @@ def lock(context, check=False):
 @task
 def clean(context):
     """Remove the project specific image."""
-    print(
-        f"Attempting to forcefully remove image {context.diffsync.image_name}:{context.diffsync.image_ver}"
-    )
+    print(f"Attempting to forcefully remove image {context.diffsync.image_name}:{context.diffsync.image_ver}")
     context.run(f"docker rmi {context.diffsync.image_name}:{context.diffsync.image_ver} --force")
     print(f"Successfully removed image {context.diffsync.image_name}:{context.diffsync.image_ver}")
 

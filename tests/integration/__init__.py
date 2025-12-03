@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 """Integration tests for DiffSync.
 
 Copyright (c) 2020 Network To Code, LLC <info@networktocode.com>
@@ -15,6 +14,3 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-=======
-"""Integration tests package."""
->>>>>>> c5f3eb1 (Cookie initialy baked by NetworkToCode Cookie Drift Manager Tool)

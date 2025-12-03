@@ -20,7 +20,7 @@ class IpamAPrefix(Prefix):
                 "cidr": ids["prefix"],
                 "family": ipaddress.ip_address(ids["prefix"].split("/")[0]).version,
                 "vrf": attrs["vrf"],
-                "vlan": f'VLAN{attrs["vlan_id"]}',
+                "vlan": f"VLAN{attrs['vlan_id']}",
                 "customer_id": attrs["tenant"] if attrs["tenant"] else None,
             }
         )
@@ -34,7 +34,7 @@ class IpamAPrefix(Prefix):
                 if "vrf" in attrs:
                     elem["vrf"] = attrs["vrf"]
                 if "vlan_id" in attrs:
-                    elem["vlan_id"] = f'VLAN{attrs["vlan_id"]}'
+                    elem["vlan_id"] = f"VLAN{attrs['vlan_id']}"
                 if "tenant" in attrs:
                     elem["customer_id"] = attrs["tenant"]
                 break

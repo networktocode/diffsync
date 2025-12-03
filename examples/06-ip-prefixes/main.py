@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """Main example."""
+
 from adapter_ipam_a import IpamA
 from adapter_ipam_b import IpamB
 

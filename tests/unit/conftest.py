@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 """Used to setup fixtures to be used through tests.
 
 Copyright (c) 2020 Network To Code, LLC <info@networktocode.com>
@@ -487,15 +486,3 @@ def diff_element_with_children():
     parent_element.add_child(child_element_4)
 
     return parent_element
-=======
-"""Used to setup fixtures to be used through tests"""
-
-import pytest
-from click.testing import CliRunner
-
-
-@pytest.fixture
-def cli_runner():
-    """Provide CLI runner for Click tests."""
-    return CliRunner()
->>>>>>> c5f3eb1 (Cookie initialy baked by NetworkToCode Cookie Drift Manager Tool)
