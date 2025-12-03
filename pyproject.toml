@@ -1,6 +1,5 @@
 [tool.poetry]
 name = "diffsync"
-<<<<<<< HEAD
 version = "2.1.1a0"
 description = "Library to easily sync/diff/update 2 different data sources"
 authors = ["Network to Code, LLC <info@networktocode.com>"]
@@ -10,17 +9,6 @@ homepage = "https://diffsync.readthedocs.io"
 repository = "https://github.com/networktocode/diffsync"
 documentation = "https://diffsync.readthedocs.io"
 keywords = ["source-of-truth", "synchronization"]
-include = [
-    "CHANGELOG.md",
-=======
-version = "2.2.0"
-description = "Library to easily sync/diff/update 2 different data sources"
-authors = ["Network to Code, LLC <opensource@networktocode.com>"]
-readme = "README.md"
-homepage = "https://diffsync.readthedocs.io/"
-repository = "https://github.com/networktocode/diffsync"
-documentation = "https://diffsync.readthedocs.io/"
-license = "Apache-2.0"
 classifiers = [
     "Intended Audience :: Developers",
     "Development Status :: 5 - Production/Stable",
@@ -31,14 +19,13 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
 ]
 include = [
->>>>>>> c5f3eb1 (Cookie initialy baked by NetworkToCode Cookie Drift Manager Tool)
+    "CHANGELOG.md",
     "LICENSE",
     "README.md",
 ]
 
 [tool.poetry.dependencies]
-<<<<<<< HEAD
-python = ">=3.9,<4.0"
+python = ">=3.10,<3.14"
 pydantic = "^2.0.0"
 structlog = ">= 20.1.0"
 packaging = ">= 21.3"
@@ -49,67 +36,6 @@ typing-extensions = { version = ">=4.0.1", python = "<3.11" }
 
 [tool.poetry.extras]
 redis = ["redis"]
-
-[tool.poetry.group.dev.dependencies]
-pytest = "*"
-pyyaml = ">= 6.0.1"
-black = "*"
-pylint = "*"
-pydocstyle = "*"
-yamllint = "*"
-bandit = "*"
-invoke = "*"
-flake8 = "*"
-mypy = "*"
-pytest-cov = "*"
-pytest-structlog = "*"
-coverage = {extras = ["toml"], version = "*"}
-Sphinx = "^6.0.0"
-m2r2 = "*"
-sphinx-rtd-theme = "*"
-toml = "*"
-types-toml = "*"
-types-redis = "*"
-pytest-redis = "^2.4.0"
-types-requests = "^2.28.11.15"
-types-python-slugify = "^8.0.0.1"
-
-[tool.black]
-line-length = 120
-include = '\.pyi?$'
-exclude = '''
-        /(
-          \.git
-        | \.tox
-        | \.venv
-        | env/
-        | _build
-        | build
-        | dist
-        )/
-    '''
-
-[tool.coverage.run]
-branch = true
-
-[tool.pylint.general]
-extension-pkg-whitelist = [
-    "pydantic"
-]
-
-[tool.pylint.basic]
-# No docstrings required for private methods (Pylint default), or for test_ functions.
-no-docstring-rgx="^(_|test_)"
-
-[tool.pylint.messages_control]
-# Line length is enforced by Black, so pylint doesn't need to check it.
-# Pylint and Black disagree about how to format multi-line arrays; Black wins.
-disable = """,
-    line-too-long,
-    """
-=======
-python = ">=3.10,<3.14"
-click = "*"
 
 [tool.poetry.group.dev.dependencies]
 coverage = "*"
@@ -153,8 +79,6 @@ griffe = "1.1.1"
 [tool.poetry.scripts]
 diffsync = 'diffsync.cli:main'
 
-
-
 [tool.ruff]
 line-length = 120
 target-version = "py310"
@@ -194,22 +118,31 @@ convention = "google"
     "S"
 ]
 
+[tool.mypy]
+warn_unused_configs = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
 
-[tool.pylint.master]
-ignore=[".venv", "tests"]
+[tool.pylint.general]
+extension-pkg-whitelist = [
+    "pydantic"
+]
 
 [tool.pylint.basic]
 # No docstrings required for private methods (Pylint default), or for test_ functions, or for inner Meta classes.
 no-docstring-rgx = "^(_|test_|Meta$)"
 
+[tool.pylint.master]
+ignore=[".venv", "tests"]
 
 [tool.pylint.messages_control]
+# Line length is enforced by Black, so pylint doesn't need to check it.
+# Pylint and Black disagree about how to format multi-line arrays; Black wins.
 disable = [
     "line-too-long",
     "duplicate-code",
     "cyclic-import",
     ]
->>>>>>> c5f3eb1 (Cookie initialy baked by NetworkToCode Cookie Drift Manager Tool)
 
 [tool.pylint.miscellaneous]
 # Don't flag TODO as a failure, let us commit with things that still need to be done in the code
@@ -218,28 +151,9 @@ notes = """,
     XXX,
     """
 
-<<<<<<< HEAD
 [tool.pylint.similarities]
 # There's a lot of duplicate code in the examples/backend_*.py files - don't complain about it for now
 min-similarity-lines = 20
-
-[tool.pytest.ini_options]
-testpaths = [
-    "tests"
-]
-
-[tool.mypy]
-warn_unused_configs = true
-disallow_untyped_defs = true
-ignore_missing_imports = true
-
-[build-system]
-requires = ["poetry_core>=1.0.8"]
-build-backend = "poetry.core.masonry.api"
-=======
-[build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
 python_paths = "./"
@@ -305,4 +219,7 @@ showcontent = true
 directory = "housekeeping"
 name = "Housekeeping"
 showcontent = true
->>>>>>> c5f3eb1 (Cookie initialy baked by NetworkToCode Cookie Drift Manager Tool)
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

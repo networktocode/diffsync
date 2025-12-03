@@ -2,7 +2,7 @@
 dev_addr: "127.0.0.1:8001"
 edit_uri: "edit/main/diffsync/docs"
 site_dir: "diffsync/static/diffsync/docs"
-site_name: "Diffsync Documentation"
+site_name: "DiffSync Documentation"
 site_url: "https://diffsync.readthedocs.io/en/latest/"
 repo_url: "https://github.com/networktocode/diffsync"
 copyright: "Copyright &copy; The Authors"
@@ -99,7 +99,7 @@ plugins:
       scripts:
         - "docs/generate_code_reference_pages.py"
   - "glightbox":
-      manual: true  # See https://blueswen.github.io/mkdocs-glightbox/flexibility/enable-by-image-or-page/
+      manual: true # See https://blueswen.github.io/mkdocs-glightbox/flexibility/enable-by-image-or-page/
   - "section-index"
   - "mkdocstrings":
       default_handler: "python"
