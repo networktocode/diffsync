@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 """DiffSync front-end classes and logic.
 
 Copyright (c) 2020-2021 Network To Code, LLC <info@networktocode.com>
@@ -911,10 +910,3 @@ class DiffSync(Adapter):
 
 # DiffSyncModel references Adapter and Adapter references DiffSyncModel. Break the typing loop:
 DiffSyncModel.model_rebuild()
-=======
-"""Initialization file for library."""
-
-from importlib import metadata
-
-__version__ = metadata.version(__name__)
->>>>>>> c5f3eb1 (Cookie initialy baked by NetworkToCode Cookie Drift Manager Tool)

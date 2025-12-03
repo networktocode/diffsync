@@ -1,23 +1,4 @@
 ---
-<<<<<<< HEAD
-version: 2
-
-sphinx:
-  builder: "html"
-  configuration: "docs/source/conf.py"
-  fail_on_warning: false
-
-build:
-  os: "ubuntu-22.04"
-  tools:
-    python: "3.11"
-
-python:
-  install:
-    - requirements: "docs/requirements.txt"
-    - method: "pip"
-      path: "."
-=======
 # .readthedocs.yaml
 # Read the Docs configuration file
 # See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
@@ -44,4 +25,3 @@ build:
 mkdocs:
   configuration: "mkdocs.yml"
   fail_on_warning: true
->>>>>>> c5f3eb1 (Cookie initialy baked by NetworkToCode Cookie Drift Manager Tool)
