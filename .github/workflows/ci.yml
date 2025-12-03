@@ -1,9 +1,9 @@
 ---
 name: "CI"
-concurrency:  # Cancel any existing runs of this workflow for this same PR
+concurrency: # Cancel any existing runs of this workflow for this same PR
   group: "${{ github.workflow }}-${{ github.ref }}"
   cancel-in-progress: true
-on:  # yamllint disable
+on: # yamllint disable
   push:
     branches:
       - "main"
@@ -145,7 +145,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        python-version: ["3.9", "3.10", "3.11"]
+        python-version: ["3.10", "3.11", "3.12"]
         poetry-version: ["1.8.5"]
     runs-on: "ubuntu-24.04"
     env:
@@ -178,7 +178,7 @@ jobs:
       - name: "Set up Python"
         uses: "actions/setup-python@v2"
         with:
-          python-version: "3.9"
+          python-version: "3.10"
       - name: "Install Python Packages"
         run: "pip install poetry"
       - name: "Set env"
@@ -207,7 +207,7 @@ jobs:
       - name: "Set up Python"
         uses: "actions/setup-python@v2"
         with:
-          python-version: "3.9"
+          python-version: "3.10"
       - name: "Install Python Packages"
         run: "pip install poetry"
       - name: "Set env"
