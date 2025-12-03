@@ -65,7 +65,7 @@ class RedisStore(BaseStore):
         """Get the object from Redis key."""
         pickled_object = self._store.get(key)
         if pickled_object:
-            obj_result = loads(pickled_object)  # nosec
+            obj_result = loads(pickled_object)  # noqa: S301
             obj_result.adapter = self.adapter
             return obj_result
         raise ObjectNotFound(f"{key} not present in Cache")
@@ -168,7 +168,7 @@ class RedisStore(BaseStore):
 
         existing_obj_binary = self._store.get(object_key)
         if existing_obj_binary:
-            existing_obj = loads(existing_obj_binary)  # nosec
+            existing_obj = loads(existing_obj_binary)  # noqa: S301
             existing_obj_dict = existing_obj.dict()
 
             if existing_obj_dict != obj.dict():

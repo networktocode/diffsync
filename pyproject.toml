@@ -41,8 +41,8 @@ redis = ["redis"]
 coverage = "*"
 pytest = "*"
 mock = "*"
-pyyaml = "^6.0.1"
-pylint = "^3.1.0"
+pyyaml = ">= 6.0.1"
+pylint = "*"
 yamllint = "^1.35.1"
 invoke = "^2.2.0"
 toml = "^0.10.2"
@@ -75,9 +75,19 @@ mkdocstrings = "0.27.0"
 # Python-specific extension to mkdocstrings
 mkdocstrings-python = "1.13.0"
 griffe = "1.1.1"
-
-[tool.poetry.scripts]
-diffsync = 'diffsync.cli:main'
+mypy = "*"
+pytest-cov = "*"
+pytest-structlog = "*"
+coverage = {extras = ["toml"], version = "*"}
+Sphinx = "^6.0.0"
+m2r2 = "*"
+sphinx-rtd-theme = "*"
+toml = "*"
+types-toml = "*"
+types-redis = "*"
+pytest-redis = "^2.4.0"
+types-requests = "^2.28.11.15"
+types-python-slugify = "^8.0.0.1"
 
 [tool.ruff]
 line-length = 120

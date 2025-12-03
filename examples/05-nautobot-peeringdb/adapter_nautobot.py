@@ -3,6 +3,7 @@
 # pylint: disable=import-error,no-name-in-module
 import pynautobot
 from models import RegionModel, SiteModel
+
 from diffsync import Adapter
 
 
@@ -131,8 +132,10 @@ class NautobotRemote(Adapter):
         """Instantiate this class, but do not load data immediately from the remote system.
 
         Args:
+            *args: Variable length argument list passed to parent class
             url (str): URL of the remote Nautobot system
             token (str): REST API authentication token
+            **kwargs: Arbitrary keyword arguments passed to parent class
             job (Job): The running Job instance that owns this DiffSync adapter instance
         """
         super().__init__(*args, **kwargs)

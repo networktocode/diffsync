@@ -13,8 +13,8 @@ https://www.sphinx-doc.org/en/master/usage/configuration.html
 # pylint: disable=W,C,R
 import os
 import sys
-
 from pathlib import Path
+
 from sphinx.ext.apidoc import main
 
 try:
@@ -24,7 +24,7 @@ except ImportError:
 
 # -- Variable setup --------------------------------------------------------------
 
-ROOT_DIR = Path(__file__).parent.parent.parent
+ROOT_DIR = Path(__file__).parent.parent.parent.parent.parent.parent
 CURR_DIR = f"{ROOT_DIR}/docs/source"
 PYPROJECT_CONFIG = toml.load(f"{ROOT_DIR}/pyproject.toml")
 TOOL_CONFIG = PYPROJECT_CONFIG["tool"]["poetry"]

@@ -1,13 +1,13 @@
 """BaseStore module."""
 
-from typing import Dict, List, Tuple, Type, Union, TYPE_CHECKING, Optional, Set, Any
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, Type, Union
+
 import structlog  # type: ignore
 
 from diffsync.exceptions import ObjectNotFound
 
 if TYPE_CHECKING:
-    from diffsync import DiffSyncModel
-    from diffsync import Adapter
+    from diffsync import Adapter, DiffSyncModel
 
 
 class BaseStore:

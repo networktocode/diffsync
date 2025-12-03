@@ -19,8 +19,14 @@ ENV PATH="${POETRY_HOME}/bin:${PATH}"
 RUN poetry config virtualenvs.create ${POETRY_VIRTUALENVS_CREATE} && \
     poetry config installer.parallel "${POETRY_INSTALLER_PARALLEL}"
 
+# Install redis-server for pytest-redis
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends redis-server && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
 WORKDIR /local
 COPY . /local
 
 # Install the app
-RUN poetry install --with dev --all-extras
+RUN poetry install --all-groups

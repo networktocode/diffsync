@@ -2,11 +2,10 @@
 
 import json
 
+from models import Country, Region  # pylint: disable=no-name-in-module
 from slugify import slugify  # pylint: disable=import-error
 
-from models import Region, Country  # pylint: disable=no-name-in-module
 from diffsync import Adapter
-
 
 COUNTRIES_FILE = "countries.json"
 

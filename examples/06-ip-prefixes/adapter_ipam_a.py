@@ -1,9 +1,11 @@
 """IPAM A adapter."""
 
-import os
 import ipaddress
+import os
+
 import yaml
 from models import Prefix  # pylint: disable=no-name-in-module
+
 from diffsync import Adapter
 
 dirname = os.path.dirname(os.path.realpath(__file__))

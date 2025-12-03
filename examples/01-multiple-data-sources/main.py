@@ -20,12 +20,12 @@ limitations under the License.
 import argparse
 import pprint
 
-from diffsync import Diff
-from diffsync.logging import enable_console_logging
-
 from backend_a import BackendA
 from backend_b import BackendB
 from backend_c import BackendC
+
+from diffsync import Diff
+from diffsync.logging import enable_console_logging
 
 
 class MyDiff(Diff):

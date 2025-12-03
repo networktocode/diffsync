@@ -4,7 +4,6 @@
 from adapter_ipam_a import IpamA
 from adapter_ipam_b import IpamB
 
-
 if __name__ == "__main__":
     ipam_a = IpamA()
     ipam_b = IpamB()
