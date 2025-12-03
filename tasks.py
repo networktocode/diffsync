@@ -215,7 +215,7 @@ def pylint(context, name=NAME, image_ver=IMAGE_VER, local=INVOKE_LOCAL):
     """
     # pty is set to true to properly run the docker commands due to the invocation process of docker
     # https://docs.pyinvoke.org/en/latest/api/runners.html - Search for pty for more information
-    exec_cmd = 'find /local/diffsync/ -name "*.py" | xargs pylint'
+    exec_cmd = 'find . -name "*.py" | xargs pylint'
     run_cmd(context, exec_cmd, name, image_ver, local)
 
 
@@ -231,7 +231,7 @@ def yamllint(context, name=NAME, image_ver=IMAGE_VER, local=INVOKE_LOCAL):
     """
     # pty is set to true to properly run the docker commands due to the invocation process of docker
     # https://docs.pyinvoke.org/en/latest/api/runners.html - Search for pty for more information
-    exec_cmd = "yamllint /local/diffsync/"
+    exec_cmd = "yamllint ."
     run_cmd(context, exec_cmd, name, image_ver, local)
 
 
