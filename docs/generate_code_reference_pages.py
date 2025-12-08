@@ -16,13 +16,13 @@ for file_path in base_path.rglob("*.py"):
     # Skip files in excluded directories
     if any(part in exclude_dirs for part in file_path.parts):
         continue
-    
+
     # Ensure the file is actually within the base_path directory
     try:
         file_path.relative_to(base_path)
     except ValueError:
         continue
-    
+
     module_path = file_path.with_suffix("")
     doc_path = file_path.with_suffix(".md")
     full_doc_path = Path("code-reference", doc_path)
