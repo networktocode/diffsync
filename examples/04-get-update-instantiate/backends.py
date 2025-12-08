@@ -15,7 +15,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from models import Site, Device, Interface  # pylint: disable=no-name-in-module
+from models import Device, Interface, Site  # pylint: disable=no-name-in-module
+
 from diffsync import Adapter
 
 BACKEND_DATA_A = [

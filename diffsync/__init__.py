@@ -16,6 +16,7 @@ limitations under the License.
 """
 
 import sys
+from copy import deepcopy
 from inspect import isclass
 from typing import (
     Any,
@@ -60,7 +61,7 @@ StrType = str
 class DiffSyncModel(BaseModel):
     """Base class for all DiffSync object models.
 
-    Note that read-only APIs of this class are implemented as `get_*()` functions rather than as properties;
+    Note that read-only APIs of this class are implemented as `get_*()` methods rather than as properties;
     this is intentional as specific model classes may want to use these names (`type`, `keys`, `attrs`, etc.)
     as model attributes and we want to avoid any ambiguity or collisions.
 
@@ -158,9 +159,11 @@ class DiffSyncModel(BaseModel):
             raise AttributeError(f"Fields {attr_child_overlap} are included in both _attributes and _children.")
 
     def __repr__(self) -> str:
+        """Return a string representation of this DiffSyncModel."""
         return f'{self.get_type()} "{self.get_unique_id()}"'
 
     def __str__(self) -> str:
+        """Return a string representation of this DiffSyncModel."""
         return self.get_unique_id()
 
     def dict(self, **kwargs: Any) -> Dict:
@@ -305,7 +308,7 @@ class DiffSyncModel(BaseModel):
 
     @classmethod
     def get_type(cls) -> StrType:
-        """Return the type AKA modelname of the object or the class
+        """Return the type AKA modelname of the object or the class.
 
         Returns:
             str: modelname of the class, used in to store all objects
@@ -447,7 +450,6 @@ class Adapter:  # pylint: disable=too-many-public-methods
 
         Subclasses should be careful to call super().__init__() if they override this method.
         """
-
         if isinstance(internal_storage_engine, BaseStore):
             self.store = internal_storage_engine
             self.store.adapter = self
@@ -480,6 +482,13 @@ class Adapter:  # pylint: disable=too-many-public-methods
             if not isclass(value) or not issubclass(value, DiffSyncModel):
                 raise AttributeError(f'top_level references attribute "{name}" but it is not a DiffSyncModel subclass!')
 
+    def __new__(cls, **kwargs):  # type: ignore[no-untyped-def]
+        """Document keyword arguments that were used to initialize Adapter."""
+        meta_kwargs = deepcopy(kwargs)
+        instance = super().__new__(cls)
+        instance._meta_kwargs = meta_kwargs
+        return instance
+
     def __str__(self) -> StrType:
         """String representation of an Adapter."""
         if self.type != self.name:
@@ -487,6 +496,7 @@ class Adapter:  # pylint: disable=too-many-public-methods
         return self.type
 
     def __repr__(self) -> StrType:
+        """Representation of an Adapter."""
         return f"<{str(self)}>"
 
     def __len__(self) -> int:
@@ -575,6 +585,7 @@ class Adapter:  # pylint: disable=too-many-public-methods
             callback: Function with parameters (stage, current, total), to be called at intervals as the calculation of
                 the diff and subsequent sync proceed.
             diff: An existing diff to be used rather than generating a completely new diff.
+
         Returns:
             Diff between origin object and source
         Raises:
@@ -619,6 +630,7 @@ class Adapter:  # pylint: disable=too-many-public-methods
             callback: Function with parameters (stage, current, total), to be called at intervals as the calculation of
                 the diff and subsequent sync proceed.
             diff: An existing diff that will be used when determining what needs to be synced.
+
         Returns:
             Diff between origin object and target
         Raises:
@@ -729,7 +741,7 @@ class Adapter:  # pylint: disable=too-many-public-methods
         obj: Union[StrType, DiffSyncModel, Type[DiffSyncModel]],
         identifier: Union[StrType, Dict],
     ) -> Optional[DiffSyncModel]:
-        """Get one object from the data store based on its unique id or get a None
+        """Get one object from the data store based on its unique id or get a None.
 
         Args:
             obj: DiffSyncModel class or instance, or modelname string, that defines the type of the object to retrieve

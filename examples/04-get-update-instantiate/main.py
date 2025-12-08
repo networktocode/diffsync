@@ -19,8 +19,7 @@ limitations under the License.
 import argparse
 import pprint
 
-from backends import BackendA
-from backends import BackendB
+from backends import BackendA, BackendB
 
 from diffsync.logging import enable_console_logging
 

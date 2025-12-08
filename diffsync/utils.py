@@ -16,7 +16,7 @@ limitations under the License.
 """
 
 from collections import OrderedDict
-from typing import Iterator, List, Dict, Optional, TypeVar, Callable, Generic
+from typing import Callable, Dict, Generic, Iterator, List, Optional, TypeVar
 
 SPACE = "    "
 BRANCH = "│   "
@@ -44,7 +44,7 @@ def symmetric_difference(lst1: List[T], lst2: List[T]) -> List[T]:
 class OrderedDefaultDict(OrderedDict, Generic[K, V]):
     """A combination of collections.OrderedDict and collections.DefaultDict behavior."""
 
-    def __init__(self, dict_type: Callable[[], V]) -> None:
+    def __init__(self, dict_type: Callable[[], V] = dict) -> None:  # type: ignore[assignment]
         """Create a new OrderedDefaultDict."""
         self.factory = dict_type
         super().__init__(self)

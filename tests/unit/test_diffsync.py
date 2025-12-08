@@ -8,9 +8,10 @@ import pytest
 
 from diffsync import Adapter, DiffSyncModel
 from diffsync.enum import DiffSyncFlags, DiffSyncModelFlags
-from diffsync.exceptions import DiffClassMismatch, ObjectAlreadyExists, ObjectNotFound, ObjectCrudException
+from diffsync.exceptions import DiffClassMismatch, ObjectAlreadyExists, ObjectCrudException, ObjectNotFound
+from diffsync.store.local import LocalStore
 
-from .conftest import Site, Device, Interface, TrackedDiff, BackendA, PersonA
+from .conftest import BackendA, Device, Interface, PersonA, Site, TrackedDiff
 
 
 def test_diffsync_default_name_type(generic_adapter):
@@ -1141,3 +1142,44 @@ def test_diffsync_get_initial_value_order():
         "interface",
         "person",
     ]
+
+
+def test_adapter_new_stores_kwargs():
+    """Test that __new__ stores keyword arguments in _meta_kwargs."""
+    adapter = Adapter(name="test_adapter")
+    assert hasattr(adapter, "_meta_kwargs")
+    assert adapter._meta_kwargs == {"name": "test_adapter"}  # pylint: disable=protected-access
+
+
+def test_adapter_new_with_no_kwargs():
+    """Test that __new__ works with no keyword arguments."""
+    adapter = Adapter()
+    assert hasattr(adapter, "_meta_kwargs")
+    assert adapter._meta_kwargs == {}  # pylint: disable=protected-access
+
+
+def test_adapter_new_with_multiple_kwargs():
+    """Test that __new__ stores multiple keyword arguments."""
+    adapter = Adapter(name="test", internal_storage_engine=LocalStore)
+    assert adapter._meta_kwargs == {  # pylint: disable=protected-access
+        "name": "test",
+        "internal_storage_engine": LocalStore,
+    }
+
+
+def test_adapter_new_with_subclass():
+    """Test that __new__ works correctly with Adapter subclasses."""
+    adapter = BackendA(name="test_backend")
+    assert hasattr(adapter, "_meta_kwargs")  # pylint: disable=protected-access
+    assert adapter._meta_kwargs == {"name": "test_backend"}  # pylint: disable=protected-access
+
+
+def test_adapter_new_independent_instances():
+    """Test that different Adapter instances have independent _meta_kwargs."""
+    adapter1 = Adapter(name="adapter1", internal_storage_engine=LocalStore)
+    adapter2 = Adapter(name="adapter2", internal_storage_engine=LocalStore)
+
+    assert adapter1._meta_kwargs["name"] == "adapter1"  # pylint: disable=protected-access
+    assert adapter1._meta_kwargs["internal_storage_engine"] == LocalStore  # pylint: disable=protected-access
+    assert adapter2._meta_kwargs["name"] == "adapter2"  # pylint: disable=protected-access
+    assert adapter2._meta_kwargs["internal_storage_engine"] == LocalStore  # pylint: disable=protected-access

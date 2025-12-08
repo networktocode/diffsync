@@ -111,7 +111,7 @@ class Nautobot(Adapter):
 
 ```
 
-Would result in processing in the following order for each element until there is no elements left:
+Would result in processing in the following order for each element until there are no elements left:
 
 - site
     - vlan
@@ -145,7 +145,7 @@ NetworkImporterAdapter
 >>> 
 ```
 
-# Store data in a `Adapter` object
+# Store data in an `Adapter` object
 
 To add a site to the local cache/store, you need to pass a valid `DiffSyncModel` object to the `add()` function.
 

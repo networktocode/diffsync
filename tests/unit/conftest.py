@@ -15,13 +15,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from typing import ClassVar, List, Optional, Tuple, Dict
+from typing import ClassVar, Dict, List, Optional, Tuple
 
 import pytest
 
 from diffsync import Adapter, DiffSyncModel
 from diffsync.diff import Diff, DiffElement
-from diffsync.exceptions import ObjectNotCreated, ObjectNotUpdated, ObjectNotDeleted
+from diffsync.exceptions import ObjectNotCreated, ObjectNotDeleted, ObjectNotUpdated
 
 
 @pytest.fixture

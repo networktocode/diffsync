@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 """Main executable for DiffSync "example3"."""
-import sys
-import argparse
 
+import argparse
+import sys
+
+from diff import AlphabeticalOrderDiff
 from local_adapter import LocalAdapter
 from nautobot_adapter import NautobotAdapter
-from diff import AlphabeticalOrderDiff
 
 from diffsync.enum import DiffSyncFlags
 from diffsync.logging import enable_console_logging

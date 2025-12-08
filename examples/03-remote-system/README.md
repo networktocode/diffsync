@@ -6,11 +6,11 @@ This is a simple example to show how DiffSync can be used to compare and synchro
 For this example, we have a shared model for Region and Country defined in `models.py`.
 A country must be part of a region and has an attribute to capture its population.
 
-The comparison and synchronization of dataset is done between a local JSON file and the [public instance of Nautobot](https://demo.nautobot.com).
+The comparison and synchronization of datasets is done between a local JSON file and the [public instance of Nautobot](https://demo.nautobot.com).
 
 Also, this example is showing :
-- How to set a Global Flags to ignore object that are not matching 
-- How to provide a custom Diff class to change the ordering of a group of object
+- How to set Global Flags to ignore objects that are not matching 
+- How to provide a custom Diff class to change the ordering of a group of objects
 
 > The source code for this example is in Github in the [examples/03-remote-system/](https://github.com/networktocode/diffsync/tree/main/examples/03-remote-system) directory.
 
