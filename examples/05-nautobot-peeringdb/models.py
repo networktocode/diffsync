@@ -1,6 +1,6 @@
 """DiffSyncModel subclasses for Nautobot-PeeringDB data sync."""
 
-from typing import Optional, Union, List
+from typing import List, Optional, Union
 from uuid import UUID
 
 from diffsync import DiffSyncModel

@@ -1,11 +1,16 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "baseBranches": ["develop"],
+  "baseBranches": [
+    "develop"
+  ],
   "constraints": {
-    "python": ">=3.7",
+    "python": ">=3.10",
     "poetry": ">=1.1.14"
   },
-  "enabledManagers": ["pip_requirements", "poetry"],
+  "enabledManagers": [
+    "pip_requirements",
+    "poetry"
+  ],
   "extends": [
     "config:base"
   ],
@@ -14,10 +19,17 @@
   ],
   "packageRules": [
     {
-      "matchDepTypes": ["devDependencies"],
-      "matchUpdateTypes": ["patch", "minor"],
+      "matchDepTypes": [
+        "devDependencies"
+      ],
+      "matchUpdateTypes": [
+        "patch",
+        "minor"
+      ],
       "groupName": "Update development dependencies (non-major releases)",
-      "schedule": ["before 5am on friday"]
+      "schedule": [
+        "before 5am on friday"
+      ]
     }
   ],
   "rangeStrategy": "in-range-only"

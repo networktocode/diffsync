@@ -16,8 +16,9 @@ limitations under the License.
 """
 
 # pylint: disable=wrong-import-order
+from models import Device, Interface, Site  # pylint: disable=no-name-in-module
+
 from diffsync import Adapter
-from models import Site, Device, Interface  # pylint: disable=no-name-in-module
 
 DATA = {
     "atl": {

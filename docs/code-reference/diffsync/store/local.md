@@ -1,0 +1,1 @@
+::: diffsync.store.local

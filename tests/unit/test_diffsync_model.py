@@ -21,7 +21,7 @@ import pytest
 
 from diffsync import DiffSyncModel
 from diffsync.enum import DiffSyncModelFlags
-from diffsync.exceptions import ObjectStoreWrongType, ObjectAlreadyExists, ObjectNotFound
+from diffsync.exceptions import ObjectAlreadyExists, ObjectNotFound, ObjectStoreWrongType
 
 from .conftest import Device, Interface
 

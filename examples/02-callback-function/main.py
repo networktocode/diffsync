@@ -55,7 +55,7 @@ class Adapter2(Adapter):
         """Construct count numbers in the range (1 - 2*count)."""
         prev = 0
         for i in range(count):  # pylint: disable=unused-variable
-            num = prev + random.randint(1, 2)  # nosec
+            num = prev + random.randint(1, 2)  # noqa: S311
             self.add(Number(number=num))
             prev = num
 

@@ -13,8 +13,8 @@ https://www.sphinx-doc.org/en/master/usage/configuration.html
 # pylint: disable=W,C,R
 import os
 import sys
-
 from pathlib import Path
+
 from sphinx.ext.apidoc import main
 
 try:

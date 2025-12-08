@@ -1,6 +1,7 @@
 """DiffSync models."""
 
 from typing import Optional
+
 from diffsync import DiffSyncModel
 
 

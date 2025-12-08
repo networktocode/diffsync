@@ -4,7 +4,7 @@ DiffSync is a utility library that can be used to compare and synchronize differ
 
 For example, it can be used to compare a list of devices from 2 inventory systems and, if required, synchronize them in either direction.
 
-# Primary Use Cases
+## Primary Use Cases
 
 DiffSync is at its most useful when you have multiple sources or sets of data to compare and/or synchronize, and especially if any of the following are true:
 
@@ -13,7 +13,7 @@ DiffSync is at its most useful when you have multiple sources or sets of data to
 - If various types of data in your data set naturally form a tree-like or parent-child relationship with other data.
 - If the different data sets have some attributes in common and other attributes that are exclusive to one or the other.
 
-# Overview of DiffSync
+## Overview of DiffSync
 
 DiffSync acts as an intermediate translation layer between all of the data sets you are diffing and/or syncing. In practical terms, this means that to use DiffSync, you will define a set of data models as well as the “adapters” needed to translate between each base data source and the data model. In Python terms, the adapters will be subclasses of the `Adapter` class, and each data model class will be a subclass of the `DiffSyncModel` class.
 
@@ -28,7 +28,7 @@ You can also ask DiffSync to “sync” one data set onto the other, and it will
 
 ![DiffSync Sync](https://raw.githubusercontent.com/networktocode/diffsync/develop/docs/images/diffsync_sync.png "DiffSync Sync")
 
-# Simple Example
+## Simple Example
 
 ```python
 A = DiffSyncSystemA()
@@ -50,33 +50,50 @@ A.sync_to(B)
 
 > You may wish to peruse the `diffsync` [GitHub topic](https://github.com/topics/diffsync) for examples of projects using this library.
 
-# Documentation
+## Documentation
 
-The documentation is available [on Read The Docs](https://diffsync.readthedocs.io/en/latest/index.html).
+Full documentation for this library can be found over on the [Diffsync Docs](https://diffsync.readthedocs.io/) website:
 
-# Installation
+- [User Guide](https://diffsync.readthedocs.io/user/app_overview/) - Overview, Using the Library, Getting Started.
+- [Administrator Guide](https://diffsync.readthedocs.io/admin/install/) - How to Install, Configure, Upgrade, or Uninstall the Library.
+- [Developer Guide](https://diffsync.readthedocs.io/dev/contributing/) - Extending the Library, Code Reference, Contribution Guide.
+- [Release Notes / Changelog](https://diffsync.readthedocs.io/admin/release_notes/).
+- [Frequently Asked Questions](https://diffsync.readthedocs.io/user/faq/).
 
-### Option 1: Install from PyPI.
+## Installation
 
-```
-$ pip install diffsync
+### Option 1: Install from PyPI
+
+```shell
+pip install diffsync
 ```
 
 ### Option 2: Install from a GitHub branch, such as main as shown below.
-```
-$ pip install git+https://github.com/networktocode/diffsync.git@main
+
+```shell
+pip install git+https://github.com/networktocode/diffsync.git@main
 ```
 
-# Contributing
+## Contributing
+
 Pull requests are welcomed and automatically built and tested against multiple versions of Python through GitHub Actions.
 
 The project is following Network to Code software development guidelines and is leveraging the following:
 
-- Black, Pylint, Bandit, flake8, and pydocstyle, mypy for Python linting, formatting and type hint checking.
+- Ruff, mypy for Python linting, formatting and type hint checking.
 - pytest, coverage, and unittest for unit tests.
 
 You can ensure your contribution adheres to these checks by running `invoke tests` from the CLI.
 The command `invoke build` builds a docker container with all the necessary dependencies (including the redis backend) locally to facilitate the execution of these tests.
 
-# Questions
-Please see the [documentation](https://diffsync.readthedocs.io/en/latest/index.html) for detailed documentation on how to use `diffsync`. For any additional questions or comments, feel free to swing by the [Network to Code slack channel](https://networktocode.slack.com/) (channel #networktocode). Sign up [here](http://slack.networktocode.com/)
+## Contributing to the Documentation
+
+You can find all the Markdown source for the App documentation under the [`docs`](https://github.com/networktocode/diffsync/tree/develop/docs) folder in this repository. For simple edits, a Markdown capable editor is sufficient: clone the repository and edit away.
+
+If you need to view the fully-generated documentation site, you can build it with [MkDocs](https://www.mkdocs.org/). A container hosting the documentation can be started using the `invoke` commands (details in the [Development Environment Guide](https://diffsync/dev/dev_environment/#docker-development-environment)) on [http://localhost:8001](http://localhost:8001). Using this container, as your changes to the documentation are saved, they will be automatically rebuilt and any pages currently being viewed will be reloaded in your browser.
+
+Any PRs with fixes or improvements are very welcome!
+
+## Questions
+
+For any questions or comments, please check the [FAQ](https://diffsync.readthedocs.io/en/latest/user/faq/) first. Feel free to also swing by the [Network to Code Slack](https://networktocode.slack.com/) (channel `#networktocode`), sign up [here](http://slack.networktocode.com/) if you don't have an account.
