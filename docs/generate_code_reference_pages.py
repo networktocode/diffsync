@@ -32,7 +32,7 @@ for file_path in base_path.rglob("*.py"):
         parts = parts[:-1]
 
     with mkdocs_gen_files.open(full_doc_path, "w") as fd:
-        IDENTIFIER = ".".join(parts)
+        IDENTIFIER = ".".join(parts)  # pylint: disable=invalid-name
         print(f"::: {IDENTIFIER}", file=fd)
 
     mkdocs_gen_files.set_edit_path(full_doc_path, file_path)
