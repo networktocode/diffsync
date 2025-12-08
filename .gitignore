@@ -1,12 +1,9 @@
-<<<<<<< HEAD
-=======
 # Ansible Retry Files
 *.retry
 
 # Swap files
 *.swp
 
->>>>>>> c5f3eb1 (Cookie initialy baked by NetworkToCode Cookie Drift Manager Tool)
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -137,12 +134,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-<<<<<<< HEAD
-=======
 # Editor
 .vscode/
 
->>>>>>> c5f3eb1 (Cookie initialy baked by NetworkToCode Cookie Drift Manager Tool)
 ### macOS ###
 # General
 .DS_Store
@@ -198,9 +192,6 @@ $RECYCLE.BIN/
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio, WebStorm and Rider
 # Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839
 
-<<<<<<< HEAD
-.idea/
-=======
 # User-specific stuff
 .idea/**/workspace.xml
 .idea/**/tasks.xml
@@ -236,17 +227,13 @@ $RECYCLE.BIN/
 # .idea/modules
 # *.iml
 # *.ipr
->>>>>>> c5f3eb1 (Cookie initialy baked by NetworkToCode Cookie Drift Manager Tool)
 
 # CMake
 cmake-build-*/
 
-<<<<<<< HEAD
-=======
 # Mongo Explorer plugin
 .idea/**/mongoSettings.xml
 
->>>>>>> c5f3eb1 (Cookie initialy baked by NetworkToCode Cookie Drift Manager Tool)
 # File-based project format
 *.iws
 
@@ -259,30 +246,15 @@ out/
 # JIRA plugin
 atlassian-ide-plugin.xml
 
-<<<<<<< HEAD
-=======
 # Cursive Clojure plugin
 .idea/replstate.xml
 
->>>>>>> c5f3eb1 (Cookie initialy baked by NetworkToCode Cookie Drift Manager Tool)
 # Crashlytics plugin (for Android Studio and IntelliJ)
 com_crashlytics_export_strings.xml
 crashlytics.properties
 crashlytics-build.properties
 fabric.properties
 
-<<<<<<< HEAD
-### vscode ###
-.vscode/*
-
-*.code-workspace
-
-## Sphinx Documentation ##
-docs/build
-
-## Secrets
-creds.env
-=======
 # Editor-based Rest Client
 .idea/httpRequests
 
@@ -336,4 +308,3 @@ docs/CHANGELOG.md
 public
 /compose.yaml
 /dump.sql
->>>>>>> c5f3eb1 (Cookie initialy baked by NetworkToCode Cookie Drift Manager Tool)
