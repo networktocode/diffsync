@@ -4,7 +4,25 @@ from pathlib import Path
 
 import mkdocs_gen_files
 
-for file_path in Path("../diffsync").rglob("*.py"):
+# Base path to the diffsync package
+# When mkdocs runs this script, it runs from the project root
+# So we need to reference the diffsync package relative to the project root
+base_path = Path("diffsync")
+
+# Directories to exclude from code reference generation
+exclude_dirs = {"__pycache__", "static", "tests", "examples", "docs"}
+
+for file_path in base_path.rglob("*.py"):
+    # Skip files in excluded directories
+    if any(part in exclude_dirs for part in file_path.parts):
+        continue
+    
+    # Ensure the file is actually within the base_path directory
+    try:
+        file_path.relative_to(base_path)
+    except ValueError:
+        continue
+    
     module_path = file_path.with_suffix("")
     doc_path = file_path.with_suffix(".md")
     full_doc_path = Path("code-reference", doc_path)
