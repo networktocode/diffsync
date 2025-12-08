@@ -1,11 +1,16 @@
-# v1.0 Release Notes
+# v1.10 Release Notes
 
 This document describes all new features and changes in the release. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Release Overview
 
-Initial release of DiffSync.
+## [v1.10.0] - 2023-11-16
 
-## [v1.0.0] - 2020-10-23
+### Fixed
 
-Initial release
+- #249 - Fixes natural deletion order flag
+- #247 - Fixes underspecified typing_extensions dependency
+
+### Changed
+
+- #247 - Deprecates Python 3.7
