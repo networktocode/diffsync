@@ -18,7 +18,7 @@ jobs:
           python-version: "3.13"
           poetry-install-options: "--no-root"
       - name: "Build Documentation"
-        run: "poetry run invoke build-and-check-docs"
+        run: "poetry run invoke build build-and-check-docs"
       - name: "Run Poetry Build"
         run: "poetry build"
 
