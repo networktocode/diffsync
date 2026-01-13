@@ -14,7 +14,7 @@
         "project_with_config_settings": "no",
         "generate_docs": "yes",
         "version": "2.2.0",
-        "original_publish_year": "2025",
+        "original_publish_year": "2020",
         "_drift_manager": {
             "template": "https://github.com/networktocode-llc/cookiecutter-ntc.git",
             "template_dir": "python",
@@ -23,11 +23,7 @@
             "pull_request_strategy": "update-or-create",
             "post_actions": [],
             "draft": false,
-<<<<<<< HEAD
-            "baked_commit_ref": "bc789d65fa90182c0eb392664e1cba02ea187ab1",
-=======
             "baked_commit_ref": "67d15ddeb638efb7c39ab746e97e7b9c96c16801",
->>>>>>> 4a41aa1 (Cookie updated targeting develop by NetworkToCode Cookie Drift Manager Tool)
             "drift_managed_branch": "develop"
         }
     }
