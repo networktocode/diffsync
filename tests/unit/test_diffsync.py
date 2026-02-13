@@ -1183,3 +1183,88 @@ def test_adapter_new_independent_instances():
     assert adapter1._meta_kwargs["internal_storage_engine"] == LocalStore  # pylint: disable=protected-access
     assert adapter2._meta_kwargs["name"] == "adapter2"  # pylint: disable=protected-access
     assert adapter2._meta_kwargs["internal_storage_engine"] == LocalStore  # pylint: disable=protected-access
+
+
+class _AdapterWithExtraKwargs(Adapter):
+    """Minimal Adapter subclass that accepts extra kwargs for testing __new__ serialization."""
+
+    def __init__(self, name=None, internal_storage_engine=LocalStore, **kwargs):
+        super().__init__(name=name, internal_storage_engine=internal_storage_engine)
+
+
+def test_adapter_new_serializable_objects_are_deep_copied():
+    """Test that serializable objects passed to __new__ are deep-copied into _meta_kwargs."""
+    mutable_config = {"host": "localhost", "port": 5432}
+    mutable_list = [1, 2, 3]
+    adapter = _AdapterWithExtraKwargs(
+        name="test",
+        config=mutable_config,
+        tags=mutable_list,
+        internal_storage_engine=LocalStore,
+    )
+
+    # Verify values are stored
+    assert adapter._meta_kwargs["config"] == {"host": "localhost", "port": 5432}  # pylint: disable=protected-access
+    assert adapter._meta_kwargs["tags"] == [1, 2, 3]  # pylint: disable=protected-access
+
+    # Mutate the original objects - _meta_kwargs should retain the original values (deep copy)
+    mutable_config["port"] = 9999
+    mutable_list.append(4)
+
+    assert adapter._meta_kwargs["config"] == {"host": "localhost", "port": 5432}  # pylint: disable=protected-access
+    assert adapter._meta_kwargs["tags"] == [1, 2, 3]  # pylint: disable=protected-access
+
+
+def test_adapter_new_non_serializable_type_error_stored_as_is():
+    """Test that objects raising TypeError on deepcopy are stored as-is in _meta_kwargs."""
+
+    class NonCopyableTypeError:
+        """Object that raises TypeError when deep-copied (e.g. DB connection, Kafka Consumer)."""
+
+        def __deepcopy__(self, memo=None):
+            raise TypeError("Cannot deep copy this object")
+
+    non_copyable = NonCopyableTypeError()
+    adapter = _AdapterWithExtraKwargs(name="test", non_copyable=non_copyable, internal_storage_engine=LocalStore)
+
+    assert adapter._meta_kwargs["non_copyable"] is non_copyable  # pylint: disable=protected-access
+
+
+def test_adapter_new_non_serializable_attribute_error_stored_as_is():
+    """Test that objects raising AttributeError on deepcopy are stored as-is in _meta_kwargs."""
+
+    class NonCopyableAttributeError:
+        """Object that raises AttributeError when deep-copied."""
+
+        def __deepcopy__(self, memo=None):
+            raise AttributeError("Cannot deep copy - missing attribute")
+
+    non_copyable = NonCopyableAttributeError()
+    adapter = _AdapterWithExtraKwargs(name="test", non_copyable=non_copyable, internal_storage_engine=LocalStore)
+
+    assert adapter._meta_kwargs["non_copyable"] is non_copyable  # pylint: disable=protected-access
+
+
+def test_adapter_new_mixed_serializable_and_non_serializable_kwargs():
+    """Test that __new__ handles mix of serializable and non-serializable kwargs correctly."""
+
+    class NonCopyable:
+        def __deepcopy__(self, memo=None):
+            raise TypeError("Cannot copy")
+
+    serializable_dict = {"key": "value"}
+    non_copyable = NonCopyable()
+
+    adapter = _AdapterWithExtraKwargs(
+        name="test",
+        config=serializable_dict,
+        connection=non_copyable,
+        internal_storage_engine=LocalStore,
+    )
+
+    # Serializable: deep-copied (independent copy)
+    assert adapter._meta_kwargs["config"] == {"key": "value"}  # pylint: disable=protected-access
+    assert adapter._meta_kwargs["config"] is not serializable_dict
+
+    # Non-serializable: stored by reference
+    assert adapter._meta_kwargs["connection"] is non_copyable  # pylint: disable=protected-access
