@@ -488,7 +488,7 @@ class Adapter:  # pylint: disable=too-many-public-methods
         for key, value in kwargs.items():
             try:
                 meta_kwargs[key] = deepcopy(value)
-            except (TypeError, AttributeError):
+            except Exception:
                 # Some objects (e.g. Kafka Consumer, DB connections) cannot be deep copied
                 meta_kwargs[key] = value
         instance = super().__new__(cls)
