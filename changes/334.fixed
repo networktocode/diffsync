@@ -1,1 +1,0 @@
-Fix TypeError being thrown when non-serializable object is used in creating a Diff/Adapter.
