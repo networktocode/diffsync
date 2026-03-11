@@ -18,3 +18,9 @@ Remove Python 3.9 support as it's EOL.
 
 - [#321](https://github.com/networktocode/diffsync/issues/321) - Fixed CI release workflow.
 - Rebaked from the cookie `main`.
+
+## [v2.2.2 (2026-03-11)](https://github.com/networktocode/diffsync/releases/tag/v2.2.2)
+
+### Fixed
+
+- [#339](https://github.com/networktocode/diffsync/issues/339) - Fixed bug with deepcopy in dunder new.
