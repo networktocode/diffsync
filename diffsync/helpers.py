@@ -16,7 +16,6 @@ limitations under the License.
 """
 
 import threading
-from collections import defaultdict
 from collections.abc import Iterable as ABCIterable
 from collections.abc import Mapping as ABCMapping
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -519,15 +518,11 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
                 dst_model = self._local.model_class.create(adapter=self.dst_diffsync, ids=ids, attrs=attrs)
             elif self._local.action == DiffSyncActions.UPDATE:
                 if dst_model is None:
-                    raise ObjectNotUpdated(
-                        f"Failed to update {self._local.model_class.get_type()} {ids} - not found!"
-                    )
+                    raise ObjectNotUpdated(f"Failed to update {self._local.model_class.get_type()} {ids} - not found!")
                 dst_model = dst_model.update(attrs=attrs)
             elif self._local.action == DiffSyncActions.DELETE:
                 if dst_model is None:
-                    raise ObjectNotDeleted(
-                        f"Failed to delete {self._local.model_class.get_type()} {ids} - not found!"
-                    )
+                    raise ObjectNotDeleted(f"Failed to delete {self._local.model_class.get_type()} {ids} - not found!")
                 dst_model = dst_model.delete()
             else:
                 raise ObjectCrudException(f'Unknown action "{self._local.action}"!')
@@ -536,10 +531,7 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
                 status, message = dst_model.get_status()
             else:
                 status = DiffSyncStatus.FAILURE
-                message = (
-                    f"{self._local.model_class.get_type()} "
-                    f"{self._local.action} did not return the model object."
-                )
+                message = f"{self._local.model_class.get_type()} {self._local.action} did not return the model object."
 
         except ObjectCrudException as exception:
             status = DiffSyncStatus.ERROR
@@ -557,9 +549,7 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
                 model_type = self._local.model_class.get_type()
                 if model_type not in self.operations:
                     self.operations[model_type] = {"create": [], "update": [], "delete": []}
-                self.operations[model_type][self._local.action].append(
-                    {"ids": ids, "attrs": attrs, "model": dst_model}
-                )
+                self.operations[model_type][self._local.action].append({"ids": ids, "attrs": attrs, "model": dst_model})
 
         return (True, dst_model)
 

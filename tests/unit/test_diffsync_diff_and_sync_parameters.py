@@ -17,15 +17,13 @@ limitations under the License.
 
 from typing import Dict, List, Optional
 
-import pytest
-
 from diffsync import Adapter, DiffSyncModel
 from diffsync.enum import DiffSyncFlags
-
 
 # ---------------------------------------------------------------------------
 # Models and adapters used across this test module
 # ---------------------------------------------------------------------------
+
 
 class _Site(DiffSyncModel):
     _modelname = "site"
@@ -97,6 +95,7 @@ def _make_adapter_pair():
 # model_types scoping
 # ---------------------------------------------------------------------------
 
+
 def test_diff_with_model_types_restricts_to_site_only():
     """Passing model_types={'site'} should exclude child device elements from the diff."""
     src, dst = _make_adapter_pair()
@@ -132,6 +131,7 @@ def test_sync_with_model_types_does_not_touch_excluded_types():
 # ---------------------------------------------------------------------------
 # sync_attrs / exclude_attrs
 # ---------------------------------------------------------------------------
+
 
 def test_sync_attrs_limits_diff_to_whitelisted_attributes():
     """Only the attributes named in sync_attrs should appear in the diff."""
@@ -179,6 +179,7 @@ def test_sync_attrs_and_exclude_attrs_applied_together():
 # filters (query predicates)
 # ---------------------------------------------------------------------------
 
+
 def test_filters_include_matching_objects():
     """Objects whose predicate returns True should be included in the diff."""
     src, dst = _make_adapter_pair()
@@ -190,8 +191,8 @@ def test_filters_include_matching_objects():
             if device_el.type == "device":
                 device_names.add(device_el.name)
 
-    assert "device1" in device_names   # spine in source
-    assert "device3" in device_names   # spine in source
+    assert "device1" in device_names  # spine in source
+    assert "device3" in device_names  # spine in source
     assert "device2" not in device_names  # leaf in source, filtered out
 
 
@@ -221,6 +222,7 @@ def test_filters_do_not_affect_unfiltered_types():
 # ---------------------------------------------------------------------------
 # sync_filter callback
 # ---------------------------------------------------------------------------
+
 
 def test_sync_filter_blocks_delete_operations():
     """A sync_filter that rejects deletes should preserve objects that only exist in the destination."""
@@ -279,6 +281,7 @@ def test_sync_filter_blocks_by_model_type():
 # ---------------------------------------------------------------------------
 # sync_complete operations summary
 # ---------------------------------------------------------------------------
+
 
 class _TrackingAdapter(_SimpleAdapter):
     """Adapter that captures the operations dict passed to sync_complete."""
@@ -354,6 +357,7 @@ def test_sync_complete_backwards_compat_without_operations_kwarg():
 # concurrent sync
 # ---------------------------------------------------------------------------
 
+
 def test_concurrent_sync_matches_serial_sync():
     """Syncing with concurrent=True should produce the same result as a serial sync."""
     src, dst_serial = _make_adapter_pair()
@@ -376,6 +380,7 @@ def test_sync_defaults_to_serial():
 # ---------------------------------------------------------------------------
 # Combinations of multiple parameters
 # ---------------------------------------------------------------------------
+
 
 def test_diff_filter_then_sync_with_sync_filter():
     """A pre-filtered Diff combined with a sync_filter should respect both layers."""
