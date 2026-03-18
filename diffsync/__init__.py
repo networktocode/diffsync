@@ -307,6 +307,51 @@ class DiffSyncModel(BaseModel):
         return self.delete_base()
 
     @classmethod
+    def create_bulk(cls, adapter: "Adapter", objects: List[Dict]) -> List[Optional[Self]]:
+        """Bulk create multiple instances. Override for batch creation (e.g. single API call).
+
+        The default implementation loops over individual create() calls.
+
+        Args:
+            adapter: The master data store for other DiffSyncModel instances
+            objects: List of dicts, each with "ids" and "attrs" keys
+
+        Returns:
+            List of created DiffSyncModel instances (or None for failed creations)
+        """
+        return [cls.create(adapter=adapter, ids=obj["ids"], attrs=obj["attrs"]) for obj in objects]
+
+    @classmethod
+    def update_bulk(cls, adapter: "Adapter", objects: List[Tuple["DiffSyncModel", Dict]]) -> List[Optional[Self]]:
+        """Bulk update multiple instances. Override for batch updates (e.g. single API call).
+
+        The default implementation loops over individual update() calls.
+
+        Args:
+            adapter: The master data store for other DiffSyncModel instances
+            objects: List of (existing_model, attrs_to_update) tuples
+
+        Returns:
+            List of updated DiffSyncModel instances (or None for failed updates)
+        """
+        return [model.update(attrs=attrs) for model, attrs in objects]
+
+    @classmethod
+    def delete_bulk(cls, adapter: "Adapter", objects: List["DiffSyncModel"]) -> List[Optional[Self]]:
+        """Bulk delete multiple instances. Override for batch deletion (e.g. single API call).
+
+        The default implementation loops over individual delete() calls.
+
+        Args:
+            adapter: The master data store for other DiffSyncModel instances
+            objects: List of model instances to delete
+
+        Returns:
+            List of deleted DiffSyncModel instances (or None for failed deletions)
+        """
+        return [model.delete() for model in objects]
+
+    @classmethod
     def get_type(cls) -> StrType:
         """Return the type AKA modelname of the object or the class.
 
@@ -581,6 +626,14 @@ class Adapter:  # pylint: disable=too-many-public-methods
         flags: DiffSyncFlags = DiffSyncFlags.NONE,
         callback: Optional[Callable[[StrType, int, int], None]] = None,
         diff: Optional[Diff] = None,
+        model_types: Optional[Set[StrType]] = None,
+        filters: Optional[Dict[StrType, Callable]] = None,
+        sync_attrs: Optional[Dict[StrType, Set[StrType]]] = None,
+        exclude_attrs: Optional[Dict[StrType, Set[StrType]]] = None,
+        sync_filter: Optional[Callable[[StrType, StrType, Dict, Dict], bool]] = None,
+        batch_size: Optional[int] = None,
+        concurrent: bool = False,
+        max_workers: Optional[int] = None,
     ) -> Diff:
         """Synchronize data from the given source DiffSync object into the current DiffSync object.
 
@@ -591,6 +644,14 @@ class Adapter:  # pylint: disable=too-many-public-methods
             callback: Function with parameters (stage, current, total), to be called at intervals as the calculation of
                 the diff and subsequent sync proceed.
             diff: An existing diff to be used rather than generating a completely new diff.
+            model_types: Optional set of model type names to restrict the sync to.
+            filters: Optional dict of {model_type: predicate_callable} to filter which objects are synced.
+            sync_attrs: Optional dict of {model_type: set_of_attr_names} to whitelist attributes for syncing.
+            exclude_attrs: Optional dict of {model_type: set_of_attr_names} to exclude attributes from syncing.
+            sync_filter: Optional callback (action, model_type, ids, attrs) -> bool to approve/reject each operation.
+            batch_size: Optional chunk size for batched sync execution.
+            concurrent: If True, sync independent top-level subtrees in parallel.
+            max_workers: Maximum number of threads for concurrent sync.
 
         Returns:
             Diff between origin object and source
@@ -605,17 +666,35 @@ class Adapter:  # pylint: disable=too-many-public-methods
 
         # Generate the diff if an existing diff was not provided
         if not diff:
-            diff = self.diff_from(source, diff_class=diff_class, flags=flags, callback=callback)
+            diff = self.diff_from(
+                source,
+                diff_class=diff_class,
+                flags=flags,
+                callback=callback,
+                model_types=model_types,
+                filters=filters,
+                sync_attrs=sync_attrs,
+                exclude_attrs=exclude_attrs,
+            )
         syncer = DiffSyncSyncer(
             diff=diff,
             src_diffsync=source,
             dst_diffsync=self,
             flags=flags,
             callback=callback,
+            sync_filter=sync_filter,
+            batch_size=batch_size,
+            concurrent=concurrent,
+            max_workers=max_workers,
         )
         result = syncer.perform_sync()
         if result:
-            self.sync_complete(source, diff, flags, syncer.base_logger)
+            # Feature 4: Pass operations summary to sync_complete
+            try:
+                self.sync_complete(source, diff, flags, syncer.base_logger, operations=syncer.operations)
+            except TypeError:
+                # Backwards compatibility: existing subclass overrides may not accept operations kwarg
+                self.sync_complete(source, diff, flags, syncer.base_logger)
 
         return diff
 
@@ -626,6 +705,14 @@ class Adapter:  # pylint: disable=too-many-public-methods
         flags: DiffSyncFlags = DiffSyncFlags.NONE,
         callback: Optional[Callable[[StrType, int, int], None]] = None,
         diff: Optional[Diff] = None,
+        model_types: Optional[Set[StrType]] = None,
+        filters: Optional[Dict[StrType, Callable]] = None,
+        sync_attrs: Optional[Dict[StrType, Set[StrType]]] = None,
+        exclude_attrs: Optional[Dict[StrType, Set[StrType]]] = None,
+        sync_filter: Optional[Callable[[StrType, StrType, Dict, Dict], bool]] = None,
+        batch_size: Optional[int] = None,
+        concurrent: bool = False,
+        max_workers: Optional[int] = None,
     ) -> Diff:
         """Synchronize data from the current DiffSync object into the given target DiffSync object.
 
@@ -636,13 +723,32 @@ class Adapter:  # pylint: disable=too-many-public-methods
             callback: Function with parameters (stage, current, total), to be called at intervals as the calculation of
                 the diff and subsequent sync proceed.
             diff: An existing diff that will be used when determining what needs to be synced.
+            model_types: Optional set of model type names to restrict the sync to.
+            filters: Optional dict of {model_type: predicate_callable} to filter which objects are synced.
+            sync_attrs: Optional dict of {model_type: set_of_attr_names} to whitelist attributes for syncing.
+            exclude_attrs: Optional dict of {model_type: set_of_attr_names} to exclude attributes from syncing.
+            sync_filter: Optional callback (action, model_type, ids, attrs) -> bool to approve/reject each operation.
 
         Returns:
             Diff between origin object and target
         Raises:
             DiffClassMismatch: The provided diff's class does not match the diff_class
         """
-        return target.sync_from(self, diff_class=diff_class, flags=flags, callback=callback, diff=diff)
+        return target.sync_from(
+            self,
+            diff_class=diff_class,
+            flags=flags,
+            callback=callback,
+            diff=diff,
+            model_types=model_types,
+            filters=filters,
+            sync_attrs=sync_attrs,
+            exclude_attrs=exclude_attrs,
+            sync_filter=sync_filter,
+            batch_size=batch_size,
+            concurrent=concurrent,
+            max_workers=max_workers,
+        )
 
     def sync_complete(
         self,
@@ -650,6 +756,7 @@ class Adapter:  # pylint: disable=too-many-public-methods
         diff: Diff,
         flags: DiffSyncFlags = DiffSyncFlags.NONE,
         logger: Optional[structlog.BoundLogger] = None,
+        operations: Optional[Dict[StrType, Dict[StrType, List[Dict]]]] = None,
     ) -> None:
         """Callback triggered after a `sync_from` operation has completed and updated the model data of this instance.
 
@@ -664,18 +771,24 @@ class Adapter:  # pylint: disable=too-many-public-methods
           diff: The Diff calculated prior to the sync operation.
           flags: Any flags that influenced the sync.
           logger: Logging context for the sync.
+          operations: Structured summary of all CRUD operations performed during sync.
+            Format: {"model_type": {"create": [{"ids": {...}, "attrs": {...}, "model": ...}], "update": [...], "delete": [...]}}
         """
 
     # ------------------------------------------------------------------------------
     # Diff calculation and construction
     # ------------------------------------------------------------------------------
 
-    def diff_from(
+    def diff_from(  # pylint: disable=too-many-arguments, too-many-positional-arguments
         self,
         source: "Adapter",
         diff_class: Type[Diff] = Diff,
         flags: DiffSyncFlags = DiffSyncFlags.NONE,
         callback: Optional[Callable[[StrType, int, int], None]] = None,
+        model_types: Optional[Set[StrType]] = None,
+        filters: Optional[Dict[StrType, Callable]] = None,
+        sync_attrs: Optional[Dict[StrType, Set[StrType]]] = None,
+        exclude_attrs: Optional[Dict[StrType, Set[StrType]]] = None,
     ) -> Diff:
         """Generate a Diff describing the difference from the other DiffSync to this one.
 
@@ -685,6 +798,10 @@ class Adapter:  # pylint: disable=too-many-public-methods
             flags: Flags influencing the behavior of this diff operation.
             callback: Function with parameters (stage, current, total), to be called at intervals as the
                 calculation of the diff proceeds.
+            model_types: Optional set of model type names to restrict the diff to.
+            filters: Optional dict of {model_type: predicate_callable} to filter which objects are diffed.
+            sync_attrs: Optional dict of {model_type: set_of_attr_names} to whitelist attributes for diffing.
+            exclude_attrs: Optional dict of {model_type: set_of_attr_names} to exclude attributes from diffing.
         """
         differ = DiffSyncDiffer(
             src_diffsync=source,
@@ -692,15 +809,23 @@ class Adapter:  # pylint: disable=too-many-public-methods
             flags=flags,
             diff_class=diff_class,
             callback=callback,
+            model_types=model_types,
+            filters=filters,
+            sync_attrs=sync_attrs,
+            exclude_attrs=exclude_attrs,
         )
         return differ.calculate_diffs()
 
-    def diff_to(
+    def diff_to(  # pylint: disable=too-many-arguments, too-many-positional-arguments
         self,
         target: "Adapter",
         diff_class: Type[Diff] = Diff,
         flags: DiffSyncFlags = DiffSyncFlags.NONE,
         callback: Optional[Callable[[StrType, int, int], None]] = None,
+        model_types: Optional[Set[StrType]] = None,
+        filters: Optional[Dict[StrType, Callable]] = None,
+        sync_attrs: Optional[Dict[StrType, Set[StrType]]] = None,
+        exclude_attrs: Optional[Dict[StrType, Set[StrType]]] = None,
     ) -> Diff:
         """Generate a Diff describing the difference from this DiffSync to another one.
 
@@ -710,8 +835,21 @@ class Adapter:  # pylint: disable=too-many-public-methods
             flags: Flags influencing the behavior of this diff operation.
             callback: Function with parameters (stage, current, total), to be called at intervals as the
                 calculation of the diff proceeds.
+            model_types: Optional set of model type names to restrict the diff to.
+            filters: Optional dict of {model_type: predicate_callable} to filter which objects are diffed.
+            sync_attrs: Optional dict of {model_type: set_of_attr_names} to whitelist attributes for diffing.
+            exclude_attrs: Optional dict of {model_type: set_of_attr_names} to exclude attributes from diffing.
         """
-        return target.diff_from(self, diff_class=diff_class, flags=flags, callback=callback)
+        return target.diff_from(
+            self,
+            diff_class=diff_class,
+            flags=flags,
+            callback=callback,
+            model_types=model_types,
+            filters=filters,
+            sync_attrs=sync_attrs,
+            exclude_attrs=exclude_attrs,
+        )
 
     # ------------------------------------------------------------------------------
     # Object Storage Management
