@@ -323,7 +323,7 @@ class DiffSyncModel(BaseModel):  # pylint: disable=too-many-public-methods
         return [cls.create(adapter=adapter, ids=obj["ids"], attrs=obj["attrs"]) for obj in objects]
 
     @classmethod
-    def update_bulk(cls, adapter: "Adapter", objects: List[Tuple["DiffSyncModel", Dict]]) -> List[Optional[Self]]:  # noqa: ARG003
+    def update_bulk(cls, adapter: "Adapter", objects: List[Tuple["DiffSyncModel", Dict]]) -> List[Optional[Self]]:  # noqa: ARG003  # pylint: disable=unused-argument
         """Bulk update multiple instances. Override for batch updates (e.g. single API call).
 
         The default implementation loops over individual update() calls.
@@ -338,7 +338,7 @@ class DiffSyncModel(BaseModel):  # pylint: disable=too-many-public-methods
         return [model.update(attrs=attrs) for model, attrs in objects]
 
     @classmethod
-    def delete_bulk(cls, adapter: "Adapter", objects: List["DiffSyncModel"]) -> List[Optional[Self]]:  # noqa: ARG003
+    def delete_bulk(cls, adapter: "Adapter", objects: List["DiffSyncModel"]) -> List[Optional[Self]]:  # noqa: ARG003  # pylint: disable=unused-argument
         """Bulk delete multiple instances. Override for batch deletion (e.g. single API call).
 
         The default implementation loops over individual delete() calls.
