@@ -15,8 +15,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import copy
 from functools import total_ordering
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Type
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Set, Type
 
 from .enum import DiffSyncActions
 from .exceptions import ObjectAlreadyExists
@@ -154,6 +155,166 @@ class Diff:
             if child.has_diffs(include_children=True):
                 result[child.type][child.name] = child.dict()
         return dict(result)
+
+    def filter(
+        self,
+        actions: Optional[Set[StrType]] = None,
+        model_types: Optional[Set[StrType]] = None,
+    ) -> "Diff":
+        """Return a new Diff containing only elements matching the given criteria.
+
+        Args:
+            actions: If provided, only include elements whose action is in this set (e.g. {"create", "update"}).
+            model_types: If provided, only include elements whose type is in this set.
+
+        Returns:
+            A new Diff instance with only the matching elements.
+        """
+        new_diff = self.__class__()
+        new_diff.models_processed = self.models_processed
+
+        for group in self.groups():
+            if model_types is not None and group not in model_types:
+                continue
+            for element in self.children[group].values():
+                filtered = _filter_diff_element(element, actions=actions, model_types=model_types)
+                if filtered is not None:
+                    new_diff.add(filtered)
+
+        return new_diff
+
+    def exclude(
+        self,
+        actions: Optional[Set[StrType]] = None,
+        model_types: Optional[Set[StrType]] = None,
+    ) -> "Diff":
+        """Return a new Diff excluding elements matching the given criteria.
+
+        Args:
+            actions: If provided, exclude elements whose action is in this set.
+            model_types: If provided, exclude elements whose type is in this set.
+
+        Returns:
+            A new Diff instance without the excluded elements.
+        """
+        new_diff = self.__class__()
+        new_diff.models_processed = self.models_processed
+
+        for group in self.groups():
+            if model_types is not None and group in model_types:
+                continue
+            for element in self.children[group].values():
+                filtered = _exclude_diff_element(element, actions=actions, model_types=model_types)
+                if filtered is not None:
+                    new_diff.add(filtered)
+
+        return new_diff
+
+
+def _copy_diff_element(element: "DiffElement") -> "DiffElement":
+    """Create a shallow copy of a DiffElement without its children."""
+    new_element = DiffElement(
+        obj_type=element.type,
+        name=element.name,
+        keys=copy.copy(element.keys),
+        source_name=element.source_name,
+        dest_name=element.dest_name,
+    )
+    if element.source_attrs is not None:
+        new_element.source_attrs = copy.copy(element.source_attrs)
+    if element.dest_attrs is not None:
+        new_element.dest_attrs = copy.copy(element.dest_attrs)
+    return new_element
+
+
+def _filter_diff_element(
+    element: "DiffElement",
+    actions: Optional[Set[StrType]] = None,
+    model_types: Optional[Set[StrType]] = None,
+) -> Optional["DiffElement"]:
+    """Recursively filter a DiffElement, returning a copy with only matching elements or None."""
+    # Check if this element's action matches
+    if actions is not None and element.action not in actions:
+        # Even if the element itself doesn't match, its children might
+        has_matching_children = False
+        new_element = _copy_diff_element(element)
+        # Clear attrs so this element itself shows no action
+        new_element.source_attrs = element.source_attrs
+        new_element.dest_attrs = element.dest_attrs
+
+        for child in element.get_children():
+            filtered_child = _filter_diff_element(child, actions=actions, model_types=model_types)
+            if filtered_child is not None:
+                new_element.add_child(filtered_child)
+                has_matching_children = True
+
+        if has_matching_children:
+            # Return the element as a container for its matching children, but neutralize its own action
+            neutral = _copy_diff_element(element)
+            # Set both attrs to be equal so action becomes None
+            if element.source_attrs is not None and element.dest_attrs is not None:
+                neutral.source_attrs = copy.copy(element.dest_attrs)
+                neutral.dest_attrs = copy.copy(element.dest_attrs)
+            elif element.source_attrs is not None:
+                neutral.source_attrs = None
+                neutral.dest_attrs = None
+            elif element.dest_attrs is not None:
+                neutral.source_attrs = None
+                neutral.dest_attrs = None
+            neutral.child_diff = new_element.child_diff
+            return neutral
+        return None
+
+    # Element itself matches (or no action filter)
+    new_element = _copy_diff_element(element)
+    for child in element.get_children():
+        filtered_child = _filter_diff_element(child, actions=actions, model_types=model_types)
+        if filtered_child is not None:
+            new_element.add_child(filtered_child)
+
+    return new_element
+
+
+def _exclude_diff_element(
+    element: "DiffElement",
+    actions: Optional[Set[StrType]] = None,
+    model_types: Optional[Set[StrType]] = None,
+) -> Optional["DiffElement"]:
+    """Recursively exclude matching elements from a DiffElement, returning a copy or None."""
+    # If this element's action should be excluded
+    if actions is not None and element.action in actions:
+        # Still check children — they might not be excluded
+        has_kept_children = False
+        new_element = _copy_diff_element(element)
+        # Neutralize the element's own action
+        if element.source_attrs is not None and element.dest_attrs is not None:
+            new_element.source_attrs = copy.copy(element.dest_attrs)
+            new_element.dest_attrs = copy.copy(element.dest_attrs)
+        elif element.source_attrs is not None:
+            new_element.source_attrs = None
+            new_element.dest_attrs = None
+        elif element.dest_attrs is not None:
+            new_element.source_attrs = None
+            new_element.dest_attrs = None
+
+        for child in element.get_children():
+            excluded_child = _exclude_diff_element(child, actions=actions, model_types=model_types)
+            if excluded_child is not None:
+                new_element.add_child(excluded_child)
+                has_kept_children = True
+
+        if has_kept_children:
+            return new_element
+        return None
+
+    # Element itself is not excluded
+    new_element = _copy_diff_element(element)
+    for child in element.get_children():
+        excluded_child = _exclude_diff_element(child, actions=actions, model_types=model_types)
+        if excluded_child is not None:
+            new_element.add_child(excluded_child)
+
+    return new_element
 
 
 @total_ordering

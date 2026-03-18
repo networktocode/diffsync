@@ -138,6 +138,43 @@ class BaseStore:
         """Returns the number of elements of a specific model, or all elements in the store if not specified."""
         raise NotImplementedError
 
+    def add_bulk(self, *, objs: List["DiffSyncModel"]) -> None:
+        """Add multiple DiffSyncModel objects to the store.
+
+        The default implementation loops over individual add() calls.
+        Subclasses may override for optimized batch operations.
+
+        Args:
+            objs: List of objects to store
+        """
+        for obj in objs:
+            self.add(obj=obj)
+
+    def update_bulk(self, *, objs: List["DiffSyncModel"]) -> None:
+        """Update multiple DiffSyncModel objects in the store.
+
+        The default implementation loops over individual update() calls.
+        Subclasses may override for optimized batch operations.
+
+        Args:
+            objs: List of objects to update
+        """
+        for obj in objs:
+            self.update(obj=obj)
+
+    def remove_bulk(self, *, objs: List["DiffSyncModel"], remove_children: bool = False) -> None:
+        """Remove multiple DiffSyncModel objects from the store.
+
+        The default implementation loops over individual remove() calls.
+        Subclasses may override for optimized batch operations.
+
+        Args:
+            objs: List of objects to remove
+            remove_children: If True, also recursively remove children
+        """
+        for obj in objs:
+            self.remove(obj=obj, remove_children=remove_children)
+
     def get_or_instantiate(
         self, *, model: Type["DiffSyncModel"], ids: Dict, attrs: Optional[Dict] = None
     ) -> Tuple["DiffSyncModel", bool]:

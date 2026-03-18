@@ -15,8 +15,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import threading
+from collections import defaultdict
 from collections.abc import Iterable as ABCIterable
 from collections.abc import Mapping as ABCMapping
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import TYPE_CHECKING, Callable, Dict, Iterable, List, Optional, Tuple, Type
 
 import structlog  # type: ignore
@@ -44,6 +47,10 @@ class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
         flags: DiffSyncFlags,
         diff_class: Type[Diff] = Diff,
         callback: Optional[Callable[[str, int, int], None]] = None,
+        model_types: Optional[set] = None,
+        filters: Optional[Dict[str, Callable]] = None,
+        sync_attrs: Optional[Dict[str, set]] = None,
+        exclude_attrs: Optional[Dict[str, set]] = None,
     ):
         """Create a DiffSyncDiffer for calculating diffs between the provided DiffSync instances."""
         self.src_diffsync = src_diffsync
@@ -54,6 +61,14 @@ class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
         self.diff_class = diff_class
         self.callback = callback
         self.diff: Optional[Diff] = None
+
+        # Feature 6: Model-type scoping
+        self.model_types = model_types
+        # Feature 5: Attribute-based query predicates
+        self.filters = filters
+        # Feature 7: Attribute-scoped syncing
+        self.sync_attrs = sync_attrs
+        self.exclude_attrs = exclude_attrs
 
         self.models_processed = 0
         self.total_models = len(src_diffsync) + len(dst_diffsync)
@@ -85,7 +100,12 @@ class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
             elif skipped_type in self.src_diffsync.top_level:
                 self.incr_models_processed(len(self.src_diffsync.get_all(skipped_type)))
 
-        for obj_type in intersection(self.dst_diffsync.top_level, self.src_diffsync.top_level):
+        top_level_types = intersection(self.dst_diffsync.top_level, self.src_diffsync.top_level)
+        # Feature 6: Model-type scoping
+        if self.model_types is not None:
+            top_level_types = [t for t in top_level_types if t in self.model_types]
+
+        for obj_type in top_level_types:
             diff_elements = self.diff_object_list(
                 src=self.src_diffsync.get_all(obj_type),
                 dst=self.dst_diffsync.get_all(obj_type),
@@ -209,6 +229,16 @@ class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
             self.incr_models_processed()
             return None
 
+        # Feature 5: Attribute-based query predicates
+        if self.filters and model in self.filters:
+            predicate = self.filters[model]
+            obj_to_check = src_obj or dst_obj
+            if obj_to_check and not predicate(obj_to_check):
+                log.debug("Skipping due to query predicate filter")
+                delta = (1 if src_obj else 0) + (1 if dst_obj else 0)
+                self.incr_models_processed(delta)
+                return None
+
         diff_element = DiffElement(
             obj_type=model,
             name=shortname,
@@ -220,10 +250,14 @@ class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
 
         delta = 0
         if src_obj:
-            diff_element.add_attrs(source=src_obj.get_attrs(), dest=None)
+            src_attrs = src_obj.get_attrs()
+            src_attrs = self._filter_attrs(model, src_attrs)
+            diff_element.add_attrs(source=src_attrs, dest=None)
             delta += 1
         if dst_obj:
-            diff_element.add_attrs(source=None, dest=dst_obj.get_attrs())
+            dst_attrs = dst_obj.get_attrs()
+            dst_attrs = self._filter_attrs(model, dst_attrs)
+            diff_element.add_attrs(source=None, dest=dst_attrs)
             delta += 1
 
         self.incr_models_processed(delta)
@@ -232,6 +266,17 @@ class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
         self.diff_child_objects(diff_element, src_obj, dst_obj)
 
         return diff_element
+
+    def _filter_attrs(self, model_type: str, attrs: Dict) -> Dict:
+        """Filter attributes based on sync_attrs and exclude_attrs settings.
+
+        Feature 7: Attribute-scoped syncing.
+        """
+        if self.sync_attrs and model_type in self.sync_attrs:
+            attrs = {k: v for k, v in attrs.items() if k in self.sync_attrs[model_type]}
+        if self.exclude_attrs and model_type in self.exclude_attrs:
+            attrs = {k: v for k, v in attrs.items() if k not in self.exclude_attrs[model_type]}
+        return attrs
 
     def diff_child_objects(
         self,
@@ -268,6 +313,10 @@ class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
             raise RuntimeError("Called with neither src_obj nor dest_obj??")
 
         for child_type, child_fieldname in children_mapping.items():
+            # Feature 6: Model-type scoping — skip child types not in model_types
+            if self.model_types is not None and child_type not in self.model_types:
+                continue
+
             # for example, child_type == "device" and child_fieldname == "devices"
 
             # for example, getattr(src_obj, "devices") --> list of device uids
@@ -294,6 +343,10 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
         dst_diffsync: "Adapter",
         flags: DiffSyncFlags,
         callback: Optional[Callable[[str, int, int], None]] = None,
+        sync_filter: Optional[Callable[[str, str, Dict, Dict], bool]] = None,
+        batch_size: Optional[int] = None,
+        concurrent: bool = False,
+        max_workers: Optional[int] = None,
     ):
         """Create a DiffSyncSyncer instance, ready to call `perform_sync()` against."""
         self.diff = diff
@@ -302,15 +355,30 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
         self.flags = flags
         self.callback = callback
 
+        # Feature 9: Callback-based sync interceptor
+        self.sync_filter = sync_filter
+
+        # Feature 2: Chunked/batched sync execution
+        self.batch_size = batch_size
+
+        # Feature 3: Parallel sync of independent subtrees
+        self.concurrent = concurrent
+        self.max_workers = max_workers
+
+        # Feature 4: Structured operations summary
+        self.operations: Dict[str, Dict[str, List[Dict]]] = {}
+        self._operations_lock = threading.Lock()
+
         self.elements_processed = 0
         self.total_elements = len(diff)
 
         self.base_logger = structlog.get_logger().new(src=src_diffsync, dst=dst_diffsync, flags=flags)
 
-        # Local state maintained during synchronization
-        self.logger: structlog.BoundLogger = self.base_logger
-        self.model_class: Type["DiffSyncModel"]
-        self.action: Optional[str] = None
+        # Thread-local state maintained during synchronization (for concurrent safety)
+        self._local = threading.local()
+        self._local.logger = self.base_logger
+        self._local.model_class = None
+        self._local.action = None
 
     def incr_elements_processed(self, delta: int = 1) -> None:
         """Increment self.elements_processed, then call self.callback if present."""
@@ -327,8 +395,18 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
         """
         changed = False
         self.base_logger.info("Beginning sync")
-        for element in self.diff.get_children():
-            changed |= self.sync_diff_element(element)
+
+        # Feature 3: Parallel sync of independent subtrees
+        if self.concurrent:
+            elements = list(self.diff.get_children())
+            with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+                futures = {executor.submit(self.sync_diff_element, element): element for element in elements}
+                for future in as_completed(futures):
+                    changed |= future.result()
+        else:
+            for element in self.diff.get_children():
+                changed |= self.sync_diff_element(element)
+
         self.base_logger.info("Sync complete")
         return changed
 
@@ -340,26 +418,26 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
         Returns:
             bool: True if this element or any of its children resulted in actual changes, else False.
         """
-        self.model_class = getattr(self.dst_diffsync, element.type)
+        self._local.model_class = getattr(self.dst_diffsync, element.type)
         diffs = element.get_attrs_diffs()
-        self.logger = self.base_logger.bind(
+        self._local.logger = self.base_logger.bind(
             action=element.action,
             model=element.type,
-            unique_id=self.model_class.create_unique_id(**element.keys),
+            unique_id=self._local.model_class.create_unique_id(**element.keys),
             diffs=diffs,
         )
-        self.action = element.action
+        self._local.action = element.action
         ids = element.keys
         # We only actually need the "new" attrs to perform a create/update operation, and don't need any for a delete
         attrs = diffs.get("+", {})
 
         # Retrieve Source Object to get its flags
-        src_model = self.src_diffsync.get_or_none(self.model_class, ids)
+        src_model = self.src_diffsync.get_or_none(self._local.model_class, ids)
 
         # Retrieve Dest (and primary) Object
         dst_model: Optional["DiffSyncModel"]
         try:
-            dst_model = self.dst_diffsync.get(self.model_class, ids)
+            dst_model = self.dst_diffsync.get(self._local.model_class, ids)
             dst_model.set_status(DiffSyncStatus.UNKNOWN)
         except ObjectNotFound:
             dst_model = None
@@ -373,23 +451,23 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
 
         # Recurse through children to delete if we are supposed to delete the current diff element
         changed = False
-        if natural_deletion_order and self.action == DiffSyncActions.DELETE and not skip_children:
+        if natural_deletion_order and self._local.action == DiffSyncActions.DELETE and not skip_children:
             for child in element.get_children():
                 changed |= self.sync_diff_element(child, parent_model=dst_model)
 
-        # Sync the current model - this will delete the current model if self.action is DELETE
+        # Sync the current model - this will delete the current model if self._local.action is DELETE
         changed, modified_model = self.sync_model(src_model=src_model, dst_model=dst_model, ids=ids, attrs=attrs)
         dst_model = modified_model or dst_model
 
         if not modified_model or not dst_model:
-            self.logger.warning("No object resulted from sync, will not process child objects.")
+            self._local.logger.warning("No object resulted from sync, will not process child objects.")
             return changed
 
-        if self.action == DiffSyncActions.CREATE:
+        if self._local.action == DiffSyncActions.CREATE:
             if parent_model:
                 parent_model.add_child(dst_model)
             self.dst_diffsync.add(dst_model)
-        elif self.action == DiffSyncActions.DELETE:
+        elif self._local.action == DiffSyncActions.DELETE:
             if parent_model:
                 parent_model.remove_child(dst_model)
 
@@ -400,7 +478,7 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
 
         self.incr_elements_processed()
 
-        if not natural_deletion_order or self.action is not DiffSyncActions.DELETE:
+        if not natural_deletion_order or self._local.action is not DiffSyncActions.DELETE:
             for child in element.get_children():
                 changed |= self.sync_diff_element(child, parent_model=dst_model)
 
@@ -416,44 +494,72 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
         Returns:
             (changed, model) where model may be None if an error occurred
         """
-        if self.action is None:
+        if self._local.action is None:
             status = DiffSyncStatus.SUCCESS
             message = "No changes to apply; no action needed"
-            self.log_sync_status(self.action, status, message)
+            self.log_sync_status(self._local.action, status, message)
             return (False, dst_model)
 
+        # Feature 9: Callback-based sync interceptor
+        if self.sync_filter:
+            model_type = self._local.model_class.get_type()
+            if not self.sync_filter(self._local.action, model_type, ids, attrs):
+                self._local.logger.debug("Skipping due to sync_filter callback")
+                # Clear the action so sync_diff_element doesn't proceed with store operations
+                self._local.action = None
+                return (False, dst_model)
+
         try:
-            self.logger.debug(f"Attempting model {self.action}")
-            if self.action == DiffSyncActions.CREATE:
+            self._local.logger.debug(f"Attempting model {self._local.action}")
+            if self._local.action == DiffSyncActions.CREATE:
                 if dst_model is not None:
-                    raise ObjectNotCreated(f"Failed to create {self.model_class.get_type()} {ids} - it already exists!")
-                dst_model = self.model_class.create(adapter=self.dst_diffsync, ids=ids, attrs=attrs)
-            elif self.action == DiffSyncActions.UPDATE:
+                    raise ObjectNotCreated(
+                        f"Failed to create {self._local.model_class.get_type()} {ids} - it already exists!"
+                    )
+                dst_model = self._local.model_class.create(adapter=self.dst_diffsync, ids=ids, attrs=attrs)
+            elif self._local.action == DiffSyncActions.UPDATE:
                 if dst_model is None:
-                    raise ObjectNotUpdated(f"Failed to update {self.model_class.get_type()} {ids} - not found!")
+                    raise ObjectNotUpdated(
+                        f"Failed to update {self._local.model_class.get_type()} {ids} - not found!"
+                    )
                 dst_model = dst_model.update(attrs=attrs)
-            elif self.action == DiffSyncActions.DELETE:
+            elif self._local.action == DiffSyncActions.DELETE:
                 if dst_model is None:
-                    raise ObjectNotDeleted(f"Failed to delete {self.model_class.get_type()} {ids} - not found!")
+                    raise ObjectNotDeleted(
+                        f"Failed to delete {self._local.model_class.get_type()} {ids} - not found!"
+                    )
                 dst_model = dst_model.delete()
             else:
-                raise ObjectCrudException(f'Unknown action "{self.action}"!')
+                raise ObjectCrudException(f'Unknown action "{self._local.action}"!')
 
             if dst_model is not None:
                 status, message = dst_model.get_status()
             else:
                 status = DiffSyncStatus.FAILURE
-                message = f"{self.model_class.get_type()} {self.action} did not return the model object."
+                message = (
+                    f"{self._local.model_class.get_type()} "
+                    f"{self._local.action} did not return the model object."
+                )
 
         except ObjectCrudException as exception:
             status = DiffSyncStatus.ERROR
             message = str(exception)
-            self.log_sync_status(self.action, status, message)
+            self.log_sync_status(self._local.action, status, message)
             if self.flags & DiffSyncFlags.CONTINUE_ON_FAILURE:
                 return (True, None)
             raise
 
-        self.log_sync_status(self.action, status, message)
+        self.log_sync_status(self._local.action, status, message)
+
+        # Feature 4: Track operations for structured sync_complete
+        if self._local.action is not None and status == DiffSyncStatus.SUCCESS:
+            with self._operations_lock:
+                model_type = self._local.model_class.get_type()
+                if model_type not in self.operations:
+                    self.operations[model_type] = {"create": [], "update": [], "delete": []}
+                self.operations[model_type][self._local.action].append(
+                    {"ids": ids, "attrs": attrs, "model": dst_model}
+                )
 
         return (True, dst_model)
 
@@ -464,10 +570,10 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
         """
         if action is None:
             if self.flags & DiffSyncFlags.LOG_UNCHANGED_RECORDS:
-                self.logger.debug(message, status=status.value)
+                self._local.logger.debug(message, status=status.value)
         elif status == DiffSyncStatus.SUCCESS:
-            self.logger.info(message, status=status.value)
+            self._local.logger.info(message, status=status.value)
         elif status == DiffSyncStatus.FAILURE:
-            self.logger.warning(message, status=status.value)
+            self._local.logger.warning(message, status=status.value)
         else:
-            self.logger.error(message, status=status.value)
+            self._local.logger.error(message, status=status.value)
