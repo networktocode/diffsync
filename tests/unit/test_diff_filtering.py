@@ -16,8 +16,6 @@ limitations under the License.
 """
 
 
-
-
 def test_diff_filter_by_action_create(diff_with_children):
     """Filtering a Diff by action='create' should only retain elements with create diffs."""
     filtered = diff_with_children.filter(actions={"create"})

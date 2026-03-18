@@ -14,6 +14,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+# pylint: disable=too-many-lines
 
 import sys
 from copy import deepcopy
@@ -58,7 +59,7 @@ else:
 StrType = str
 
 
-class DiffSyncModel(BaseModel):
+class DiffSyncModel(BaseModel):  # pylint: disable=too-many-public-methods
     """Base class for all DiffSync object models.
 
     Note that read-only APIs of this class are implemented as `get_*()` methods rather than as properties;
@@ -322,7 +323,7 @@ class DiffSyncModel(BaseModel):
         return [cls.create(adapter=adapter, ids=obj["ids"], attrs=obj["attrs"]) for obj in objects]
 
     @classmethod
-    def update_bulk(cls, adapter: "Adapter", objects: List[Tuple["DiffSyncModel", Dict]]) -> List[Optional[Self]]:
+    def update_bulk(cls, adapter: "Adapter", objects: List[Tuple["DiffSyncModel", Dict]]) -> List[Optional[Self]]:  # noqa: ARG003
         """Bulk update multiple instances. Override for batch updates (e.g. single API call).
 
         The default implementation loops over individual update() calls.
@@ -337,7 +338,7 @@ class DiffSyncModel(BaseModel):
         return [model.update(attrs=attrs) for model, attrs in objects]
 
     @classmethod
-    def delete_bulk(cls, adapter: "Adapter", objects: List["DiffSyncModel"]) -> List[Optional[Self]]:
+    def delete_bulk(cls, adapter: "Adapter", objects: List["DiffSyncModel"]) -> List[Optional[Self]]:  # noqa: ARG003
         """Bulk delete multiple instances. Override for batch deletion (e.g. single API call).
 
         The default implementation loops over individual delete() calls.
@@ -533,7 +534,7 @@ class Adapter:  # pylint: disable=too-many-public-methods
         for key, value in kwargs.items():
             try:
                 meta_kwargs[key] = deepcopy(value)
-            except Exception:  # pylint: disable=broad-exception-caught
+            except Exception:  # pylint: disable=broad-except
                 # Some objects (e.g. Kafka Consumer, DB connections) cannot be deep copied
                 meta_kwargs[key] = value
         instance = super().__new__(cls)
@@ -619,7 +620,7 @@ class Adapter:  # pylint: disable=too-many-public-methods
     # Synchronization between DiffSync instances
     # ------------------------------------------------------------------------------
 
-    def sync_from(  # pylint: disable=too-many-arguments, too-many-positional-arguments
+    def sync_from(  # pylint: disable=too-many-arguments,R0917,too-many-locals
         self,
         source: "Adapter",
         diff_class: Type[Diff] = Diff,
@@ -698,7 +699,7 @@ class Adapter:  # pylint: disable=too-many-public-methods
 
         return diff
 
-    def sync_to(  # pylint: disable=too-many-arguments, too-many-positional-arguments
+    def sync_to(  # pylint: disable=too-many-arguments,R0917
         self,
         target: "Adapter",
         diff_class: Type[Diff] = Diff,
@@ -753,7 +754,7 @@ class Adapter:  # pylint: disable=too-many-public-methods
             max_workers=max_workers,
         )
 
-    def sync_complete(
+    def sync_complete(  # pylint: disable=too-many-arguments,R0917
         self,
         source: "Adapter",
         diff: Diff,
@@ -782,7 +783,7 @@ class Adapter:  # pylint: disable=too-many-public-methods
     # Diff calculation and construction
     # ------------------------------------------------------------------------------
 
-    def diff_from(  # pylint: disable=too-many-arguments, too-many-positional-arguments
+    def diff_from(  # pylint: disable=too-many-arguments,R0917
         self,
         source: "Adapter",
         diff_class: Type[Diff] = Diff,
@@ -819,7 +820,7 @@ class Adapter:  # pylint: disable=too-many-public-methods
         )
         return differ.calculate_diffs()
 
-    def diff_to(  # pylint: disable=too-many-arguments, too-many-positional-arguments
+    def diff_to(  # pylint: disable=too-many-arguments,R0917
         self,
         target: "Adapter",
         diff_class: Type[Diff] = Diff,
