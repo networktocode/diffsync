@@ -39,7 +39,7 @@ class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
     Independent from Diff and DiffElement as those classes are purely data objects, while this stores some state.
     """
 
-    def __init__(  # pylint: disable=too-many-arguments, too-many-positional-arguments
+    def __init__(  # pylint: disable=too-many-arguments,R0917
         self,
         src_diffsync: "Adapter",
         dst_diffsync: "Adapter",
@@ -179,7 +179,7 @@ class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
                 if src_obj.get_identifiers() != dst_obj.get_identifiers():
                     raise ValueError(f"Keys mismatch: {src_obj.get_identifiers()} vs {dst_obj.get_identifiers()}")
 
-    def diff_object_pair(  # pylint: disable=too-many-return-statements
+    def diff_object_pair(  # pylint: disable=too-many-return-statements, too-many-branches, too-many-statements
         self, src_obj: Optional["DiffSyncModel"], dst_obj: Optional["DiffSyncModel"]
     ) -> Optional[DiffElement]:
         """Diff the two provided DiffSyncModel objects and return a DiffElement or None.
@@ -335,7 +335,7 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
     Independent from DiffSync and DiffSyncModel as those classes are purely data objects, while this stores some state.
     """
 
-    def __init__(  # pylint: disable=too-many-arguments, too-many-positional-arguments
+    def __init__(  # pylint: disable=too-many-arguments,R0917
         self,
         diff: Diff,
         src_diffsync: "Adapter",

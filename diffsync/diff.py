@@ -321,7 +321,7 @@ def _exclude_diff_element(
 class DiffElement:  # pylint: disable=too-many-instance-attributes
     """DiffElement object, designed to represent a single item/object that may or may not have any diffs."""
 
-    def __init__(  # pylint: disable=too-many-positional-arguments
+    def __init__(  # pylint: disable=R0917
         self,
         obj_type: StrType,
         name: StrType,
