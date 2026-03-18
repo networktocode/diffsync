@@ -728,6 +728,9 @@ class Adapter:  # pylint: disable=too-many-public-methods
             sync_attrs: Optional dict of {model_type: set_of_attr_names} to whitelist attributes for syncing.
             exclude_attrs: Optional dict of {model_type: set_of_attr_names} to exclude attributes from syncing.
             sync_filter: Optional callback (action, model_type, ids, attrs) -> bool to approve/reject each operation.
+            batch_size: Optional chunk size for batched sync execution.
+            concurrent: If True, sync independent top-level subtrees in parallel.
+            max_workers: Maximum number of threads for concurrent sync.
 
         Returns:
             Diff between origin object and target

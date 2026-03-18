@@ -17,8 +17,6 @@ limitations under the License.
 
 from typing import List
 
-import pytest
-
 from diffsync import Adapter, DiffSyncModel
 
 

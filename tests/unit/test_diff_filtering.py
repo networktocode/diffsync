@@ -15,9 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import pytest
 
-from diffsync.diff import Diff, DiffElement
 
 
 def test_diff_filter_by_action_create(diff_with_children):
