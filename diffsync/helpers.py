@@ -346,6 +346,7 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
         batch_size: Optional[int] = None,
         concurrent: bool = False,
         max_workers: Optional[int] = None,
+        sync_stages: Optional[List[List[str]]] = None,
     ):
         """Create a DiffSyncSyncer instance, ready to call `perform_sync()` against."""
         self.diff = diff
@@ -363,6 +364,7 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
         # Feature 3: Parallel sync of independent subtrees
         self.concurrent = concurrent
         self.max_workers = max_workers
+        self.sync_stages = sync_stages
 
         # Feature 4: Structured operations summary
         self.operations: Dict[str, Dict[str, List[Dict]]] = {}
@@ -397,11 +399,30 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
 
         # Feature 3: Parallel sync of independent subtrees
         if self.concurrent:
-            elements = list(self.diff.get_children())
-            with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
-                futures = {executor.submit(self.sync_diff_element, element): element for element in elements}
-                for future in as_completed(futures):
-                    changed |= future.result()
+            if self.sync_stages:
+                # Staged concurrent execution: process each stage sequentially,
+                # parallelizing elements within each stage.
+                for stage in self.sync_stages:
+                    stage_set = set(stage)
+                    stage_elements = [el for el in self.diff.get_children() if el.type in stage_set]
+                    if stage_elements:
+                        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+                            futures = {executor.submit(self.sync_diff_element, el): el for el in stage_elements}
+                            for future in as_completed(futures):
+                                changed |= future.result()
+
+                # Handle any elements whose type is not covered by sync_stages (serial fallback)
+                staged_types = {t for stage in self.sync_stages for t in stage}
+                for element in self.diff.get_children():
+                    if element.type not in staged_types:
+                        changed |= self.sync_diff_element(element)
+            else:
+                # No stages defined — all elements in one pool (original behavior)
+                elements = list(self.diff.get_children())
+                with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+                    futures = {executor.submit(self.sync_diff_element, element): element for element in elements}
+                    for future in as_completed(futures):
+                        changed |= future.result()
         else:
             for element in self.diff.get_children():
                 changed |= self.sync_diff_element(element)

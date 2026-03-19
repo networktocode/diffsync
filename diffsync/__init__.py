@@ -487,6 +487,22 @@ class Adapter:  # pylint: disable=too-many-public-methods
     top_level: ClassVar[List[str]] = []
     """List of top-level modelnames to begin from when diffing or synchronizing."""
 
+    sync_stages: ClassVar[Optional[List[List[str]]]] = None
+    """Optional ordered groups of model types for staged concurrent sync.
+
+    Each inner list is a "stage" of model types that can safely execute in parallel.
+    Stages are processed sequentially — all elements in stage N complete before stage N+1 begins.
+    Only used when ``concurrent=True``; ignored for serial sync.
+
+    Example::
+
+        sync_stages = [
+            ["site", "vlan"],      # stage 1: independent types, run in parallel
+            ["device"],            # stage 2: depends on sites
+            ["interface"],         # stage 3: depends on devices
+        ]
+    """
+
     def __init__(
         self,
         name: Optional[str] = None,
@@ -527,6 +543,21 @@ class Adapter:  # pylint: disable=too-many-public-methods
             value = getattr(cls, name)
             if not isclass(value) or not issubclass(value, DiffSyncModel):
                 raise AttributeError(f'top_level references attribute "{name}" but it is not a DiffSyncModel subclass!')
+
+        if cls.sync_stages is not None:
+            top_level_set = set(cls.top_level)
+            seen: set = set()
+            for stage in cls.sync_stages:
+                for model_type in stage:
+                    if model_type not in top_level_set:
+                        raise AttributeError(
+                            f'sync_stages references "{model_type}" but it is not in top_level!'
+                        )
+                    if model_type in seen:
+                        raise AttributeError(
+                            f'sync_stages contains duplicate entry "{model_type}"!'
+                        )
+                    seen.add(model_type)
 
     def __new__(cls, **kwargs):  # type: ignore[no-untyped-def]
         """Document keyword arguments that were used to initialize Adapter."""
@@ -687,6 +718,7 @@ class Adapter:  # pylint: disable=too-many-public-methods
             batch_size=batch_size,
             concurrent=concurrent,
             max_workers=max_workers,
+            sync_stages=self.sync_stages,
         )
         result = syncer.perform_sync()
         if result:

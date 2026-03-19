@@ -442,3 +442,189 @@ def test_filters_combined_with_sync_attrs():
             diffs = de.get_attrs_diffs()
             if "+" in diffs:
                 assert "tag" not in diffs["+"]
+
+
+# ---------------------------------------------------------------------------
+# sync_stages — ordered group execution for concurrent sync
+# ---------------------------------------------------------------------------
+
+
+# Models and adapters for sync_stages tests — uses multiple top-level types
+# to exercise staged parallelism.
+
+_creation_order: List = []
+
+
+class _Region(DiffSyncModel):
+    _modelname = "region"
+    _identifiers = ("name",)
+    _attributes = ("slug",)
+
+    name: str
+    slug: str = ""
+
+    @classmethod
+    def create(cls, adapter, ids, attrs):
+        _creation_order.append(("region", ids["name"]))
+        return super().create(adapter=adapter, ids=ids, attrs=attrs)
+
+
+class _Tenant(DiffSyncModel):
+    _modelname = "tenant"
+    _identifiers = ("name",)
+    _attributes = ("group",)
+
+    name: str
+    group: str = ""
+
+    @classmethod
+    def create(cls, adapter, ids, attrs):
+        _creation_order.append(("tenant", ids["name"]))
+        return super().create(adapter=adapter, ids=ids, attrs=attrs)
+
+
+class _Rack(DiffSyncModel):
+    _modelname = "rack"
+    _identifiers = ("name",)
+    _attributes = ("site_name",)
+
+    name: str
+    site_name: str = ""
+
+    @classmethod
+    def create(cls, adapter, ids, attrs):
+        _creation_order.append(("rack", ids["name"]))
+        return super().create(adapter=adapter, ids=ids, attrs=attrs)
+
+
+class _StagedAdapter(Adapter):
+    region = _Region
+    tenant = _Tenant
+    rack = _Rack
+    top_level = ["region", "tenant", "rack"]
+    sync_stages = [
+        ["region", "tenant"],  # stage 1: independent, can run in parallel
+        ["rack"],              # stage 2: depends on regions being created
+    ]
+
+
+class _UnstagedAdapter(Adapter):
+    """Same models, no sync_stages — for comparison."""
+    region = _Region
+    tenant = _Tenant
+    rack = _Rack
+    top_level = ["region", "tenant", "rack"]
+
+
+def _make_staged_pair(adapter_cls=_StagedAdapter):
+    """Build a source with regions/tenants/racks and an empty destination."""
+    src = adapter_cls()
+    dst = adapter_cls()
+
+    src.add(_Region(name="region1", slug="r1"))
+    src.add(_Region(name="region2", slug="r2"))
+    src.add(_Tenant(name="tenant1", group="g1"))
+    src.add(_Rack(name="rack1", site_name="region1"))
+    src.add(_Rack(name="rack2", site_name="region2"))
+
+    return src, dst
+
+
+def test_sync_stages_executes_in_order():
+    """All stage-1 types (region, tenant) must be created before any stage-2 type (rack)."""
+    _creation_order.clear()
+    src, dst = _make_staged_pair()
+    dst.sync_from(src, concurrent=True, max_workers=4)
+
+    # Find the index of the first rack creation
+    rack_indices = [i for i, (t, _) in enumerate(_creation_order) if t == "rack"]
+    region_indices = [i for i, (t, _) in enumerate(_creation_order) if t == "region"]
+    tenant_indices = [i for i, (t, _) in enumerate(_creation_order) if t == "tenant"]
+
+    assert len(rack_indices) == 2
+    assert len(region_indices) == 2
+    assert len(tenant_indices) == 1
+
+    # All stage-1 creations (regions + tenants) must come before any stage-2 creation (racks)
+    max_stage1_index = max(max(region_indices), max(tenant_indices))
+    min_stage2_index = min(rack_indices)
+    assert max_stage1_index < min_stage2_index, (
+        f"Stage 1 items must all complete before stage 2 begins. "
+        f"Order was: {_creation_order}"
+    )
+
+
+def test_sync_stages_parallelizes_within_stage():
+    """Two independent top-level types in the same stage should both be processed."""
+    _creation_order.clear()
+    src, dst = _make_staged_pair()
+    dst.sync_from(src, concurrent=True, max_workers=4)
+
+    types_created = {t for t, _ in _creation_order}
+    assert "region" in types_created
+    assert "tenant" in types_created
+    assert "rack" in types_created
+
+
+def test_sync_stages_none_preserves_current_behavior():
+    """sync_stages=None with concurrent=True should behave like the original unstaged concurrent sync."""
+    _creation_order.clear()
+    src, dst = _make_staged_pair(_UnstagedAdapter)
+    dst.sync_from(src, concurrent=True, max_workers=2)
+
+    assert dst.get_or_none("region", "region1") is not None
+    assert dst.get_or_none("tenant", "tenant1") is not None
+    assert dst.get_or_none("rack", "rack1") is not None
+
+
+def test_sync_stages_ignored_when_serial():
+    """sync_stages should have no effect on serial sync — top_level order is used."""
+    _creation_order.clear()
+    src, dst = _make_staged_pair()
+    dst.sync_from(src, concurrent=False)
+
+    assert dst.get_or_none("region", "region1") is not None
+    assert dst.get_or_none("rack", "rack1") is not None
+
+
+def test_sync_stages_validation_rejects_unknown_type():
+    """A type in sync_stages that is not in top_level should raise AttributeError."""
+    import pytest
+
+    with pytest.raises(AttributeError, match="sync_stages.*not in top_level"):
+        class _BadAdapter(Adapter):
+            region = _Region
+            top_level = ["region"]
+            sync_stages = [["region", "nonexistent"]]
+
+
+def test_sync_stages_validation_rejects_duplicates():
+    """A type appearing in multiple stages should raise AttributeError."""
+    import pytest
+
+    with pytest.raises(AttributeError, match="sync_stages.*duplicate"):
+        class _BadAdapter(Adapter):
+            region = _Region
+            tenant = _Tenant
+            top_level = ["region", "tenant"]
+            sync_stages = [["region", "tenant"], ["region"]]
+
+
+def test_sync_stages_unstaged_types_still_sync():
+    """A type in top_level but not in any stage should still be synced (serially, after all stages)."""
+
+    class _PartialStagesAdapter(Adapter):
+        region = _Region
+        tenant = _Tenant
+        rack = _Rack
+        top_level = ["region", "tenant", "rack"]
+        sync_stages = [["region"]]  # tenant and rack not staged
+
+    _creation_order.clear()
+    src, dst = _make_staged_pair(_PartialStagesAdapter)
+    dst.sync_from(src, concurrent=True, max_workers=2)
+
+    # All types should still be synced
+    assert dst.get_or_none("region", "region1") is not None
+    assert dst.get_or_none("tenant", "tenant1") is not None
+    assert dst.get_or_none("rack", "rack1") is not None
