@@ -1,5 +1,6 @@
 """LocalStore module."""
 
+import threading
 from collections import defaultdict
 from typing import TYPE_CHECKING, Any, Dict, List, Set, Type, Union
 
@@ -18,6 +19,7 @@ class LocalStore(BaseStore):
         super().__init__(*args, **kwargs)
 
         self._data: Dict = defaultdict(dict)
+        self._lock = threading.Lock()
 
     def get_all_model_names(self) -> Set[str]:
         """Get all the model names stored.
@@ -97,20 +99,21 @@ class LocalStore(BaseStore):
         Raises:
             ObjectAlreadyExists: if a different object with the same uid is already present.
         """
-        modelname = obj.get_type()
-        uid = obj.get_unique_id()
+        with self._lock:
+            modelname = obj.get_type()
+            uid = obj.get_unique_id()
 
-        existing_obj = self._data[modelname].get(uid)
-        if existing_obj:
-            if existing_obj is not obj:
-                raise ObjectAlreadyExists(f"Object {uid} already present", obj)
-            # Return so we don't have to change anything on the existing object and underlying data
-            return
+            existing_obj = self._data[modelname].get(uid)
+            if existing_obj:
+                if existing_obj is not obj:
+                    raise ObjectAlreadyExists(f"Object {uid} already present", obj)
+                # Return so we don't have to change anything on the existing object and underlying data
+                return
 
-        if not obj.adapter:
-            obj.adapter = self.adapter
+            if not obj.adapter:
+                obj.adapter = self.adapter
 
-        self._data[modelname][uid] = obj
+            self._data[modelname][uid] = obj
 
     def update(self, *, obj: "DiffSyncModel") -> None:
         """Update a DiffSyncModel object to the store.
@@ -118,20 +121,22 @@ class LocalStore(BaseStore):
         Args:
             obj: Object to update
         """
-        modelname = obj.get_type()
-        uid = obj.get_unique_id()
+        with self._lock:
+            modelname = obj.get_type()
+            uid = obj.get_unique_id()
 
-        existing_obj = self._data[modelname].get(uid)
-        if existing_obj is obj:
-            return
+            existing_obj = self._data[modelname].get(uid)
+            if existing_obj is obj:
+                return
 
-        self._data[modelname][uid] = obj
+            self._data[modelname][uid] = obj
 
     def remove_item(self, modelname: str, uid: str) -> None:
         """Remove one item from store."""
-        if uid not in self._data[modelname]:
-            raise ObjectNotFound(f"{modelname} {uid} not present in {str(self)}")
-        del self._data[modelname][uid]
+        with self._lock:
+            if uid not in self._data[modelname]:
+                raise ObjectNotFound(f"{modelname} {uid} not present in {str(self)}")
+            del self._data[modelname][uid]
 
     def count(self, *, model: Union[str, "DiffSyncModel", Type["DiffSyncModel"], None] = None) -> int:
         """Returns the number of elements of a specific model, or all elements in the store if unspecified."""
@@ -143,3 +148,25 @@ class LocalStore(BaseStore):
         else:
             modelname = model.get_type()
         return len(self._data[modelname])
+
+    def add_bulk(self, *, objs: List["DiffSyncModel"]) -> None:
+        """Add multiple DiffSyncModel objects to the store in a batch.
+
+        Args:
+            objs: List of objects to store
+
+        Raises:
+            ObjectAlreadyExists: if a different object with the same uid is already present.
+        """
+        with self._lock:
+            for obj in objs:
+                modelname = obj.get_type()
+                uid = obj.get_unique_id()
+                existing_obj = self._data[modelname].get(uid)
+                if existing_obj:
+                    if existing_obj is not obj:
+                        raise ObjectAlreadyExists(f"Object {uid} already present", obj)
+                    continue
+                if not obj.adapter:
+                    obj.adapter = self.adapter
+                self._data[modelname][uid] = obj

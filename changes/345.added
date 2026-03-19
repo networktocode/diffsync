@@ -1,0 +1,10 @@
+Added bulk sync operations and advanced filtering capabilities to Adapter diff/sync methods.
+Added Diff.filter() and Diff.exclude() methods for post-diff, pre-sync manipulation of computed diffs.
+Added model_types parameter to scope diffs and syncs to specific model types.
+Added sync_attrs and exclude_attrs parameters for attribute-level diff control.
+Added filters parameter for per-model-type query predicates during diff calculation.
+Added sync_filter callback parameter to approve or reject individual CRUD operations during sync.
+Added structured operations summary passed to sync_complete() after sync.
+Added bulk CRUD methods (create_bulk, update_bulk, delete_bulk) on DiffSyncModel.
+Added store-level bulk methods (add_bulk, update_bulk, remove_bulk) on BaseStore, LocalStore, and RedisStore.
+Added concurrent flag for parallel sync of independent top-level subtrees.
