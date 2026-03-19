@@ -722,7 +722,7 @@ class Adapter:  # pylint: disable=too-many-public-methods
         )
         result = syncer.perform_sync()
         if result:
-            # Feature 4: Pass operations summary to sync_complete
+            # Pass operations summary to sync_complete
             try:
                 self.sync_complete(source, diff, flags, syncer.base_logger, operations=syncer.operations)
             except TypeError:

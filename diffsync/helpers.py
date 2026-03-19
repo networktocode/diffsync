@@ -61,11 +61,11 @@ class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
         self.callback = callback
         self.diff: Optional[Diff] = None
 
-        # Feature 6: Model-type scoping
+        # Model-type scoping
         self.model_types = model_types
-        # Feature 5: Attribute-based query predicates
+        # Attribute-based query predicates
         self.filters = filters
-        # Feature 7: Attribute-scoped syncing
+        # Attribute-scoped syncing
         self.sync_attrs = sync_attrs
         self.exclude_attrs = exclude_attrs
 
@@ -100,7 +100,7 @@ class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
                 self.incr_models_processed(len(self.src_diffsync.get_all(skipped_type)))
 
         top_level_types = intersection(self.dst_diffsync.top_level, self.src_diffsync.top_level)
-        # Feature 6: Model-type scoping
+        # Model-type scoping
         if self.model_types is not None:
             top_level_types = [t for t in top_level_types if t in self.model_types]
 
@@ -228,7 +228,7 @@ class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
             self.incr_models_processed()
             return None
 
-        # Feature 5: Attribute-based query predicates
+        # Attribute-based query predicates
         if self.filters and model in self.filters:
             predicate = self.filters[model]
             obj_to_check = src_obj or dst_obj
@@ -269,7 +269,7 @@ class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
     def _filter_attrs(self, model_type: str, attrs: Dict) -> Dict:
         """Filter attributes based on sync_attrs and exclude_attrs settings.
 
-        Feature 7: Attribute-scoped syncing.
+        Apply sync_attrs whitelist first, then exclude_attrs blacklist.
         """
         if self.sync_attrs and model_type in self.sync_attrs:
             attrs = {k: v for k, v in attrs.items() if k in self.sync_attrs[model_type]}
@@ -312,7 +312,7 @@ class DiffSyncDiffer:  # pylint: disable=too-many-instance-attributes
             raise RuntimeError("Called with neither src_obj nor dest_obj??")
 
         for child_type, child_fieldname in children_mapping.items():
-            # Feature 6: Model-type scoping — skip child types not in model_types
+            # Model-type scoping — skip child types not in model_types
             if self.model_types is not None and child_type not in self.model_types:
                 continue
 
@@ -355,18 +355,18 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
         self.flags = flags
         self.callback = callback
 
-        # Feature 9: Callback-based sync interceptor
+        # Callback-based sync interceptor
         self.sync_filter = sync_filter
 
-        # Feature 2: Chunked/batched sync execution
+        # Chunked/batched sync execution
         self.batch_size = batch_size
 
-        # Feature 3: Parallel sync of independent subtrees
+        # Parallel sync of independent subtrees
         self.concurrent = concurrent
         self.max_workers = max_workers
         self.sync_stages = sync_stages
 
-        # Feature 4: Structured operations summary
+        # Structured operations summary
         self.operations: Dict[str, Dict[str, List[Dict]]] = {}
         self._operations_lock = threading.Lock()
 
@@ -397,7 +397,7 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
         changed = False
         self.base_logger.info("Beginning sync")
 
-        # Feature 3: Parallel sync of independent subtrees
+        # Parallel sync of independent subtrees
         if self.concurrent:
             if self.sync_stages:
                 # Staged concurrent execution: process each stage sequentially,
@@ -520,7 +520,7 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
             self.log_sync_status(self._local.action, status, message)
             return (False, dst_model)
 
-        # Feature 9: Callback-based sync interceptor
+        # Callback-based sync interceptor
         if self.sync_filter:
             model_type = self._local.model_class.get_type()
             if not self.sync_filter(self._local.action, model_type, ids, attrs):
@@ -564,7 +564,7 @@ class DiffSyncSyncer:  # pylint: disable=too-many-instance-attributes
 
         self.log_sync_status(self._local.action, status, message)
 
-        # Feature 4: Track operations for structured sync_complete
+        # Track operations for structured sync_complete
         if self._local.action is not None and status == DiffSyncStatus.SUCCESS:
             with self._operations_lock:
                 model_type = self._local.model_class.get_type()
