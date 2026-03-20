@@ -9,7 +9,6 @@ import pytest
 from diffsync import Adapter, DiffSyncModel
 from diffsync.enum import DiffSyncFlags, DiffSyncModelFlags
 from diffsync.exceptions import DiffClassMismatch, ObjectAlreadyExists, ObjectCrudException, ObjectNotFound
-from diffsync.store.local import LocalStore
 
 from .conftest import BackendA, Device, Interface, PersonA, Site, TrackedDiff
 
