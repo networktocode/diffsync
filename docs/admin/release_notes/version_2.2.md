@@ -24,3 +24,9 @@ Remove Python 3.9 support as it's EOL.
 ### Fixed
 
 - [#339](https://github.com/networktocode/diffsync/issues/339) - Fixed bug with deepcopy in dunder new.
+
+## [v2.2.3 (2026-03-20)](https://github.com/networktocode/diffsync/releases/tag/v2.2.3)
+
+### Fixed
+
+- [#346](https://github.com/networktocode/diffsync/issues/346) - Reverted addition of __new__ method to Adapter class to resolve instantiation issues.
