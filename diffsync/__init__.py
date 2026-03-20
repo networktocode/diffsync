@@ -482,19 +482,6 @@ class Adapter:  # pylint: disable=too-many-public-methods
             if not isclass(value) or not issubclass(value, DiffSyncModel):
                 raise AttributeError(f'top_level references attribute "{name}" but it is not a DiffSyncModel subclass!')
 
-    def __new__(cls, **kwargs):  # type: ignore[no-untyped-def]
-        """Document keyword arguments that were used to initialize Adapter."""
-        meta_kwargs = {}
-        for key, value in kwargs.items():
-            try:
-                meta_kwargs[key] = deepcopy(value)
-            except Exception:  # pylint: disable=broad-exception-caught
-                # Some objects (e.g. Kafka Consumer, DB connections) cannot be deep copied
-                meta_kwargs[key] = value
-        instance = super().__new__(cls)
-        instance._meta_kwargs = meta_kwargs
-        return instance
-
     def __str__(self) -> StrType:
         """String representation of an Adapter."""
         if self.type != self.name:

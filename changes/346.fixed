@@ -1,0 +1,1 @@
+Reverted addition of dunder new method to Adapter class as it's still causing problems and we should handle in SSoT.
