@@ -16,7 +16,6 @@ limitations under the License.
 """
 
 import sys
-from copy import deepcopy
 from inspect import isclass
 from typing import (
     Any,
