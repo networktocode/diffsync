@@ -1,0 +1,1 @@
+Reverted addition of __new__ method to Adapter class to resolve instantiation issues.
