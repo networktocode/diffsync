@@ -121,10 +121,11 @@ validation:
 nav:
   - Overview: "index.md"
   - User Guide:
-      - Library Overview: "user/lib_overview.md"
-      - Getting Started: "user/lib_getting_started.md"
-      - Using the Library: "user/lib_use_cases.md"
-      - Frequently Asked Questions: "user/faq.md"
+      - Flags: "source/core_engine/01-flags.md"
+      - Customize Diff Class: "source/core_engine/02-customize-diff-class.md"
+      - Store: "source/core_engine/03-store.md"
+      - Getting Started: "source/getting_started/01-getting-started.md"
+      - Upgrading: "source/upgrading/01-upgrading-to-2.0.md"
   - Administrator Guide:
       - Install and Configure: "admin/install.md"
       - Upgrade: "admin/upgrade.md"
@@ -151,12 +152,6 @@ nav:
       - Development Environment: "dev/dev_environment.md"
       - Release Checklist: "dev/release_checklist.md"
       - Architecture Design Records: "dev/arch_decision.md"
-  - User Guide:
-      - Flags: "source/core_engine/01-flags.md"
-      - Customize Diff Class: "source/core_engine/02-customize-diff-class.md"
-      - Store: "source/core_engine/03-store.md"
-      - Getting Started: "source/getting_started/01-getting-started.md"
-      - Upgrading: "source/upgrading/01-upgrading-to-2.0.md"
   - Code Reference:
       - diffsync: "code-reference/diffsync/__init__.md"
       - diff: "code-reference/diffsync/diff.md"
