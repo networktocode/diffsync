@@ -39,7 +39,7 @@ namespace.configure(
             "python_ver": "3.10",
             "local": is_truthy(os.getenv("INVOKE_DIFFSYNC_LOCAL", "false")),
             "image_name": "diffsync",
-            "image_ver": os.getenv("INVOKE_PARSER_IMAGE_VER", "latest"),
+            "image_ver": os.getenv("INVOKE_DIFFSYNC_IMAGE_VER", "latest"),
             "pwd": Path(__file__).parent,
         }
     }
@@ -66,13 +66,14 @@ def task(function=None, *args, **kwargs):
     return task_wrapper
 
 
-def run_command(context, exec_cmd, port=None):
+def run_command(context, exec_cmd, port=None, rm=True):
     """Wrapper to run the invoke task commands.
 
     Args:
         context ([invoke.task]): Invoke task object.
         exec_cmd ([str]): Command to run.
         port (int): Used to serve local docs.
+        rm (bool): Whether to remove the container after running the command.
 
     Returns:
         result (obj): Contains Invoke result from running task.
@@ -86,12 +87,12 @@ def run_command(context, exec_cmd, port=None):
         )
         if port:
             result = context.run(
-                f"docker run -it -p {port} -v {context.diffsync.pwd}:/local {context.diffsync.image_name}:{context.diffsync.image_ver} sh -c '{exec_cmd}'",
+                f"docker run -it {'--rm' if rm else ''} -p {port} -v {context.diffsync.pwd}:/local {context.diffsync.image_name}:{context.diffsync.image_ver} sh -c '{exec_cmd}'",
                 pty=True,
             )
         else:
             result = context.run(
-                f"docker run -it -v {context.diffsync.pwd}:/local {context.diffsync.image_name}:{context.diffsync.image_ver} sh -c '{exec_cmd}'",
+                f"docker run -it {'--rm' if rm else ''} -v {context.diffsync.pwd}:/local {context.diffsync.image_name}:{context.diffsync.image_ver} sh -c '{exec_cmd}'",
                 pty=True,
             )
 
@@ -171,10 +172,26 @@ def coverage(context):
     run_command(context, "coverage html")
 
 
-@task
-def pytest(context):
+@task(
+    help={
+        "pattern": "Only run tests which match the given substring. Can be used multiple times.",
+        "label": "Module path to run (e.g., tests/unit/test_foo.py). Can be used multiple times.",
+    },
+    iterable=["pattern", "label"],
+)
+def pytest(context, pattern=None, label=None):
     """Run pytest test cases."""
     exec_cmd = "pytest -vv --doctest-modules diffsync/ && coverage run --source=diffsync -m pytest && coverage report"
+    run_command(context, exec_cmd)
+
+    doc_test_cmd = "pytest -vv --doctest-modules diffsync/"
+    pytest_cmd = "coverage run --source=diffsync -m pytest"
+    if pattern:
+        pytest_cmd += "".join([f" -k {_pattern}" for _pattern in pattern])
+    if label:
+        pytest_cmd += "".join([f" {_label}" for _label in label])
+    coverage_cmd = "coverage report"
+    exec_cmd = " && ".join([doc_test_cmd, pytest_cmd, coverage_cmd])
     run_command(context, exec_cmd)
 
 

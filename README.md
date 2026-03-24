@@ -28,11 +28,11 @@ To avoid extra work and temporary links, make sure that publishing docs (or merg
 
 Full documentation for this library can be found over on the [Diffsync Docs](https://diffsync.readthedocs.io/) website:
 
-- [User Guide](https://diffsync.readthedocs.io/user/app_overview/) - Overview, Using the Library, Getting Started.
-- [Administrator Guide](https://diffsync.readthedocs.io/admin/install/) - How to Install, Configure, Upgrade, or Uninstall the Library.
-- [Developer Guide](https://diffsync.readthedocs.io/dev/contributing/) - Extending the Library, Code Reference, Contribution Guide.
-- [Release Notes / Changelog](https://diffsync.readthedocs.io/admin/release_notes/).
-- [Frequently Asked Questions](https://diffsync.readthedocs.io/user/faq/).
+- [User Guide](https://diffsync.readthedocs.io/en/latest/user/app_overview/) - Overview, Using the Library, Getting Started.
+- [Administrator Guide](https://diffsync.readthedocs.io/en/latest/admin/install/) - How to Install, Configure, Upgrade, or Uninstall the Library.
+- [Developer Guide](https://diffsync.readthedocs.io/en/latest/dev/contributing/) - Extending the Library, Code Reference, Contribution Guide.
+- [Release Notes / Changelog](https://diffsync.readthedocs.io/en/latest/admin/release_notes/).
+- [Frequently Asked Questions](https://diffsync.readthedocs.io/en/latest/user/faq/).
 
 ### Contributing to the Documentation
 

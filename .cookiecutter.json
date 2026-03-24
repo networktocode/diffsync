@@ -14,7 +14,7 @@
         "project_with_config_settings": "no",
         "generate_docs": "yes",
         "version": "2.2.0",
-        "original_publish_year": "2025",
+        "original_publish_year": "2020",
         "_drift_manager": {
             "template": "https://github.com/networktocode-llc/cookiecutter-ntc.git",
             "template_dir": "python",
