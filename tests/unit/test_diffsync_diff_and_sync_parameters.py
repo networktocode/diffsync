@@ -504,12 +504,13 @@ class _StagedAdapter(Adapter):
     top_level = ["region", "tenant", "rack"]
     sync_stages = [
         ["region", "tenant"],  # stage 1: independent, can run in parallel
-        ["rack"],              # stage 2: depends on regions being created
+        ["rack"],  # stage 2: depends on regions being created
     ]
 
 
 class _UnstagedAdapter(Adapter):
     """Same models, no sync_stages — for comparison."""
+
     region = _Region
     tenant = _Tenant
     rack = _Rack
@@ -549,8 +550,7 @@ def test_sync_stages_executes_in_order():
     max_stage1_index = max(max(region_indices), max(tenant_indices))
     min_stage2_index = min(rack_indices)
     assert max_stage1_index < min_stage2_index, (
-        f"Stage 1 items must all complete before stage 2 begins. "
-        f"Order was: {_creation_order}"
+        f"Stage 1 items must all complete before stage 2 begins. Order was: {_creation_order}"
     )
 
 
@@ -592,6 +592,7 @@ def test_sync_stages_validation_rejects_unknown_type():
     import pytest
 
     with pytest.raises(AttributeError, match="sync_stages.*not in top_level"):
+
         class _BadAdapter(Adapter):
             region = _Region
             top_level = ["region"]
@@ -603,6 +604,7 @@ def test_sync_stages_validation_rejects_duplicates():
     import pytest
 
     with pytest.raises(AttributeError, match="sync_stages.*duplicate"):
+
         class _BadAdapter(Adapter):
             region = _Region
             tenant = _Tenant

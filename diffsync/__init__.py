@@ -550,13 +550,9 @@ class Adapter:  # pylint: disable=too-many-public-methods
             for stage in cls.sync_stages:
                 for model_type in stage:
                     if model_type not in top_level_set:
-                        raise AttributeError(
-                            f'sync_stages references "{model_type}" but it is not in top_level!'
-                        )
+                        raise AttributeError(f'sync_stages references "{model_type}" but it is not in top_level!')
                     if model_type in seen:
-                        raise AttributeError(
-                            f'sync_stages contains duplicate entry "{model_type}"!'
-                        )
+                        raise AttributeError(f'sync_stages contains duplicate entry "{model_type}"!')
                     seen.add(model_type)
 
     def __new__(cls, **kwargs):  # type: ignore[no-untyped-def]
