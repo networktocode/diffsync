@@ -207,6 +207,39 @@ class RedisStore(BaseStore):
 
         self._store.delete(object_key)
 
+    def add_bulk(self, *, objs: List["DiffSyncModel"]) -> None:
+        """Add multiple DiffSyncModel objects to Redis using a pipeline for efficiency.
+
+        Args:
+            objs: List of objects to store
+
+        Raises:
+            ObjectAlreadyExists: if a different object with the same uid is already present.
+        """
+        # Validate first, then batch write
+        keys_to_set = []
+        for obj in objs:
+            modelname = obj.get_type()
+            uid = obj.get_unique_id()
+            object_key = self._get_key_for_object(modelname, uid)
+
+            existing_obj_binary = self._store.get(object_key)
+            if existing_obj_binary:
+                existing_obj = loads(existing_obj_binary)  # noqa: S301
+                if existing_obj.dict() != obj.dict():
+                    raise ObjectAlreadyExists(f"Object {uid} already present", obj)
+                continue
+
+            obj_copy = copy.copy(obj)
+            obj_copy.adapter = None
+            keys_to_set.append((object_key, dumps(obj_copy)))
+
+        if keys_to_set:
+            pipe = self._store.pipeline()
+            for key, data in keys_to_set:
+                pipe.set(key, data)
+            pipe.execute()
+
     def count(self, *, model: Union[str, "DiffSyncModel", Type["DiffSyncModel"], None] = None) -> int:
         """Returns the number of elements of a specific model, or all elements in the store if unspecified."""
         search_pattern = f"{self._store_label}:*"
