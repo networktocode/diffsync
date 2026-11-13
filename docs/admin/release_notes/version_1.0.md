@@ -6,6 +6,10 @@ This document describes all new features and changes in the release. The format 
 
 Initial release of DiffSync.
 
+<<<<<<< HEAD
 ## [v1.0.0] - 2020-10-23
+=======
+## [v1.0.0] - 2026-03-24
+>>>>>>> 9cf5def (Cookie updated targeting develop by NetworkToCode Cookie Drift Manager Tool)
 
 Initial release

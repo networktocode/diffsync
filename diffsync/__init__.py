@@ -17,7 +17,6 @@ limitations under the License.
 # pylint: disable=too-many-lines
 
 import sys
-from copy import deepcopy
 from inspect import isclass
 from typing import (
     Any,
@@ -554,19 +553,6 @@ class Adapter:  # pylint: disable=too-many-public-methods
                     if model_type in seen:
                         raise AttributeError(f'sync_stages contains duplicate entry "{model_type}"!')
                     seen.add(model_type)
-
-    def __new__(cls, **kwargs):  # type: ignore[no-untyped-def]
-        """Document keyword arguments that were used to initialize Adapter."""
-        meta_kwargs = {}
-        for key, value in kwargs.items():
-            try:
-                meta_kwargs[key] = deepcopy(value)
-            except Exception:  # pylint: disable=broad-except
-                # Some objects (e.g. Kafka Consumer, DB connections) cannot be deep copied
-                meta_kwargs[key] = value
-        instance = super().__new__(cls)
-        instance._meta_kwargs = meta_kwargs
-        return instance
 
     def __str__(self) -> StrType:
         """String representation of an Adapter."""
