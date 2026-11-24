@@ -36,7 +36,7 @@ namespace.configure(
     {
         "diffsync": {
             "project_name": "diffsync",
-            "python_ver": "3.10",
+            "python_ver": "3.13",
             "local": is_truthy(os.getenv("INVOKE_DIFFSYNC_LOCAL", "false")),
             "image_name": "diffsync",
             "image_ver": os.getenv("INVOKE_DIFFSYNC_IMAGE_VER", "latest"),

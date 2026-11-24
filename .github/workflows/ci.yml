@@ -91,7 +91,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        python-version: ["3.10", "3.13"]
+        python-version: ["3.11", "3.15"]
     env:
       INVOKE_DIFFSYNC_PYTHON_VER: "${{ matrix.python-version }}"
     steps:
@@ -127,7 +127,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.11", "3.12", "3.13", "3.14", "3.15"]
     runs-on: "ubuntu-latest"
     env:
       INVOKE_DIFFSYNC_PYTHON_VER: "${{ matrix.python-version }}"
