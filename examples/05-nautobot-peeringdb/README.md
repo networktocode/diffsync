@@ -49,17 +49,10 @@ store_one = RedisStore(host="redis")
 store_two = RedisStore(host="redis")
 
 # Initialize PeeringDB adapter, using CATNIX id for demonstration
-peeringdb = PeeringDB(
-    ix_id=62,
-    internal_storage_engine=store_one
-)
+peeringdb = PeeringDB(ix_id=62, internal_storage_engine=store_one)
 
 # Initialize Nautobot adapter, pointing to the demo instance (it's also the default settings)
-nautobot = NautobotRemote(
-    url="https://demo.nautobot.com",
-    token="a" * 40,
-    internal_storage_engine=store_two
-)
+nautobot = NautobotRemote(url="https://demo.nautobot.com", token="a" * 40, internal_storage_engine=store_two)
 
 # Load PeeringDB info into the adapter
 peeringdb.load()

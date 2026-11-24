@@ -33,6 +33,7 @@ Configure verbosity of DiffSync's structured logging to console; the default is 
 
 ```python
 from diffsync.logging import enable_console_logging
+
 enable_console_logging(verbosity=0)  # Show WARNING and ERROR logs only
 # enable_console_logging(verbosity=1)  # Also include INFO logs
 # enable_console_logging(verbosity=2)  # Also include DEBUG logs

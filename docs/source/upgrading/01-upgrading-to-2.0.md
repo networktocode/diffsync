@@ -19,6 +19,7 @@ from typing import Optional
 
 from diffsync import DiffSyncModel
 
+
 # Before
 class Person(DiffSyncModel):
     _identifiers = ("name",)
@@ -26,6 +27,7 @@ class Person(DiffSyncModel):
 
     name: str
     age: Optional[int]
+
 
 # After
 class BetterPerson(DiffSyncModel):
