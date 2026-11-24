@@ -15,6 +15,7 @@ Global flags can be defined at runtime when calling one of these functions : `di
 
 ```python
 from diffsync.enum import DiffSyncFlags
+
 flags = DiffSyncFlags.SKIP_UNMATCHED_DST
 diff = nautobot.diff_from(local, flags=flags)
 ```

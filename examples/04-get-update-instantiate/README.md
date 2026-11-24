@@ -11,7 +11,9 @@ The following arguments are supported: model (`DiffSyncModel`), ids (dictionary)
 It will then return a tuple that can be unpacked.
 
 ```python
-obj, created = self.get_or_instantiate(Interface, {"device_name": "test100", "name": "eth0"}, {"description": "Test description"})
+obj, created = self.get_or_instantiate(
+    Interface, {"device_name": "test100", "name": "eth0"}, {"description": "Test description"}
+)
 ```
 
 If the object already exists, `created` will be `False` or else it will return `True` if the object had to be created.
@@ -21,7 +23,9 @@ If the object already exists, `created` will be `False` or else it will return `
 This helper is similar to `get_or_instantiate`, but it will update an existing object or add a new instance with the provided `ids` and `attrs`. The method does accept the same arguments, but requires `attrs`, whereas `get_or_instantiate` does not.
 
 ```python
-obj, created = self.update_or_instantiate(Interface, {"device_name": "test100", "name": "eth0"}, {"description": "Test description"})
+obj, created = self.update_or_instantiate(
+    Interface, {"device_name": "test100", "name": "eth0"}, {"description": "Test description"}
+)
 ```
 
 ## Example Walkthrough

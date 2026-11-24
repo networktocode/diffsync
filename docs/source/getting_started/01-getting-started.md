@@ -22,6 +22,7 @@ Each `DiffSyncModel` subclass supports the following class-level attributes:
 from typing import List, Optional
 from diffsync import DiffSyncModel
 
+
 class Site(DiffSyncModel):
     _modelname = "site"
     _identifiers = ("name",)
@@ -71,27 +72,32 @@ The models will be processed in a specfic order as defined by `top_level` atttri
 Given the following Scenario:
 
 ```python
-
 class Site(DiffSyncModel):
     _children = {"vlan": "vlans", "prefix": "prefixes"}
     [...]
+
 
 class Device(DiffSyncModel):
     _children = {"interface": "interfaces"}
     [...]
 
+
 class Vlan(DiffSyncModel):
     [...]
 
+
 class Prefix(DiffSyncModel):
     [...]
+
 
 class Interface(DiffSyncModel):
     _children = {"ip_address": "ip_addresses"}
     [...]
 
+
 class IPAddress(DiffSyncModel):
     [...]
+
 
 class Cable(DiffSyncModel):
     [...]
@@ -108,7 +114,6 @@ class Nautobot(Adapter):
 
     top_level = ["site", "device", "cable"]
     [...]
-
 ```
 
 Would result in processing in the following order for each element until there are no elements left:
